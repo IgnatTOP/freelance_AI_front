@@ -1,0 +1,9 @@
+export { DashboardStats } from "./DashboardStats";
+export { QuickActions } from "./QuickActions";
+export { RecentOrders } from "./RecentOrders";
+export { AIRecommendations } from "./AIRecommendations";
+export { ActivityWidget } from "./ActivityWidget";
+export { AIAssistant } from "./AIAssistant";
+export { AIInsights } from "./AIInsights";
+export { AIGuide } from "./AIGuide";
+export { QuickCreateOrder } from "./QuickCreateOrder";
