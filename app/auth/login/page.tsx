@@ -1,34 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Layout,
+  Box,
   Card,
-  Form,
-  Input,
+  CardContent,
+  TextField,
   Button,
   Typography,
-  Space,
+  Stack,
   Alert,
-  theme,
-} from "antd";
+  InputAdornment,
+  IconButton,
+  useTheme,
+} from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { toastService } from "@/src/shared/lib/toast";
 import { motion } from "framer-motion";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import { LogIn, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 
-const { Content } = Layout;
-const { Title, Text } = Typography;
-const { useToken } = theme;
-
 export default function LoginPage() {
-  const { token } = useToken();
+  const theme = useTheme();
   const router = useRouter();
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     if (authService.isAuthenticated()) {
@@ -36,14 +39,49 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const handleSubmit = async (values: any) => {
+  const validateEmail = (email: string) => {
+    if (!email) {
+      setEmailError("Введите email");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Введите корректный email");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordError("Введите пароль");
+      return false;
+    }
+    if (password.length < 6) {
+      setPasswordError("Минимум 6 символов");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError("");
+
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       await authService.login({
-        email: values.email,
-        password: values.password,
+        email,
+        password,
       });
 
       toastService.success("Вход выполнен успешно!");
@@ -60,271 +98,232 @@ export default function LoginPage() {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "100vh",
-            padding: "40px 24px",
-          }}
+    <Box sx={{ minHeight: "100vh", background: "transparent" }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          padding: { xs: "24px", md: "40px 24px" },
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          style={{ width: "100%", maxWidth: 480 }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            style={{ width: "100%", maxWidth: 480 }}
-          >
-            <Space direction="vertical" size={32} style={{ width: "100%" }}>
-              {/* Header */}
-              <div style={{ textAlign: "center" }}>
-                <motion.div
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: token.borderRadiusLG,
-                    background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 16,
-                  }}
-                >
-                  <LogIn size={32} strokeWidth={2} style={{ color: "#fff" }} />
-                </motion.div>
-                <Title
-                  level={1}
-                  style={{
-                    margin: 0,
-                    fontSize: 32,
-                    lineHeight: "40px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Вход в аккаунт
-                </Title>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: 14,
-                    lineHeight: "22px",
-                    display: "block",
-                    marginTop: 8,
-                  }}
-                >
-                  Войдите для доступа к платформе
-                </Text>
-              </div>
-
-              {/* Form Card */}
-              <Card
+          <Stack spacing={4}>
+            {/* Header */}
+            <Box sx={{ textAlign: "center" }}>
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
                 style={{
-                  borderRadius: token.borderRadiusLG,
-                  borderColor: token.colorBorder,
-                }}
-                styles={{
-                  body: { padding: 32 },
+                  width: 64,
+                  height: 64,
+                  borderRadius: theme.shape.borderRadius * 2,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
                 }}
               >
-                <Form
-                  form={form}
-                  layout="vertical"
-                  onFinish={handleSubmit}
-                  size="large"
-                  requiredMark={false}
-                >
-                  {/* Error Alert */}
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      style={{ marginBottom: 24 }}
-                    >
-                      <Alert
-                        message="Ошибка входа"
-                        description={error}
-                        type="error"
-                        showIcon
-                        closable
-                        onClose={() => setError("")}
-                        style={{
-                          borderRadius: token.borderRadius,
-                        }}
-                      />
-                    </motion.div>
-                  )}
+                <LogIn size={32} strokeWidth={2} style={{ color: "#fff" }} />
+              </motion.div>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{ fontWeight: 600, mb: 1 }}
+              >
+                Вход в аккаунт
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Войдите для доступа к платформе
+              </Typography>
+            </Box>
 
-                  {/* Email Field */}
-                  <Form.Item
-                    name="email"
-                    label={
-                      <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                        Email
-                      </Text>
-                    }
-                    rules={[
-                      { required: true, message: "Введите email" },
-                      { type: "email", message: "Введите корректный email" },
-                    ]}
-                    style={{ marginBottom: 24 }}
-                  >
-                    <Input
-                      prefix={
-                        <Mail size={16} style={{ color: token.colorTextTertiary }} />
-                      }
-                      placeholder="your@email.com"
-                      disabled={loading}
-                      style={{
-                        fontSize: 14,
-                        lineHeight: "22px",
-                        height: 40,
-                      }}
-                    />
-                  </Form.Item>
-
-                  {/* Password Field */}
-                  <Form.Item
-                    name="password"
-                    label={
-                      <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                        Пароль
-                      </Text>
-                    }
-                    rules={[
-                      { required: true, message: "Введите пароль" },
-                      { min: 6, message: "Минимум 6 символов" },
-                    ]}
-                    style={{ marginBottom: 16 }}
-                  >
-                    <Input.Password
-                      prefix={
-                        <Lock size={16} style={{ color: token.colorTextTertiary }} />
-                      }
-                      placeholder="••••••••"
-                      disabled={loading}
-                      style={{
-                        fontSize: 14,
-                        lineHeight: "22px",
-                        height: 40,
-                      }}
-                    />
-                  </Form.Item>
-
-                  {/* Forgot Password Link */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      marginBottom: 24,
-                    }}
-                  >
-                    <Link href="/auth/forgot-password">
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          lineHeight: "22px",
-                          color: token.colorPrimary,
-                          cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.textDecoration = "underline";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.textDecoration = "none";
-                        }}
+            {/* Form Card */}
+            <Card
+              sx={{
+                borderRadius: 2,
+                borderColor: theme.palette.divider,
+              }}
+            >
+              <CardContent sx={{ p: 4 }}>
+                <form onSubmit={handleSubmit}>
+                  <Stack spacing={3}>
+                    {/* Error Alert */}
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
                       >
-                        Забыли пароль?
-                      </Text>
-                    </Link>
-                  </div>
+                        <Alert
+                          severity="error"
+                          onClose={() => setError("")}
+                          sx={{ borderRadius: 1 }}
+                        >
+                          <Typography variant="body2" fontWeight={600}>
+                            Ошибка входа
+                          </Typography>
+                          <Typography variant="body2">{error}</Typography>
+                        </Alert>
+                      </motion.div>
+                    )}
 
-                  {/* Submit Button */}
-                  <Form.Item style={{ marginBottom: 0 }}>
+                    {/* Email Field */}
+                    <TextField
+                      label="Email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setEmailError("");
+                      }}
+                      onBlur={() => validateEmail(email)}
+                      error={!!emailError}
+                      helperText={emailError}
+                      disabled={loading}
+                      placeholder="your@email.com"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Mail size={16} style={{ color: theme.palette.text.secondary }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      fullWidth
+                      required
+                    />
+
+                    {/* Password Field */}
+                    <TextField
+                      label="Пароль"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setPasswordError("");
+                      }}
+                      onBlur={() => validatePassword(password)}
+                      error={!!passwordError}
+                      helperText={passwordError}
+                      disabled={loading}
+                      placeholder="••••••••"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Lock size={16} style={{ color: theme.palette.text.secondary }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                              size="small"
+                            >
+                              {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                      fullWidth
+                      required
+                    />
+
+                    {/* Forgot Password Link */}
+                    <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                      <Link href="/auth/forgot-password" style={{ textDecoration: "none" }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: theme.palette.primary.main,
+                            cursor: "pointer",
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
+                          }}
+                        >
+                          Забыли пароль?
+                        </Typography>
+                      </Link>
+                    </Box>
+
+                    {/* Submit Button */}
                     <Button
-                      type="primary"
-                      htmlType="submit"
-                      icon={<ArrowRight size={20} strokeWidth={2} />}
-                      loading={loading}
-                      block
-                      iconPosition="end"
-                      style={{
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      disabled={loading}
+                      endIcon={<ArrowRight size={20} strokeWidth={2} />}
+                      fullWidth
+                      sx={{
                         height: 48,
                         fontSize: 16,
-                        lineHeight: "24px",
                         fontWeight: 500,
                       }}
                     >
                       {loading ? "Вход..." : "Войти"}
                     </Button>
-                  </Form.Item>
 
-                  {/* Register Link */}
-                  <div
-                    style={{
-                      marginTop: 24,
-                      paddingTop: 24,
-                      borderTop: `1px solid ${token.colorBorderSecondary}`,
-                      textAlign: "center",
-                    }}
-                  >
-                    <Text
-                      type="secondary"
-                      style={{ fontSize: 14, lineHeight: "22px" }}
+                    {/* Register Link */}
+                    <Box
+                      sx={{
+                        pt: 3,
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                        textAlign: "center",
+                      }}
                     >
-                      Нет аккаунта?{" "}
-                      <Link href="/auth/register">
-                        <Text
-                          strong
-                          style={{
-                            fontSize: 14,
-                            lineHeight: "22px",
-                            color: token.colorPrimary,
-                            cursor: "pointer",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.textDecoration = "underline";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.textDecoration = "none";
-                          }}
-                        >
-                          Зарегистрироваться
-                        </Text>
-                      </Link>
-                    </Text>
-                  </div>
-                </Form>
-              </Card>
+                      <Typography variant="body2" color="text.secondary">
+                        Нет аккаунта?{" "}
+                        <Link href="/auth/register" style={{ textDecoration: "none" }}>
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            sx={{
+                              color: theme.palette.primary.main,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              "&:hover": {
+                                textDecoration: "underline",
+                              },
+                            }}
+                          >
+                            Зарегистрироваться
+                          </Typography>
+                        </Link>
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </form>
+              </CardContent>
+            </Card>
 
-              {/* Security Info */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <ShieldCheck
-                  size={16}
-                  style={{ color: token.colorTextTertiary }}
-                />
-                <Text
-                  type="secondary"
-                  style={{ fontSize: 12, lineHeight: "20px" }}
-                >
-                  Защищенное соединение с шифрованием
-                </Text>
-              </div>
-            </Space>
-          </motion.div>
-        </div>
-      </Content>
-    </Layout>
+            {/* Security Info */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1,
+              }}
+            >
+              <ShieldCheck
+                size={16}
+                style={{ color: theme.palette.text.secondary }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                Защищенное соединение с шифрованием
+              </Typography>
+            </Box>
+          </Stack>
+        </motion.div>
+      </Box>
+    </Box>
   );
 }

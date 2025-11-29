@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Layout, Typography, Row, Col, Skeleton, theme, Card, Space, Button, Avatar, Badge } from "antd";
+import {
+  Box,
+  Typography,
+  Grid,
+  Skeleton,
+  Card,
+  CardContent,
+  Stack,
+  Button,
+  Badge,
+  useTheme,
+  Container
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { getStats } from "@/src/shared/api/stats";
 import { useAuth } from "@/src/shared/lib/hooks";
@@ -31,13 +43,9 @@ import { ActivityWidget } from "@/src/widgets/Dashboard/ActivityWidget";
 import { ProjectsCards } from "@/src/widgets/Dashboard/ProjectsCards";
 import { AIHub } from "@/src/widgets/Dashboard/AIHub";
 
-const { Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
-const { useToken } = theme;
-
 export default function DashboardPage() {
   const router = useRouter();
-  const { token } = useToken();
+  const theme = useTheme();
   const { user, profile, userRole, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{
@@ -133,14 +141,14 @@ export default function DashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
-        <Content style={{ padding: token.paddingLG }}>
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Skeleton active paragraph={{ rows: 1 }} />
-            <Skeleton active paragraph={{ rows: 4 }} />
-          </Space>
-        </Content>
-      </Layout>
+      <Box sx={{ minHeight: '100vh', background: 'transparent' }}>
+        <Container maxWidth="xl" sx={{ py: 3 }}>
+          <Stack spacing={3}>
+            <Skeleton variant="rectangular" height={60} />
+            <Skeleton variant="rectangular" height={200} />
+          </Stack>
+        </Container>
+      </Box>
     );
   }
 
@@ -162,7 +170,7 @@ export default function DashboardPage() {
           icon: Rocket,
           title: "Создать проект",
           description: "Опубликуйте новый заказ",
-          color: token.colorPrimary,
+          color: theme.palette.primary.main,
           href: "/orders/create",
           badge: null,
         },
@@ -170,7 +178,7 @@ export default function DashboardPage() {
           icon: Sparkles,
           title: "AI генератор",
           description: "Создать ТЗ с помощью AI",
-          color: token.colorPrimary,
+          color: theme.palette.primary.main,
           href: "/orders/create?ai=true",
           badge: "NEW",
         },
@@ -178,7 +186,7 @@ export default function DashboardPage() {
           icon: Users,
           title: "Фрилансеры",
           description: "Найти исполнителей",
-          color: token.colorInfo,
+          color: theme.palette.info.main,
           href: "/freelancers",
           badge: null,
         },
@@ -186,7 +194,7 @@ export default function DashboardPage() {
           icon: MessageSquare,
           title: "Сообщения",
           description: "Чаты и уведомления",
-          color: token.colorSuccess,
+          color: theme.palette.success.main,
           href: "/messages",
           badge: 3,
         },
@@ -194,7 +202,7 @@ export default function DashboardPage() {
           icon: FileText,
           title: "Мои заказы",
           description: "Управление проектами",
-          color: token.colorWarning,
+          color: theme.palette.warning.main,
           href: "/orders",
           badge: null,
         },
@@ -202,7 +210,7 @@ export default function DashboardPage() {
           icon: BarChart3,
           title: "Аналитика",
           description: "Статистика и отчеты",
-          color: token.colorError,
+          color: theme.palette.error.main,
           href: "/analytics",
           badge: null,
         },
@@ -212,7 +220,7 @@ export default function DashboardPage() {
           icon: Target,
           title: "Найти заказы",
           description: "Просмотр активных проектов",
-          color: token.colorPrimary,
+          color: theme.palette.primary.main,
           href: "/orders",
           badge: null,
         },
@@ -220,7 +228,7 @@ export default function DashboardPage() {
           icon: Sparkles,
           title: "AI рекомендации",
           description: "Подходящие заказы для вас",
-          color: token.colorPrimary,
+          color: theme.palette.primary.main,
           href: "/orders?ai=true",
           badge: "NEW",
         },
@@ -228,7 +236,7 @@ export default function DashboardPage() {
           icon: FileText,
           title: "Мои отклики",
           description: "Управление предложениями",
-          color: token.colorInfo,
+          color: theme.palette.info.main,
           href: "/proposals",
           badge: null,
         },
@@ -236,7 +244,7 @@ export default function DashboardPage() {
           icon: MessageSquare,
           title: "Сообщения",
           description: "Чаты с заказчиками",
-          color: token.colorSuccess,
+          color: theme.palette.success.main,
           href: "/messages",
           badge: 5,
         },
@@ -244,7 +252,7 @@ export default function DashboardPage() {
           icon: Calendar,
           title: "Мои проекты",
           description: "Активные заказы",
-          color: token.colorWarning,
+          color: theme.palette.warning.main,
           href: "/my-projects",
           badge: null,
         },
@@ -252,7 +260,7 @@ export default function DashboardPage() {
           icon: Settings,
           title: "Профиль",
           description: "Настройки и портфолио",
-          color: token.colorError,
+          color: theme.palette.error.main,
           href: "/profile",
           badge: null,
         },
@@ -260,23 +268,22 @@ export default function DashboardPage() {
           icon: FolderKanban,
           title: "Портфолио",
           description: "Мои работы и проекты",
-          color: token.colorPrimary,
+          color: theme.palette.primary.main,
           href: "/portfolio",
           badge: null,
         },
       ];
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
-      <Content
-        style={{
-          padding: `${token.paddingLG}px ${token.paddingXL}px`,
-          maxWidth: '1800px',
-          margin: '0 auto',
-          width: '100%'
+    <Box sx={{ minHeight: '100vh', background: 'transparent' }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          py: { xs: 2, md: 3 },
+          px: { xs: 2, md: 4 }
         }}
       >
-        <Space direction="vertical" size={token.marginXL} style={{ width: '100%' }}>
+        <Stack spacing={4}>
           {/* HERO SECTION */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -284,157 +291,158 @@ export default function DashboardPage() {
             transition={{ duration: 0.5 }}
           >
             <Card
-              style={{
-                background: `linear-gradient(135deg, ${token.colorPrimary}15 0%, ${token.colorPrimaryBg} 100%)`,
-                borderColor: token.colorBorder,
-                borderRadius: token.borderRadiusLG,
-              }}
-              styles={{
-                body: { padding: token.paddingXL }
+              sx={{
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.background.paper} 100%)`,
+                borderColor: theme.palette.divider,
+                borderRadius: 2,
               }}
             >
-              <Row gutter={[token.marginXL, token.marginLG]} align="middle">
-                <Col xs={24} md={16}>
-                  <Space direction="vertical" size="small">
-                    <Text type="secondary" style={{ fontSize: token.fontSize }}>
-                      {getGreeting()}, {profile?.display_name || user?.username}!
-                    </Text>
-                    <Title level={1} style={{ margin: 0, fontSize: token.fontSizeHeading1 }}>
-                      {userRole === "client" ? "Управляйте проектами эффективно" : "Найдите идеальный проект"}
-                    </Title>
-                    <Paragraph type="secondary" style={{ fontSize: token.fontSizeLG, margin: 0 }}>
-                      {userRole === "client"
-                        ? "У вас 8 активных проектов. 3 ожидают вашего внимания."
-                        : "12 новых заказов подходят вашему профилю"
-                      }
-                    </Paragraph>
-                  </Space>
-                </Col>
-                <Col xs={24} md={8} style={{ textAlign: 'right' }}>
-                  <Link href={userRole === "client" ? "/orders/create" : "/orders?ai=true"}>
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={userRole === "client" ? <Rocket size={20} /> : <Sparkles size={20} />}
-                      style={{
-                        height: 56,
-                        fontSize: token.fontSizeLG,
-                        borderRadius: token.borderRadiusLG,
-                        paddingLeft: token.paddingXL,
-                        paddingRight: token.paddingXL,
-                      }}
-                    >
-                      {userRole === "client" ? "Создать проект" : "AI рекомендации"}
-                    </Button>
-                  </Link>
-                </Col>
-              </Row>
+              <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+                <Grid container spacing={{ xs: 2, md: 4 }} alignItems="center">
+                  <Grid item xs={12} md={8}>
+                    <Stack spacing={1}>
+                      <Typography variant="body1" color="text.secondary">
+                        {getGreeting()}, {profile?.display_name || user?.username}!
+                      </Typography>
+                      <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
+                        {userRole === "client" ? "Управляйте проектами эффективно" : "Найдите идеальный проект"}
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary">
+                        {userRole === "client"
+                          ? "У вас 8 активных проектов. 3 ожидают вашего внимания."
+                          : "12 новых заказов подходят вашему профилю"
+                        }
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                    <Link href={userRole === "client" ? "/orders/create" : "/orders?ai=true"} style={{ textDecoration: 'none' }}>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        startIcon={userRole === "client" ? <Rocket size={20} /> : <Sparkles size={20} />}
+                        sx={{
+                          height: 56,
+                          fontSize: theme.typography.body1.fontSize,
+                          borderRadius: 2,
+                          px: 4,
+                        }}
+                      >
+                        {userRole === "client" ? "Создать проект" : "AI рекомендации"}
+                      </Button>
+                    </Link>
+                  </Grid>
+                </Grid>
+              </CardContent>
             </Card>
           </motion.div>
 
           {/* QUICK METRICS */}
-          <Row gutter={[token.margin, token.margin]}>
+          <Grid container spacing={2}>
             {[
               {
                 icon: FileText,
                 title: userRole === "client" ? "Всего проектов" : "Откликов",
                 value: displayStats.totalProjects,
                 trend: displayStats.trend.projects,
-                color: token.colorPrimary,
+                color: theme.palette.primary.main,
               },
               {
                 icon: Clock,
                 title: "Активных",
                 value: displayStats.activeProjects,
                 trend: displayStats.activeProjects > 0 ? 5 : 0,
-                color: token.colorInfo,
+                color: theme.palette.info.main,
               },
               {
                 icon: CheckCircle2,
                 title: "Завершено",
                 value: displayStats.completedProjects,
                 trend: displayStats.completedProjects > 0 ? 10 : 0,
-                color: token.colorSuccess,
+                color: theme.palette.success.main,
               },
               {
                 icon: Wallet,
                 title: userRole === "client" ? "Потрачено" : "Заработано",
-                value: displayStats.earnings > 0 
+                value: displayStats.earnings > 0
                   ? `${(displayStats.earnings / 1000).toFixed(0)}K ₽`
                   : "0 ₽",
                 trend: displayStats.trend.earnings,
-                color: token.colorWarning,
+                color: theme.palette.warning.main,
               },
             ].map((metric, index) => {
               const Icon = metric.icon;
               const TrendIcon = metric.trend >= 0 ? ArrowUpRight : ArrowDownRight;
               return (
-                <Col xs={12} sm={12} md={6} key={index}>
+                <Grid item xs={6} sm={6} md={3} key={index}>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
                     <Card
-                      hoverable
-                      style={{
-                        borderColor: token.colorBorder,
-                        borderRadius: token.borderRadiusLG,
+                      sx={{
+                        borderColor: theme.palette.divider,
+                        borderRadius: 2,
                         height: '100%',
-                      }}
-                      styles={{
-                        body: { padding: token.paddingLG }
+                        transition: 'transform 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: theme.shadows[4],
+                        }
                       }}
                     >
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                          <div
-                            style={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: token.borderRadiusLG,
-                              background: `${metric.color}15`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <Icon size={24} style={{ color: metric.color }} />
-                          </div>
-                          <Space size={4}>
-                            <TrendIcon
-                              size={16}
-                              style={{ color: metric.trend >= 0 ? token.colorSuccess : token.colorError }}
-                            />
-                            <Text
-                              style={{
-                                fontSize: token.fontSizeSM,
-                                color: metric.trend >= 0 ? token.colorSuccess : token.colorError,
+                      <CardContent>
+                        <Stack spacing={1}>
+                          <Stack direction="row" justifyContent="space-between" alignItems="center">
+                            <Box
+                              sx={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 2,
+                                background: `${metric.color}15`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                               }}
                             >
-                              {Math.abs(metric.trend)}%
-                            </Text>
-                          </Space>
-                        </Space>
-                        <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                          {metric.title}
-                        </Text>
-                        <Title level={3} style={{ margin: 0 }}>
-                          {metric.value}
-                        </Title>
-                      </Space>
+                              <Icon size={24} style={{ color: metric.color }} />
+                            </Box>
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <TrendIcon
+                                size={16}
+                                style={{ color: metric.trend >= 0 ? theme.palette.success.main : theme.palette.error.main }}
+                              />
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: metric.trend >= 0 ? theme.palette.success.main : theme.palette.error.main,
+                                }}
+                              >
+                                {Math.abs(metric.trend)}%
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary">
+                            {metric.title}
+                          </Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                            {metric.value}
+                          </Typography>
+                        </Stack>
+                      </CardContent>
                     </Card>
                   </motion.div>
-                </Col>
+                </Grid>
               );
             })}
-          </Row>
+          </Grid>
 
           {/* MAIN LAYOUT */}
-          <Row gutter={[token.marginXL, token.marginXL]}>
+          <Grid container spacing={4}>
             {/* MAIN CONTENT */}
-            <Col xs={24} lg={14} xl={15}>
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Grid item xs={12} lg={8} xl={8}>
+              <Stack spacing={3}>
                 {/* ACTION CENTER */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -442,69 +450,75 @@ export default function DashboardPage() {
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
                   <Card
-                    title={
-                      <Space>
-                        <Zap size={20} style={{ color: token.colorPrimary }} />
-                        <span>Быстрые действия</span>
-                      </Space>
-                    }
-                    style={{
-                      borderColor: token.colorBorder,
-                      borderRadius: token.borderRadiusLG,
+                    sx={{
+                      borderColor: theme.palette.divider,
+                      borderRadius: 2,
                     }}
                   >
-                    <Row gutter={[token.margin, token.margin]}>
-                      {quickActions.map((action, index) => {
-                        const Icon = action.icon;
-                        return (
-                          <Col xs={12} sm={8} md={8} key={index}>
-                            <Link href={action.href}>
-                              <motion.div
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <Card
-                                  hoverable
-                                  style={{
-                                    borderColor: token.colorBorder,
-                                    borderRadius: token.borderRadiusLG,
-                                    height: '100%',
-                                    cursor: 'pointer',
-                                  }}
-                                  styles={{
-                                    body: { padding: token.padding }
-                                  }}
+                    <CardContent>
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                        <Zap size={20} style={{ color: theme.palette.primary.main }} />
+                        <Typography variant="h6">Быстрые действия</Typography>
+                      </Stack>
+                      <Grid container spacing={2}>
+                        {quickActions.map((action, index) => {
+                          const Icon = action.icon;
+                          return (
+                            <Grid item xs={6} sm={4} md={4} key={index}>
+                              <Link href={action.href} style={{ textDecoration: 'none' }}>
+                                <motion.div
+                                  whileHover={{ scale: 1.03 }}
+                                  whileTap={{ scale: 0.98 }}
                                 >
-                                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                                    <Badge count={action.badge} offset={[-5, 5]}>
-                                      <div
-                                        style={{
-                                          width: 40,
-                                          height: 40,
-                                          borderRadius: token.borderRadius,
-                                          background: `${action.color}15`,
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                        }}
-                                      >
-                                        <Icon size={20} style={{ color: action.color }} />
-                                      </div>
-                                    </Badge>
-                                    <Text strong style={{ fontSize: token.fontSize }}>
-                                      {action.title}
-                                    </Text>
-                                    <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                      {action.description}
-                                    </Text>
-                                  </Space>
-                                </Card>
-                              </motion.div>
-                            </Link>
-                          </Col>
-                        );
-                      })}
-                    </Row>
+                                  <Card
+                                    sx={{
+                                      borderColor: theme.palette.divider,
+                                      borderRadius: 2,
+                                      height: '100%',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s',
+                                      '&:hover': {
+                                        boxShadow: theme.shadows[4],
+                                      }
+                                    }}
+                                  >
+                                    <CardContent sx={{ p: 2 }}>
+                                      <Stack spacing={1}>
+                                        <Badge
+                                          badgeContent={action.badge}
+                                          color={action.badge === "NEW" ? "primary" : "error"}
+                                          sx={{ alignSelf: 'flex-start' }}
+                                        >
+                                          <Box
+                                            sx={{
+                                              width: 40,
+                                              height: 40,
+                                              borderRadius: 1,
+                                              background: `${action.color}15`,
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                            }}
+                                          >
+                                            <Icon size={20} style={{ color: action.color }} />
+                                          </Box>
+                                        </Badge>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                          {action.title}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {action.description}
+                                        </Typography>
+                                      </Stack>
+                                    </CardContent>
+                                  </Card>
+                                </motion.div>
+                              </Link>
+                            </Grid>
+                          );
+                        })}
+                      </Grid>
+                    </CardContent>
                   </Card>
                 </motion.div>
 
@@ -525,12 +539,12 @@ export default function DashboardPage() {
                 >
                   <ProjectsCards userRole={userRole} />
                 </motion.div>
-              </Space>
-            </Col>
+              </Stack>
+            </Grid>
 
             {/* SIDEBAR */}
-            <Col xs={24} lg={10} xl={9}>
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Grid item xs={12} lg={4} xl={4}>
+              <Stack spacing={3}>
                 {/* AI HUB */}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -547,112 +561,106 @@ export default function DashboardPage() {
                   transition={{ duration: 0.5, delay: 0.4 }}
                 >
                   <Card
-                    title={
-                      <Space>
-                        <BarChart3 size={20} style={{ color: token.colorPrimary }} />
-                        <span>Быстрая статистика</span>
-                      </Space>
-                    }
-                    style={{
-                      borderColor: token.colorBorder,
-                      borderRadius: token.borderRadiusLG,
+                    sx={{
+                      borderColor: theme.palette.divider,
+                      borderRadius: 2,
                     }}
                   >
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <Row gutter={[token.margin, token.margin]}>
-                        <Col span={12}>
+                    <CardContent>
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                        <BarChart3 size={20} style={{ color: theme.palette.primary.main }} />
+                        <Typography variant="h6">Быстрая статистика</Typography>
+                      </Stack>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
                           <Card
-                            style={{
-                              background: `${token.colorPrimary}08`,
-                              borderColor: token.colorBorder,
-                            }}
-                            styles={{
-                              body: { padding: token.padding }
+                            sx={{
+                              background: `${theme.palette.primary.main}08`,
+                              borderColor: theme.palette.divider,
                             }}
                           >
-                            <Space direction="vertical" size={4}>
-                              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                Рейтинг
-                              </Text>
-                              <Text strong style={{ fontSize: token.fontSizeHeading4 }}>
-                                {quickStats?.rating ? `${quickStats.rating.toFixed(1)} ⭐` : "0.0 ⭐"}
-                              </Text>
-                            </Space>
+                            <CardContent sx={{ p: 2 }}>
+                              <Stack spacing={0.5}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Рейтинг
+                                </Typography>
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {quickStats?.rating ? `${quickStats.rating.toFixed(1)} ⭐` : "0.0 ⭐"}
+                                </Typography>
+                              </Stack>
+                            </CardContent>
                           </Card>
-                        </Col>
-                        <Col span={12}>
+                        </Grid>
+                        <Grid item xs={6}>
                           <Card
-                            style={{
-                              background: `${token.colorSuccess}08`,
-                              borderColor: token.colorBorder,
-                            }}
-                            styles={{
-                              body: { padding: token.padding }
+                            sx={{
+                              background: `${theme.palette.success.main}08`,
+                              borderColor: theme.palette.divider,
                             }}
                           >
-                            <Space direction="vertical" size={4}>
-                              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                Выполнено
-                              </Text>
-                              <Text strong style={{ fontSize: token.fontSizeHeading4 }}>
-                                {quickStats?.completionRate ? `${Math.round(quickStats.completionRate)}%` : "0%"}
-                              </Text>
-                            </Space>
+                            <CardContent sx={{ p: 2 }}>
+                              <Stack spacing={0.5}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Выполнено
+                                </Typography>
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {quickStats?.completionRate ? `${Math.round(quickStats.completionRate)}%` : "0%"}
+                                </Typography>
+                              </Stack>
+                            </CardContent>
                           </Card>
-                        </Col>
-                        <Col span={12}>
+                        </Grid>
+                        <Grid item xs={6}>
                           <Card
-                            style={{
-                              background: `${token.colorInfo}08`,
-                              borderColor: token.colorBorder,
-                            }}
-                            styles={{
-                              body: { padding: token.padding }
+                            sx={{
+                              background: `${theme.palette.info.main}08`,
+                              borderColor: theme.palette.divider,
                             }}
                           >
-                            <Space direction="vertical" size={4}>
-                              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                Ответ
-                              </Text>
-                              <Text strong style={{ fontSize: token.fontSizeHeading4 }}>
-                                {quickStats?.responseTimeHours 
-                                  ? quickStats.responseTimeHours < 1 
-                                    ? `${Math.round(quickStats.responseTimeHours * 60)} мин`
-                                    : `${Math.round(quickStats.responseTimeHours)} ч`
-                                  : "—"}
-                              </Text>
-                            </Space>
+                            <CardContent sx={{ p: 2 }}>
+                              <Stack spacing={0.5}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Ответ
+                                </Typography>
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {quickStats?.responseTimeHours
+                                    ? quickStats.responseTimeHours < 1
+                                      ? `${Math.round(quickStats.responseTimeHours * 60)} мин`
+                                      : `${Math.round(quickStats.responseTimeHours)} ч`
+                                    : "—"}
+                                </Typography>
+                              </Stack>
+                            </CardContent>
                           </Card>
-                        </Col>
-                        <Col span={12}>
+                        </Grid>
+                        <Grid item xs={6}>
                           <Card
-                            style={{
-                              background: `${token.colorWarning}08`,
-                              borderColor: token.colorBorder,
-                            }}
-                            styles={{
-                              body: { padding: token.padding }
+                            sx={{
+                              background: `${theme.palette.warning.main}08`,
+                              borderColor: theme.palette.divider,
                             }}
                           >
-                            <Space direction="vertical" size={4}>
-                              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                Отзывы
-                              </Text>
-                              <Text strong style={{ fontSize: token.fontSizeHeading4 }}>
-                                {quickStats?.totalReviews || 0}
-                              </Text>
-                            </Space>
+                            <CardContent sx={{ p: 2 }}>
+                              <Stack spacing={0.5}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Отзывы
+                                </Typography>
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {quickStats?.totalReviews || 0}
+                                </Typography>
+                              </Stack>
+                            </CardContent>
                           </Card>
-                        </Col>
-                      </Row>
-                    </Space>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
                   </Card>
                 </motion.div>
-              </Space>
-            </Col>
-          </Row>
-        </Space>
-      </Content>
-    </Layout>
+              </Stack>
+            </Grid>
+          </Grid>
+        </Stack>
+      </Container>
+    </Box>
   );
 }
