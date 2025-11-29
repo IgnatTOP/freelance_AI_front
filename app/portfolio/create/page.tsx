@@ -1,18 +1,14 @@
 "use client";
 
-import { Layout } from "antd";
+import { Box, Container } from "@mui/material";
 import { CreatePortfolioItemFeature } from "@/src/features/portfolio/create-portfolio-item/ui/CreatePortfolioItemFeature";
-
-const { Content } = Layout;
 
 export default function CreatePortfolioPage() {
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, width: "100%" }}>
         <CreatePortfolioItemFeature />
-      </Content>
-    </Layout>
+      </Container>
+    </Box>
   );
 }
-
-
