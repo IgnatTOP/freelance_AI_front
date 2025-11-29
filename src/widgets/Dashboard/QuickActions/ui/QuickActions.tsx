@@ -1,6 +1,8 @@
 "use client";
 
-import { Card, Button, Space, Row, Col } from "antd";
+import { Card, CardContent, Button, Stack, Box, Typography } from "@mui/material";
+import Grid from "@mui/material/Grid";
+import { useTheme } from "@mui/material/styles";
 import {
   Plus,
   Search,
@@ -83,60 +85,77 @@ export function QuickActions({ userRole }: QuickActionsProps) {
   ];
 
   const actions = userRole === "client" ? clientActions : freelancerActions;
+  const theme = useTheme();
 
   return (
     <Card
-      style={{
-        background: 'var(--primary-05)',
-        borderColor: 'var(--primary-12)',
+      sx={{
+        background: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.05)' : 'rgba(24, 144, 255, 0.03)',
+        borderColor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.12)' : 'rgba(24, 144, 255, 0.08)',
+        borderWidth: 1,
+        borderStyle: 'solid',
       }}
     >
-      <Row gutter={[16, 16]} wrap={false} style={{ overflowX: 'auto' }}>
-        {/* Quick Create Order для клиентов - первая карточка */}
-        {userRole === "client" && (
-          <Col flex="0 0 auto">
-            <QuickCreateOrder userRole={userRole} />
-          </Col>
-        )}
-        
-        {actions.map((action, index) => {
-          const Icon = action.icon;
-          return (
-            <Col key={action.title} flex="0 0 auto">
-              <Link href={action.href}>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Card
-                    hoverable
-                    style={{
-                      minWidth: 140,
-                      background: action.primary ? 'var(--primary-08)' : undefined,
-                      borderColor: action.primary ? 'var(--primary-25)' : undefined,
-                    }}
+      <CardContent>
+        <Grid container spacing={2} wrap="nowrap" sx={{ overflowX: 'auto' }}>
+          {/* Quick Create Order для клиентов - первая карточка */}
+          {userRole === "client" && (
+            <Grid>
+              <QuickCreateOrder userRole={userRole} />
+            </Grid>
+          )}
+
+          {actions.map((action, index) => {
+            const Icon = action.icon;
+            return (
+              <Grid key={action.title}>
+                <Link href={action.href} style={{ textDecoration: 'none' }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <Space direction="vertical" align="center" style={{ width: '100%', textAlign: 'center' }}>
-                      <Icon size={20} style={{ color: action.primary ? 'var(--primary)' : undefined }} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '14px' }}>
-                          {action.title}
-                        </div>
-                        <div style={{ fontSize: '12px', opacity: 0.7, marginTop: 4 }}>
-                          {action.description}
-                        </div>
-                      </div>
-                    </Space>
-                  </Card>
-                </motion.div>
-              </Link>
-            </Col>
-          );
-        })}
-      </Row>
+                    <Card
+                      sx={{
+                        minWidth: 140,
+                        background: action.primary
+                          ? theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.08)' : 'rgba(24, 144, 255, 0.05)'
+                          : 'transparent',
+                        borderColor: action.primary
+                          ? theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.25)' : 'rgba(24, 144, 255, 0.15)'
+                          : theme.palette.divider,
+                        borderWidth: 1,
+                        borderStyle: 'solid',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          borderColor: theme.palette.primary.main,
+                          boxShadow: theme.shadows[4],
+                        },
+                      }}
+                    >
+                      <CardContent>
+                        <Stack direction="column" alignItems="center" spacing={1} sx={{ textAlign: 'center' }}>
+                          <Icon size={20} style={{ color: action.primary ? theme.palette.primary.main : theme.palette.text.primary }} />
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '14px' }}>
+                              {action.title}
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: '12px', opacity: 0.7, mt: 0.5, display: 'block' }}>
+                              {action.description}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Link>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </CardContent>
     </Card>
   );
 }

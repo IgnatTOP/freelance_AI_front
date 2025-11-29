@@ -1,13 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, Typography, Space, Progress, Button } from "antd";
+import { Card, CardContent, Typography, Box, LinearProgress, Button } from "@mui/material";
 import { Sparkles, CheckCircle2, AlertCircle, X, Info } from "lucide-react";
-import { theme } from "antd";
+import { useTheme } from "@mui/material/styles";
 import { cleanExplanationText } from "@/src/shared/lib/ai/ai-utils";
-
-const { Text } = Typography;
-const { useToken } = theme;
 
 interface AISearchStatusProps {
   status: "idle" | "analyzing" | "success" | "error" | "no-results";
@@ -24,7 +21,7 @@ export function AISearchStatus({
   onClose,
   onReset,
 }: AISearchStatusProps) {
-  const { token } = useToken();
+  const theme = useTheme();
 
   // Очищаем explanation от UUID и технических деталей перед отображением
   const cleanedExplanation = explanation ? cleanExplanationText(explanation) : undefined;
@@ -94,41 +91,39 @@ export function AISearchStatus({
         style={{ marginBottom: 20 }}
       >
         <Card
-          style={{
-            borderRadius: token.borderRadius,
+          sx={{
+            borderRadius: 1,
             borderColor:
               status === "success"
-                ? token.colorSuccess
+                ? theme.palette.success.main
                 : status === "error"
-                ? token.colorError
+                ? theme.palette.error.main
                 : status === "no-results"
-                ? token.colorWarning
-                : token.colorPrimary,
+                ? theme.palette.warning.main
+                : theme.palette.primary.main,
             background:
               status === "success"
-                ? `linear-gradient(135deg, ${token.colorSuccessBg} 0%, ${token.colorSuccessBg}dd 100%)`
+                ? `linear-gradient(135deg, ${theme.palette.success.light}33 0%, ${theme.palette.success.light}22 100%)`
                 : status === "error"
-                ? `linear-gradient(135deg, ${token.colorErrorBg} 0%, ${token.colorErrorBg}dd 100%)`
+                ? `linear-gradient(135deg, ${theme.palette.error.light}33 0%, ${theme.palette.error.light}22 100%)`
                 : status === "no-results"
-                ? `linear-gradient(135deg, ${token.colorWarningBg} 0%, ${token.colorWarningBg}dd 100%)`
-                : `linear-gradient(135deg, ${token.colorPrimaryBg} 0%, ${token.colorPrimaryBg}dd 100%)`,
-            boxShadow: `0 4px 12px rgba(0, 0, 0, 0.1)`,
-          }}
-          styles={{
-            body: { padding: "20px 24px" },
+                ? `linear-gradient(135deg, ${theme.palette.warning.light}33 0%, ${theme.palette.warning.light}22 100%)`
+                : `linear-gradient(135deg, ${theme.palette.primary.light}33 0%, ${theme.palette.primary.light}22 100%)`,
+            boxShadow: 1,
           }}
         >
-          <div
-            style={{
+          <CardContent sx={{ padding: "20px 24px" }}>
+          <Box
+            sx={{
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "space-between",
-              gap: 16,
+              gap: 2,
             }}
           >
-            <Space size={12} style={{ flex: 1 }}>
-              <div
-                style={{
+            <Box sx={{ display: "flex", gap: 1.5, flex: 1 }}>
+              <Box
+                sx={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -137,65 +132,63 @@ export function AISearchStatus({
                   borderRadius: "50%",
                   background:
                     status === "analyzing"
-                      ? `${token.colorPrimary}15`
+                      ? `${theme.palette.primary.main}15`
                       : status === "success"
-                      ? `${token.colorSuccess}15`
+                      ? `${theme.palette.success.main}15`
                       : status === "error"
-                      ? `${token.colorError}15`
-                      : `${token.colorWarning}15`,
+                      ? `${theme.palette.error.main}15`
+                      : `${theme.palette.warning.main}15`,
                 }}
               >
                 {content.icon}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Text
-                  strong
-                  style={{
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="body1"
+                  sx={{
                     fontSize: 15,
                     lineHeight: "22px",
-                    color: token.colorTextHeading,
+                    fontWeight: 600,
                     display: "block",
-                    marginBottom: 4,
+                    marginBottom: 0.5,
                   }}
                 >
                   {content.title}
-                </Text>
-                <Text
-                  type="secondary"
-                  style={{
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
                     fontSize: 13,
                     lineHeight: "20px",
-                    color: token.colorTextSecondary,
                     display: "block",
                   }}
                 >
                   {content.description}
-                </Text>
+                </Typography>
                 {content.showProgress && (
-                  <div style={{ marginTop: 12 }}>
-                    <Progress
-                      percent={100}
-                      showInfo={false}
-                      strokeColor={token.colorPrimary}
-                      status="active"
-                      style={{ margin: 0 }}
+                  <Box sx={{ marginTop: 1.5 }}>
+                    <LinearProgress
+                      variant="indeterminate"
+                      color="primary"
+                      sx={{ height: 4, borderRadius: 2 }}
                     />
-                  </div>
+                  </Box>
                 )}
-              </div>
-            </Space>
+              </Box>
+            </Box>
 
             {(status === "success" || status === "no-results" || status === "error") && (
-              <Space>
+              <Box sx={{ display: "flex", gap: 1 }}>
                 {status === "success" && onReset && (
                   <Button
-                    type="text"
+                    variant="text"
                     size="small"
                     onClick={onReset}
-                    style={{
+                    sx={{
                       fontSize: 12,
-                      height: 28,
-                      color: token.colorTextSecondary,
+                      minHeight: 28,
+                      textTransform: "none",
                     }}
                   >
                     Сбросить
@@ -203,42 +196,45 @@ export function AISearchStatus({
                 )}
                 {onClose && (
                   <Button
-                    type="text"
+                    variant="text"
                     size="small"
-                    icon={<X size={14} />}
                     onClick={onClose}
-                    style={{
+                    sx={{
                       fontSize: 12,
-                      height: 28,
-                      color: token.colorTextSecondary,
+                      minHeight: 28,
+                      minWidth: 28,
+                      padding: 0,
                     }}
-                  />
+                  >
+                    <X size={14} />
+                  </Button>
                 )}
-              </Space>
+              </Box>
             )}
-          </div>
+          </Box>
 
-          {status === "success" && cleanedExplanation && cleanedExplanation.trim() && 
+          {status === "success" && cleanedExplanation && cleanedExplanation.trim() &&
            !cleanedExplanation.includes("Показаны все доступные заказы") &&
            !cleanedExplanation.includes("AI временно недоступен") && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               transition={{ delay: 0.2 }}
-              style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${token.colorBorder}` }}
+              style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${theme.palette.divider}` }}
             >
-              <Space size={8} style={{ width: "100%" }}>
-                <Info size={14} style={{ color: token.colorTextSecondary, flexShrink: 0 }} />
-                <Text
-                  style={{
+              <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
+                <Info size={14} style={{ color: theme.palette.text.secondary, flexShrink: 0 }} />
+                <Typography
+                  variant="body2"
+                  sx={{
                     fontSize: 13,
                     lineHeight: "20px",
-                    color: token.colorTextSecondary,
+                    color: theme.palette.text.secondary,
                   }}
                 >
                   {cleanedExplanation}
-                </Text>
-              </Space>
+                </Typography>
+              </Box>
             </motion.div>
           )}
 
@@ -247,35 +243,38 @@ export function AISearchStatus({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               transition={{ delay: 0.2 }}
-              style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${token.colorBorder}` }}
+              style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${theme.palette.divider}` }}
             >
-              <Space size={8} style={{ width: "100%", flexDirection: "column", alignItems: "flex-start" }}>
-                <Space size={8} style={{ width: "100%" }}>
-                  <AlertCircle size={14} style={{ color: token.colorError, flexShrink: 0 }} />
-                  <Text
-                    strong
-                    style={{
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%", alignItems: "flex-start" }}>
+                <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
+                  <AlertCircle size={14} style={{ color: theme.palette.error.main, flexShrink: 0 }} />
+                  <Typography
+                    variant="body2"
+                    sx={{
                       fontSize: 13,
                       lineHeight: "20px",
-                      color: token.colorError,
+                      color: theme.palette.error.main,
+                      fontWeight: 600,
                     }}
                   >
                     Детали ошибки:
-                  </Text>
-                </Space>
-                <Text
-                  style={{
+                  </Typography>
+                </Box>
+                <Typography
+                  variant="body2"
+                  sx={{
                     fontSize: 13,
                     lineHeight: "20px",
-                    color: token.colorTextSecondary,
-                    paddingLeft: 22,
+                    color: theme.palette.text.secondary,
+                    paddingLeft: 2.75,
                   }}
                 >
                   {cleanedExplanation}
-                </Text>
-              </Space>
+                </Typography>
+              </Box>
             </motion.div>
           )}
+          </CardContent>
         </Card>
       </motion.div>
     </AnimatePresence>

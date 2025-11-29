@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Empty, Skeleton, Progress, Alert, Space, Typography, List } from "antd";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  Button,
+  Skeleton,
+  LinearProgress,
+  Alert,
+  Stack,
+  Typography,
+  List,
+  ListItem,
+  Box,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { getMyOrders, getOrders } from "@/src/shared/api/orders";
 import { getStats } from "@/src/shared/api/stats";
 import { aiService } from "@/src/shared/lib/ai";
@@ -15,8 +29,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-
-const { Text, Paragraph } = Typography;
 
 interface Insight {
   id: string;
@@ -220,14 +232,13 @@ export function AIInsights({ userRole, embedded = false }: AIInsightsProps) {
     }
   };
 
-  const getAlertType = (type: Insight["type"]) => {
+  const getAlertSeverity = (type: Insight["type"]): "success" | "warning" | "info" | "error" => {
     switch (type) {
       case "success":
         return "success";
       case "warning":
         return "warning";
       case "info":
-        return "info";
       case "tip":
         return "info";
       default:
@@ -235,19 +246,21 @@ export function AIInsights({ userRole, embedded = false }: AIInsightsProps) {
     }
   };
 
+  const theme = useTheme();
+
   const content = (
     <>
       {insights.length === 0 ? (
-        <Empty
-          description="Пока нет инсайтов"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body2" color="text.secondary">
+            Пока нет инсайтов
+          </Typography>
+        </Box>
       ) : (
-        <List
-          dataSource={insights}
-          renderItem={(insight, index) => {
+        <List sx={{ p: 0 }}>
+          {insights.map((insight, index) => {
             const Icon = getIcon(insight.type);
-            const alertType = getAlertType(insight.type);
+            const alertSeverity = getAlertSeverity(insight.type);
 
             return (
               <motion.div
@@ -256,89 +269,93 @@ export function AIInsights({ userRole, embedded = false }: AIInsightsProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
-                <Alert
-                  message={
-                    <Space>
-                      <Icon size={18} />
-                      <Text strong style={{ fontSize: '14px' }}>
-                        {insight.title}
-                      </Text>
-                    </Space>
-                  }
-                  description={
-                    <Space direction="vertical" size="small" style={{ width: '100%', marginTop: 8 }}>
-                      <Paragraph
-                        ellipsis={{ rows: 2, expandable: false }}
-                        style={{ fontSize: '12px', margin: 0 }}
+                <ListItem sx={{ p: 0, mb: 2 }}>
+                  <Alert
+                    severity={alertSeverity}
+                    icon={<Icon size={18} />}
+                    sx={{
+                      width: '100%',
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '14px' }}>
+                          {insight.title}
+                        </Typography>
+                      </Stack>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          fontSize: '12px',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
                       >
                         {insight.description}
-                      </Paragraph>
+                      </Typography>
 
                       {insight.metric && (
-                        <div style={{ marginTop: 8 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                        <Box sx={{ mt: 1 }}>
+                          <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '12px' }}>
                               {insight.metric.label}
-                            </Text>
-                            <Text style={{ fontSize: '12px', fontWeight: 600 }}>
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: '12px', fontWeight: 600 }}>
                               {insight.metric.value} / {insight.metric.max}
-                            </Text>
-                          </div>
-                          <Progress
-                            percent={(insight.metric.value / insight.metric.max) * 100}
-                            strokeColor={{
-                              "0%": "var(--primary)",
-                              "100%": "var(--primary-light)",
+                            </Typography>
+                          </Stack>
+                          <LinearProgress
+                            variant="determinate"
+                            value={(insight.metric.value / insight.metric.max) * 100}
+                            sx={{
+                              height: 6,
+                              borderRadius: 1,
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
                             }}
-                            trailColor="var(--primary-06)"
-                            showInfo={false}
-                            size="small"
                           />
-                        </div>
+                        </Box>
                       )}
 
                       {insight.action && (
-                        <Link href={insight.action.href}>
+                        <Link href={insight.action.href} style={{ textDecoration: 'none' }}>
                           <Button
-                            type="link"
                             size="small"
-                            icon={<ArrowRight size={14} />}
-                            style={{ padding: 0, height: 'auto' }}
+                            endIcon={<ArrowRight size={14} />}
+                            sx={{ p: 0, mt: 1 }}
                           >
                             {insight.action.label}
                           </Button>
                         </Link>
                       )}
-                    </Space>
-                  }
-                  type={alertType}
-                  icon={<Icon size={18} />}
-                  style={{
-                    marginBottom: 16,
-                    borderRadius: '12px',
-                  }}
-                />
+                    </Stack>
+                  </Alert>
+                </ListItem>
               </motion.div>
             );
-          }}
-        />
+          })}
+        </List>
       )}
     </>
   );
 
   if (loading) {
     return embedded ? (
-      <Skeleton active paragraph={{ rows: 3 }} />
+      <Skeleton variant="rectangular" height={200} />
     ) : (
-      <Card
-        title={
-          <Space>
+      <Card>
+        <CardContent>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
             <Lightbulb size={20} />
-            AI Инсайты
-          </Space>
-        }
-      >
-        <Skeleton active paragraph={{ rows: 3 }} />
+            <Typography variant="h6">AI Инсайты</Typography>
+          </Stack>
+          <Skeleton variant="rectangular" height={100} />
+          <Skeleton variant="rectangular" height={100} sx={{ mt: 2 }} />
+        </CardContent>
       </Card>
     );
   }
@@ -348,13 +365,21 @@ export function AIInsights({ userRole, embedded = false }: AIInsightsProps) {
   }
 
   return (
-    <Card
-      title={
-        <Space>
-          <div className="relative">
+    <Card>
+      <CardContent>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2, position: 'relative' }}>
+          <Box sx={{ position: 'relative' }}>
             <Lightbulb size={20} />
             <motion.div
-              className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: theme.palette.primary.main,
+              }}
               animate={{
                 scale: [1, 1.3, 1],
                 opacity: [1, 0.6, 1],
@@ -365,12 +390,11 @@ export function AIInsights({ userRole, embedded = false }: AIInsightsProps) {
                 ease: "easeInOut",
               }}
             />
-          </div>
-          <span>AI Инсайты</span>
-        </Space>
-      }
-    >
-      {content}
+          </Box>
+          <Typography variant="h6">AI Инсайты</Typography>
+        </Stack>
+        {content}
+      </CardContent>
     </Card>
   );
 }

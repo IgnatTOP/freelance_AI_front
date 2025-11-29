@@ -1,6 +1,16 @@
 "use client";
 
-import { Card, Timeline, Avatar, Space, Typography, Empty, Skeleton, theme, Tag } from "antd";
+import {
+  Card,
+  CardContent,
+  Avatar,
+  Stack,
+  Typography,
+  Skeleton,
+  Box,
+  Chip,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   FileText,
   MessageSquare,
@@ -14,9 +24,6 @@ import {
 import { motion } from "framer-motion";
 import { formatTimeAgo } from "@/src/shared/lib/utils/date-utils";
 import { useActivities, Activity } from "@/src/shared/lib/hooks/useActivities";
-
-const { Text } = Typography;
-const { useToken } = theme;
 
 interface ActivityWidgetProps {
   userRole: "client" | "freelancer" | null;
@@ -44,115 +51,129 @@ function getTimeGroup(timestamp: string): string {
 }
 
 export function ActivityWidget({ userRole, variant = "simple" }: ActivityWidgetProps) {
-  const { token } = useToken();
+  const theme = useTheme();
   const { activities, loading } = useActivities(userRole);
 
   if (loading) {
     return (
-      <Card title="Последняя активность">
-        <Skeleton active paragraph={{ rows: 3 }} />
+      <Card>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 2 }}>Последняя активность</Typography>
+          <Skeleton variant="rectangular" height={100} />
+          <Skeleton variant="rectangular" height={100} sx={{ mt: 2 }} />
+        </CardContent>
       </Card>
     );
   }
 
   if (variant === "grouped") {
-    return <GroupedActivityView activities={activities} token={token} />;
+    return <GroupedActivityView activities={activities} />;
   }
 
   return <SimpleActivityView activities={activities} />;
 }
 
 function SimpleActivityView({ activities }: { activities: Activity[] }) {
+  const theme = useTheme();
+
   const colorMap: Record<string, string> = {
     order_created: '#3b82f6',
     proposal_sent: '#a855f7',
-    proposal_accepted: 'var(--primary)',
+    proposal_accepted: theme.palette.primary.main,
     message_received: '#fbbf24',
-    order_completed: 'var(--primary)',
+    order_completed: theme.palette.primary.main,
     profile_updated: '#ec4899',
   };
 
   return (
-    <Card
-      title={
-        <span>
-          <TrendingUp size={18} style={{ marginRight: 8 }} />
-          Последняя активность
-        </span>
-      }
-    >
-      {activities.length === 0 ? (
-        <Empty description="Нет активности" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-      ) : (
-        <Timeline
-          items={activities.map((activity, index) => {
-            const Icon = activityConfig[activity.type].icon;
-            const color = colorMap[activity.type];
+    <Card>
+      <CardContent>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+          <TrendingUp size={18} />
+          <Typography variant="h6">Последняя активность</Typography>
+        </Stack>
 
-            return {
-              key: activity.id,
-              color: color,
-              dot: (
+        {activities.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              Нет активности
+            </Typography>
+          </Box>
+        ) : (
+          <Stack spacing={3}>
+            {activities.map((activity, index) => {
+              const Icon = activityConfig[activity.type].icon;
+              const color = colorMap[activity.type];
+
+              return (
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
+                  key={activity.id}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  style={{
-                    background: 'var(--primary-06)',
-                    padding: '8px',
-                    borderRadius: '50%',
-                    border: `2px solid ${color}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
                 >
-                  <Icon size={14} style={{ color }} />
-                </motion.div>
-              ),
-              children: (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  style={{ paddingBottom: '16px' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <Text strong style={{ fontSize: '14px' }}>
-                      {activity.title}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {formatTimeAgo(activity.timestamp)}
-                    </Text>
-                  </div>
+                  <Stack direction="row" spacing={2}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        background: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
+                        border: `2px solid ${color}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon size={16} style={{ color }} />
+                    </Box>
+                    <Stack spacing={1} sx={{ flex: 1 }}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '14px' }}>
+                          {activity.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '12px' }}>
+                          {formatTimeAgo(activity.timestamp)}
+                        </Typography>
+                      </Stack>
 
-                  <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
-                    {activity.description}
-                  </Text>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '14px' }}>
+                        {activity.description}
+                      </Typography>
 
-                  {activity.user && (
-                    <Space>
-                      <Avatar
-                        size={24}
-                        icon={<User size={14} />}
-                        style={{ backgroundColor: 'var(--primary-06)', color: 'var(--primary)' }}
-                      />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        {activity.user.name}
-                      </Text>
-                    </Space>
-                  )}
+                      {activity.user && (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Avatar
+                            sx={{
+                              width: 24,
+                              height: 24,
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
+                              color: theme.palette.primary.main,
+                            }}
+                          >
+                            <User size={14} />
+                          </Avatar>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '12px' }}>
+                            {activity.user.name}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </Stack>
+                  </Stack>
                 </motion.div>
-              ),
-            };
-          })}
-        />
-      )}
+              );
+            })}
+          </Stack>
+        )}
+      </CardContent>
     </Card>
   );
 }
 
-function GroupedActivityView({ activities, token }: { activities: Activity[]; token: any }) {
+function GroupedActivityView({ activities }: { activities: Activity[] }) {
+  const theme = useTheme();
+
   const groupedActivities: Record<string, Activity[]> = {};
   activities.forEach((activity) => {
     const group = getTimeGroup(activity.timestamp);
@@ -167,158 +188,151 @@ function GroupedActivityView({ activities, token }: { activities: Activity[]; to
 
   return (
     <Card
-      title={
-        <Space>
-          <Clock size={18} style={{ color: token.colorTextTertiary }} />
-          <span style={{ fontSize: token.fontSize, color: token.colorTextSecondary }}>Последняя активность</span>
-        </Space>
-      }
-      style={{
-        borderColor: token.colorBorder,
-        borderRadius: token.borderRadiusLG,
-      }}
-      styles={{
-        body: { padding: token.paddingMD }
+      sx={{
+        borderColor: theme.palette.divider,
+        borderRadius: 2,
       }}
     >
-      {activities.length === 0 ? (
-        <Empty description="Нет активности" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-      ) : (
-        <div
-          style={{
-            maxHeight: '400px',
-            overflowY: 'auto',
-            paddingRight: token.paddingXS,
-            paddingLeft: token.paddingSM,
-          }}
-        >
-          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-            {sortedGroups.map((groupName, groupIndex) => (
-              <div key={groupName}>
-                <Text
-                  style={{
-                    fontSize: token.fontSizeSM,
-                    color: token.colorTextTertiary,
-                    display: 'block',
-                    marginBottom: token.marginXS,
-                    fontWeight: 500,
-                  }}
-                >
-                  {groupName}
-                </Text>
-                <Timeline
-                  items={groupedActivities[groupName].map((activity, index) => {
-                    const config = activityConfig[activity.type];
-                    const Icon = config.icon;
+      <CardContent sx={{ p: 2 }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+          <Clock size={18} style={{ color: theme.palette.text.secondary }} />
+          <Typography variant="body2" color="text.secondary">
+            Последняя активность
+          </Typography>
+        </Stack>
 
-                    return {
-                      key: activity.id,
-                      color: config.color,
-                      dot: (
+        {activities.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              Нет активности
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              maxHeight: '400px',
+              overflowY: 'auto',
+              pr: 1,
+              pl: 1,
+            }}
+          >
+            <Stack spacing={2}>
+              {sortedGroups.map((groupName, groupIndex) => (
+                <Box key={groupName}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: 'block',
+                      mb: 1,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {groupName}
+                  </Typography>
+                  <Stack spacing={2}>
+                    {groupedActivities[groupName].map((activity, index) => {
+                      const config = activityConfig[activity.type];
+                      const Icon = config.icon;
+
+                      return (
                         <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
+                          key={activity.id}
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
                           transition={{
                             duration: 0.3,
                             delay: groupIndex * 0.1 + index * 0.05,
                           }}
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: token.borderRadius,
-                            background: `${config.color}20`,
-                            border: `1.5px solid ${config.color}60`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
                         >
-                          <Icon size={12} style={{ color: config.color }} />
-                        </motion.div>
-                      ),
-                      children: (
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{
-                            duration: 0.3,
-                            delay: groupIndex * 0.1 + index * 0.05,
-                          }}
-                          style={{ paddingBottom: token.paddingSM }}
-                        >
-                          <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                              <Text style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>
-                                {activity.title}
-                              </Text>
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: token.fontSizeSM - 1, color: token.colorTextTertiary }}
-                              >
-                                {formatTimeAgo(activity.timestamp)}
-                              </Text>
-                            </Space>
-
-                            {activity.description && (
-                              <Text
-                                type="secondary"
-                                style={{
-                                  fontSize: token.fontSizeSM - 1,
-                                  display: 'block',
-                                  color: token.colorTextTertiary,
-                                }}
-                              >
-                                {activity.description}
-                              </Text>
-                            )}
-
-                            {activity.user && (
-                              <Space size="small" style={{ marginTop: 2 }}>
-                                <Avatar
-                                  size={20}
-                                  style={{
-                                    backgroundColor: `${config.color}20`,
-                                    color: config.color,
-                                    fontSize: token.fontSizeSM - 2,
-                                  }}
-                                >
-                                  {activity.user.name[0]}
-                                </Avatar>
-                                <Text
-                                  type="secondary"
-                                  style={{ fontSize: token.fontSizeSM - 1, color: token.colorTextTertiary }}
-                                >
-                                  {activity.user.name}
-                                </Text>
-                              </Space>
-                            )}
-
-                            <Tag
-                              style={{
-                                marginTop: 2,
-                                borderRadius: token.borderRadius,
-                                fontSize: token.fontSizeSM - 1,
-                                padding: `2px ${token.paddingXS}px`,
-                                height: 'auto',
-                                lineHeight: '1.4',
-                                backgroundColor: `${config.color}15`,
-                                color: config.color,
-                                border: `1px solid ${config.color}30`,
+                          <Stack direction="row" spacing={2}>
+                            <Box
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: 1,
+                                background: `${config.color}20`,
+                                border: `1.5px solid ${config.color}60`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
                               }}
                             >
-                              {config.label}
-                            </Tag>
-                          </Space>
+                              <Icon size={12} style={{ color: config.color }} />
+                            </Box>
+                            <Stack spacing={0.5} sx={{ flex: 1 }}>
+                              <Stack direction="row" justifyContent="space-between">
+                                <Typography variant="caption" color="text.secondary">
+                                  {activity.title}
+                                </Typography>
+                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '11px' }}>
+                                  {formatTimeAgo(activity.timestamp)}
+                                </Typography>
+                              </Stack>
+
+                              {activity.description && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.disabled"
+                                  sx={{ fontSize: '11px' }}
+                                >
+                                  {activity.description}
+                                </Typography>
+                              )}
+
+                              {activity.user && (
+                                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+                                  <Avatar
+                                    sx={{
+                                      width: 20,
+                                      height: 20,
+                                      backgroundColor: `${config.color}20`,
+                                      color: config.color,
+                                      fontSize: '10px',
+                                    }}
+                                  >
+                                    {activity.user.name[0]}
+                                  </Avatar>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.disabled"
+                                    sx={{ fontSize: '11px' }}
+                                  >
+                                    {activity.user.name}
+                                  </Typography>
+                                </Stack>
+                              )}
+
+                              <Chip
+                                label={config.label}
+                                size="small"
+                                sx={{
+                                  mt: 0.5,
+                                  height: 'auto',
+                                  fontSize: '10px',
+                                  py: 0.25,
+                                  px: 1,
+                                  backgroundColor: `${config.color}15`,
+                                  color: config.color,
+                                  border: `1px solid ${config.color}30`,
+                                  '& .MuiChip-label': {
+                                    px: 0,
+                                  },
+                                }}
+                              />
+                            </Stack>
+                          </Stack>
                         </motion.div>
-                      ),
-                    };
-                  })}
-                />
-              </div>
-            ))}
-          </Space>
-        </div>
-      )}
+                      );
+                    })}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+        )}
+      </CardContent>
     </Card>
   );
 }

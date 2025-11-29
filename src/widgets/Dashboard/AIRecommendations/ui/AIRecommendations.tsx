@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Empty, Skeleton, notification, List, Tag, Space, Typography, Row, Col } from "antd";
+import { Card, CardContent, Button, Skeleton, Stack, Typography, Box, Chip, List, ListItem, IconButton, useTheme } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { Bot, Sparkles, TrendingUp, Target, Zap, ArrowRight, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { aiService } from "@/src/shared/lib/ai";
 import { getOrder, getOrders, getMyOrders } from "@/src/shared/api/orders";
 import { cleanExplanationText } from "@/src/shared/lib/ai/ai-utils";
-
-const { Text, Paragraph } = Typography;
+import { toastService } from "@/src/shared/lib/toast";
 
 interface Recommendation {
   id: string;
@@ -244,10 +244,7 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
       console.error("Error fetching AI recommendations:", error);
       // Показываем уведомление только если это не первая загрузка
       if (!showLoading) {
-        notification.error({
-          message: "Ошибка",
-          description: "Не удалось загрузить рекомендации. Попробуйте обновить.",
-        });
+        toastService.error("Не удалось загрузить рекомендации", "Попробуйте обновить.");
       }
       // Устанавливаем пустой массив, чтобы показать Empty состояние
       setRecommendations([]);
@@ -282,11 +279,13 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
     }
   };
 
+  const theme = useTheme();
+
   const content = (
     <>
       {!embedded && (
-        <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-          <Space>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <div className="relative">
               <Bot size={20} />
               <motion.div
@@ -302,94 +301,91 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                 }}
               />
             </div>
-            <span style={{ fontWeight: 600 }}>AI Рекомендации</span>
-          </Space>
-          <Button
-            type="text"
+            <Typography variant="subtitle1" fontWeight={600}>AI Рекомендации</Typography>
+          </Box>
+          <IconButton
             size="small"
-            icon={<RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />}
             onClick={() => fetchRecommendations(false)}
             disabled={refreshing}
-          />
-        </Space>
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+          </IconButton>
+        </Box>
       )}
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-        <Text type="secondary" style={{ fontSize: '13px' }}>
+      <Stack spacing={2}>
+        <Typography variant="body2" color="text.secondary">
           {userRole === "freelancer"
             ? "Подобрали заказы специально для вас"
             : "Лучшие исполнители для ваших проектов"}
-        </Text>
+        </Typography>
 
         {explanation && explanation.trim() && (
           <Card
-            size="small"
-            style={{
-              background: 'var(--primary-06)',
+            sx={{
+              bgcolor: 'var(--primary-06)',
               borderColor: 'var(--primary-18)',
-              marginBottom: 16,
+              mb: 2,
               overflow: 'visible',
               wordBreak: 'break-word',
             }}
-            styles={{
-              body: { padding: '12px' }
-            }}
           >
-            <Space direction="vertical" size={4} style={{ width: '100%' }}>
-              <Text strong style={{ fontSize: '12px', color: 'var(--primary)' }}>
-                Почему эти заказы?
-              </Text>
-              <Text 
-                style={{ 
-                  fontSize: '12px',
-                  wordBreak: 'break-word',
-                  whiteSpace: 'normal',
-                  lineHeight: '1.6',
-                  display: 'block',
-                  maxHeight: 'none',
-                  overflow: 'visible',
-                }}
-              >
-                {explanation}
-              </Text>
-            </Space>
+            <CardContent sx={{ p: 1.5 }}>
+              <Stack spacing={0.5}>
+                <Typography variant="caption" fontWeight="bold" sx={{ color: 'var(--primary)' }}>
+                  Почему эти заказы?
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    wordBreak: 'break-word',
+                    whiteSpace: 'normal',
+                    lineHeight: 1.6,
+                    display: 'block',
+                  }}
+                >
+                  {explanation}
+                </Typography>
+              </Stack>
+            </CardContent>
           </Card>
         )}
 
         {recommendations.length === 0 ? (
-          <Empty
-            description="Пока нет рекомендаций"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
+          <Box textAlign="center" py={4}>
+            <Typography variant="body2" color="text.secondary">Пока нет рекомендаций</Typography>
+          </Box>
         ) : (
-          <List
-            dataSource={recommendations}
-            renderItem={(rec, index) => {
+          <Stack spacing={1}>
+            {recommendations.map((rec, index) => {
               const Icon = getIcon(rec.type);
               return (
                 <motion.div
+                  key={rec.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
-                  <Link href={rec.href}>
-                    <List.Item
-                      style={{
+                  <Link href={rec.href} style={{ textDecoration: 'none' }}>
+                    <Box
+                      sx={{
                         cursor: 'pointer',
-                        padding: '16px',
-                        borderRadius: '12px',
-                        marginBottom: '8px',
-                        background: 'var(--primary-05)',
-                        borderColor: 'var(--primary-12)',
+                        p: 2,
+                        borderRadius: 1.5,
+                        bgcolor: 'var(--primary-05)',
+                        border: '1px solid var(--primary-12)',
                         overflow: 'hidden',
                         wordBreak: 'break-word',
+                        '&:hover': {
+                          borderColor: 'primary.main',
+                          opacity: 0.9,
+                        }
                       }}
-                      className="hover:border-primary/50"
                     >
-                      <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                        <div style={{
-                          background: 'var(--primary-06)',
-                          padding: '8px',
-                          borderRadius: '8px',
+                      <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <Box sx={{
+                          bgcolor: 'var(--primary-06)',
+                          p: 1,
+                          borderRadius: 1,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -397,131 +393,129 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                           height: 'fit-content',
                         }}>
                           <Icon size={18} style={{ color: 'var(--primary)' }} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '8px',
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
                             flexWrap: 'nowrap',
-                            width: '100%',
-                            marginBottom: '8px',
+                            mb: 1,
                           }}>
                             {rec.match_score > 0 && (
-                              <div
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  padding: '2px 8px',
-                                  borderRadius: '4px',
-                                  backgroundColor: rec.match_score >= 0.9 
-                                    ? 'rgba(82, 196, 26, 0.15)' 
-                                    : rec.match_score >= 0.75 
-                                    ? 'rgba(250, 173, 20, 0.15)' 
+                              <Chip
+                                size="small"
+                                icon={<Zap size={12} />}
+                                label={`${Math.min(Math.round(rec.match_score * 100), 100)}%`}
+                                sx={{
+                                  bgcolor: rec.match_score >= 0.9
+                                    ? 'rgba(82, 196, 26, 0.15)'
+                                    : rec.match_score >= 0.75
+                                    ? 'rgba(250, 173, 20, 0.15)'
                                     : 'rgba(24, 144, 255, 0.15)',
-                                  border: `1px solid ${rec.match_score >= 0.9 
-                                    ? 'rgba(82, 196, 26, 0.3)' 
-                                    : rec.match_score >= 0.75 
-                                    ? 'rgba(250, 173, 20, 0.3)' 
-                                    : 'rgba(24, 144, 255, 0.3)'}`,
-                                  color: rec.match_score >= 0.9 
-                                    ? '#52c41a' 
-                                    : rec.match_score >= 0.75 
-                                    ? '#faad14' 
+                                  borderColor: rec.match_score >= 0.9
+                                    ? 'rgba(82, 196, 26, 0.3)'
+                                    : rec.match_score >= 0.75
+                                    ? 'rgba(250, 173, 20, 0.3)'
+                                    : 'rgba(24, 144, 255, 0.3)',
+                                  color: rec.match_score >= 0.9
+                                    ? '#52c41a'
+                                    : rec.match_score >= 0.75
+                                    ? '#faad14'
                                     : '#1890ff',
                                   fontSize: '12px',
                                   fontWeight: 500,
-                                  flexShrink: 0,
-                                  lineHeight: '20px',
-                                  whiteSpace: 'nowrap',
+                                  border: '1px solid',
                                 }}
-                              >
-                                <Zap size={12} style={{ display: 'inline-block' }} />
-                                <span>{Math.min(Math.round(rec.match_score * 100), 100)}%</span>
-                              </div>
+                              />
                             )}
-                            <Text 
-                              strong 
-                              style={{ 
-                                fontSize: '13px',
+                            <Typography
+                              variant="body2"
+                              fontWeight="bold"
+                              sx={{
                                 flex: 1,
                                 minWidth: 0,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                lineHeight: '20px',
                               }}
                               title={rec.title}
                             >
                               {rec.title}
-                            </Text>
-                          </div>
-                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                            <Paragraph
-                              ellipsis={{ rows: 2, expandable: false }}
-                              style={{ 
-                                fontSize: '12px', 
-                                margin: 0,
-                                wordBreak: 'break-word',
+                            </Typography>
+                          </Box>
+                          <Stack spacing={0.5}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
                                 overflow: 'hidden',
+                                wordBreak: 'break-word',
                               }}
-                              type="secondary"
                             >
                               {rec.description}
-                            </Paragraph>
+                            </Typography>
                             {rec.reason && rec.reason.length > 0 && (
-                              <div style={{ width: '100%', display: 'flex', gap: '4px', alignItems: 'flex-start' }}>
-                                <Sparkles size={12} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '2px' }} />
-                                <Text 
-                                  type="secondary" 
-                                  style={{ 
-                                    fontSize: '12px',
+                              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'flex-start' }}>
+                                <Sparkles size={12} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{
                                     wordBreak: 'break-word',
                                     whiteSpace: 'normal',
                                     flex: 1,
                                     minWidth: 0,
-                                    lineHeight: '1.4',
+                                    lineHeight: 1.4,
                                   }}
                                 >
                                   {rec.reason}
-                                </Text>
-                              </div>
+                                </Typography>
+                              </Box>
                             )}
-                          </Space>
-                        </div>
-                      </div>
-                    </List.Item>
+                          </Stack>
+                        </Box>
+                      </Box>
+                    </Box>
                   </Link>
                 </motion.div>
               );
-            }}
-          />
+            })}
+          </Stack>
         )}
 
-        <Link href={userRole === "freelancer" ? "/orders?ai-recommended=true" : "/freelancers?ai-recommended=true"}>
-          <Button type="default" block icon={<Bot size={16} />}>
+        <Link href={userRole === "freelancer" ? "/orders?ai-recommended=true" : "/freelancers?ai-recommended=true"} style={{ textDecoration: 'none' }}>
+          <Button variant="outlined" fullWidth startIcon={<Bot size={16} />} endIcon={<ArrowRight size={16} />}>
             Все рекомендации
-            <ArrowRight size={16} />
           </Button>
         </Link>
-      </Space>
+      </Stack>
     </>
   );
 
   if (loading) {
     return embedded ? (
-      <Skeleton active paragraph={{ rows: 3 }} />
+      <Box>
+        <Skeleton variant="text" width="60%" />
+        <Skeleton variant="rectangular" height={80} sx={{ mt: 1 }} />
+        <Skeleton variant="rectangular" height={80} sx={{ mt: 1 }} />
+        <Skeleton variant="rectangular" height={80} sx={{ mt: 1 }} />
+      </Box>
     ) : (
-      <Card
-        title={
-          <Space>
+      <Card>
+        <CardContent>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2 }}>
             <Bot size={20} className="animate-pulse" />
-            AI Рекомендации
-          </Space>
-        }
-      >
-        <Skeleton active paragraph={{ rows: 3 }} />
+            <Typography variant="h6">AI Рекомендации</Typography>
+          </Box>
+          <Skeleton variant="text" width="60%" />
+          <Skeleton variant="rectangular" height={80} sx={{ mt: 1 }} />
+          <Skeleton variant="rectangular" height={80} sx={{ mt: 1 }} />
+          <Skeleton variant="rectangular" height={80} sx={{ mt: 1 }} />
+        </CardContent>
       </Card>
     );
   }
@@ -531,38 +525,37 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
   }
 
   return (
-    <Card
-      title={
-        <Space>
-          <div className="relative">
-            <Bot size={20} />
-            <motion.div
-              className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
-              animate={{
-                scale: [1, 1.5, 1],
-                opacity: [1, 0.5, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          </div>
-          <span>AI Рекомендации</span>
-        </Space>
-      }
-      extra={
-        <Button
-          type="text"
-          icon={<RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />}
-          onClick={() => fetchRecommendations(false)}
-          disabled={refreshing}
-        />
-      }
-      style={{ position: 'sticky', top: 96 }}
-    >
-      {content}
+    <Card sx={{ position: 'sticky', top: 96 }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <div className="relative">
+              <Bot size={20} />
+              <motion.div
+                className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [1, 0.5, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            </div>
+            <Typography variant="h6">AI Рекомендации</Typography>
+          </Box>
+          <IconButton
+            size="small"
+            onClick={() => fetchRecommendations(false)}
+            disabled={refreshing}
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+          </IconButton>
+        </Box>
+        {content}
+      </CardContent>
     </Card>
   );
 }

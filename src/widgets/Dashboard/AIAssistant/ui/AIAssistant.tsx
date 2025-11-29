@@ -1,14 +1,24 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Button, Input, Spin, Typography, Card, Space, Avatar } from "antd";
+import {
+  Button,
+  TextField,
+  CircularProgress,
+  Typography,
+  Card,
+  CardContent,
+  CardHeader,
+  Stack,
+  Avatar,
+  Box,
+  IconButton,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Bot, Send, Sparkles, X, Minimize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { aiService } from "@/src/shared/lib/ai";
 import { useAuth } from "@/src/shared/lib/hooks";
-
-const { TextArea } = Input;
-const { Text } = Typography;
 
 interface Message {
   id: string;
@@ -18,18 +28,18 @@ interface Message {
 }
 
 interface AIAssistantProps {
-  embedded?: boolean; // Если true, работает встроенно без floating button
+  embedded?: boolean;
 }
 
 export function AIAssistant({ embedded = false }: AIAssistantProps) {
+  const theme = useTheme();
   const { user } = useAuth({ requireAuth: false });
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(embedded); // Если embedded, сразу открыт
+  const [isOpen, setIsOpen] = useState(embedded);
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,7 +49,6 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
     scrollToBottom();
   }, [messages]);
 
-  // Инициализируем приветственное сообщение
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([
@@ -67,7 +76,6 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
     setInput("");
     setLoading(true);
 
-    // Создаем сообщение ассистента для стриминга
     const assistantMessageId = (Date.now() + 1).toString();
     const assistantMessage: Message = {
       id: assistantMessageId,
@@ -78,7 +86,6 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
-      // Используем стриминг для ответа AI
       await aiService.chatAssistantStream(
         {
           message: userMessage.content,
@@ -87,7 +94,6 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
           },
         },
         (chunk) => {
-          // Обновляем сообщение ассистента по мере получения чанков
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === assistantMessageId
@@ -117,7 +123,6 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
     }
   };
 
-  // Floating button когда закрыт (только если не embedded)
   if (!isOpen && !embedded) {
     return (
       <motion.div
@@ -149,7 +154,6 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
     );
   }
 
-  // Chat panel когда открыт
   return (
     <motion.div
       initial={embedded ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.95 }}
@@ -159,15 +163,31 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
       style={{ pointerEvents: 'auto' }}
     >
       <Card
-        title={
-          <Space>
-            <div className="relative">
-              <Avatar
-                icon={<Bot size={20} />}
-                style={{ backgroundColor: 'var(--primary-12)', color: 'var(--primary)' }}
-              />
+        sx={{
+          height: embedded ? '500px' : (isMinimized ? 'auto' : '600px'),
+          maxHeight: embedded ? '500px' : (isMinimized ? 'auto' : 'calc(100vh - 8rem)'),
+          display: 'flex',
+          flexDirection: 'column',
+          background: embedded ? 'transparent' : theme.palette.mode === 'dark' ? 'rgba(17, 26, 21, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: embedded ? 'none' : 'blur(12px)',
+        }}
+      >
+        <CardHeader
+          avatar={
+            <Box sx={{ position: 'relative' }}>
+              <Avatar sx={{ bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.12)' : 'rgba(24, 144, 255, 0.08)', color: theme.palette.primary.main }}>
+                <Bot size={20} />
+              </Avatar>
               <motion.div
-                className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  background: theme.palette.primary.main,
+                }}
                 animate={{
                   scale: [1, 1.3, 1],
                   opacity: [1, 0.5, 1],
@@ -178,173 +198,153 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
                   ease: "easeInOut",
                 }}
               />
-            </div>
-            <div>
-              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>AI Помощник</div>
-              <div style={{ fontSize: '12px', opacity: 0.7 }}>Всегда готов помочь</div>
-            </div>
-          </Space>
-        }
-        extra={
-          !embedded ? (
-            <Space>
-              <Button
-                type="text"
-                size="small"
-                icon={<Minimize2 size={14} />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsMinimized(!isMinimized);
-                }}
-                title={isMinimized ? "Развернуть" : "Свернуть"}
-              />
-              <Button
-                type="text"
-                size="small"
-                icon={<X size={14} />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                }}
-              />
-            </Space>
-          ) : null
-        }
-        style={{
-          height: embedded ? '500px' : (isMinimized ? 'auto' : '600px'),
-          maxHeight: embedded ? '500px' : (isMinimized ? 'auto' : 'calc(100vh - 8rem)'),
-          display: 'flex',
-          flexDirection: 'column',
-          background: embedded ? 'transparent' : 'rgba(17, 26, 21, 0.8)',
-          backdropFilter: embedded ? 'none' : 'blur(12px)',
-          border: embedded ? 'none' : undefined,
-          boxShadow: embedded ? 'none' : undefined,
-        }}
-        bodyStyle={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          padding: 0,
-        }}
-      >
+            </Box>
+          }
+          title={
+            <Typography variant="h6" sx={{ fontSize: '16px' }}>
+              AI Помощник
+            </Typography>
+          }
+          subheader={
+            <Typography variant="caption" sx={{ fontSize: '12px', opacity: 0.7 }}>
+              Всегда готов помочь
+            </Typography>
+          }
+          action={
+            !embedded ? (
+              <Stack direction="row" spacing={1}>
+                <IconButton
+                  size="small"
+                  onClick={() => setIsMinimized(!isMinimized)}
+                  title={isMinimized ? "Развернуть" : "Свернуть"}
+                >
+                  <Minimize2 size={14} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <X size={14} />
+                </IconButton>
+              </Stack>
+            ) : null
+          }
+        />
 
         {!isMinimized && (
-          <>
-            {/* Messages - Scrollable Area */}
-            <div 
-              className="flex-1 space-y-4 p-4 overflow-y-auto overflow-x-hidden"
-              style={{ 
+          <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0, overflow: 'hidden' }}>
+            <Box
+              sx={{
+                flex: 1,
+                overflowY: 'auto',
+                p: 2,
                 minHeight: 0,
-                WebkitOverflowScrolling: 'touch',
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'var(--primary-18) transparent',
-              }}
-              onWheel={(e) => {
-                const target = e.currentTarget;
-                const { scrollTop, scrollHeight, clientHeight } = target;
-                const isAtTop = scrollTop <= 0;
-                const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 1;
-                const deltaY = e.deltaY;
-                
-                // Если скроллим вверх и мы вверху, или скроллим вниз и мы внизу
-                if ((deltaY < 0 && isAtTop) || (deltaY > 0 && isAtBottom)) {
-                  // Позволяем скроллу страницы продолжиться
-                  return;
-                }
-                
-                // Иначе останавливаем распространение события на страницу
-                e.stopPropagation();
-              }}
-              onTouchMove={(e) => {
-                // Для мобильных устройств
-                e.stopPropagation();
               }}
             >
-              <AnimatePresence>
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    style={{
-                      display: 'flex',
-                      gap: '8px',
-                      justifyContent: message.role === "user" ? "flex-end" : "flex-start",
-                      marginBottom: '16px',
-                    }}
-                  >
-                    {message.role === "assistant" && (
-                      <Avatar
-                        icon={<Bot size={14} />}
-                        style={{ backgroundColor: 'var(--primary-06)', color: 'var(--primary)' }}
-                        size={28}
-                      />
-                    )}
-                    <div
-                      style={{
-                        maxWidth: '80%',
-                        borderRadius: '16px',
-                        padding: '8px 12px',
-                        fontSize: '14px',
-                        background: message.role === "user"
-                          ? 'var(--primary-06)'
-                          : 'var(--primary-05)',
-                        border: '1px solid var(--primary-12)',
+              <Stack spacing={2}>
+                <AnimatePresence>
+                  {messages.map((message) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent={message.role === "user" ? "flex-end" : "flex-start"}
+                      >
+                        {message.role === "assistant" && (
+                          <Avatar
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
+                              color: theme.palette.primary.main,
+                            }}
+                          >
+                            <Bot size={14} />
+                          </Avatar>
+                        )}
+                        <Box
+                          sx={{
+                            maxWidth: '80%',
+                            borderRadius: 2,
+                            p: 1.5,
+                            background: message.role === "user"
+                              ? theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)'
+                              : theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.05)' : 'rgba(24, 144, 255, 0.03)',
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ fontSize: '14px', whiteSpace: 'pre-wrap' }}>
+                            {message.content}
+                          </Typography>
+                        </Box>
+                        {message.role === "user" && (
+                          <Avatar
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
+                              color: theme.palette.primary.main,
+                            }}
+                          >
+                            <Sparkles size={14} />
+                          </Avatar>
+                        )}
+                      </Stack>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {loading && (
+                  <Stack direction="row" spacing={1}>
+                    <Avatar
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
+                        color: theme.palette.primary.main,
                       }}
                     >
-                      <Text style={{ fontSize: '14px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                        {message.content}
-                      </Text>
-                    </div>
-                    {message.role === "user" && (
-                      <Avatar
-                        icon={<Sparkles size={14} />}
-                        style={{ backgroundColor: 'var(--primary-06)', color: 'var(--primary)' }}
-                        size={28}
-                      />
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                      <Bot size={14} />
+                    </Avatar>
+                    <Card sx={{ p: 1, background: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.05)' : 'rgba(24, 144, 255, 0.03)' }}>
+                      <CircularProgress size={16} />
+                    </Card>
+                  </Stack>
+                )}
 
-              {loading && (
-                <Space>
-                  <Avatar
-                    icon={<Bot size={14} />}
-                    style={{ backgroundColor: 'var(--primary-06)', color: 'var(--primary)' }}
-                    size={28}
-                  />
-                  <Card size="small" style={{ background: 'var(--primary-05)' }}>
-                    <Spin size="small" />
-                  </Card>
-                </Space>
-              )}
+                <div ref={messagesEndRef} />
+              </Stack>
+            </Box>
 
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div style={{ padding: '16px', borderTop: '1px solid var(--primary-12)', display: 'flex', gap: '8px' }}>
-              <TextArea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Задайте вопрос..."
-                autoSize={{ minRows: 1, maxRows: 3 }}
-                disabled={loading}
-                style={{ resize: "none", flex: 1 }}
-              />
-              <Button
-                type="primary"
-                icon={<Send size={16} />}
-                onClick={handleSend}
-                disabled={!input.trim() || loading}
-              />
-            </div>
-          </>
+            <Box sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  fullWidth
+                  multiline
+                  maxRows={3}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Задайте вопрос..."
+                  disabled={loading}
+                  size="small"
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleSend}
+                  disabled={!input.trim() || loading}
+                  sx={{ minWidth: 40 }}
+                >
+                  <Send size={16} />
+                </Button>
+              </Stack>
+            </Box>
+          </CardContent>
         )}
       </Card>
     </motion.div>

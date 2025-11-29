@@ -1,16 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Form, Input, Button, Checkbox, Typography, Divider, Select } from 'antd';
+import { TextField, Button, Checkbox, FormControlLabel, Divider, Typography, Box, Stack, InputAdornment, IconButton, MenuItem, Select, FormControl, InputLabel, FormHelperText } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { toastService } from '@/src/shared/lib/toast';
 import { User, Mail, Lock } from 'lucide-react';
 import { emailRules, passwordRules, displayNameRules, usernameRules, confirmPasswordRules } from '@/src/shared/lib/utils/form-validations';
 import { useAsyncOperation } from '@/src/shared/lib/hooks';
 import { authService } from '@/src/shared/lib/auth/auth.service';
 import type { RegisterRequest } from '@/src/shared/lib/auth/auth.service';
-
-const { Text, Link: AntLink } = Typography;
 
 interface RegisterFormValues {
   email: string;
@@ -23,9 +23,20 @@ interface RegisterFormValues {
 }
 
 export function RegisterForm() {
-  const [form] = Form.useForm();
   const router = useRouter();
-  
+  const [formData, setFormData] = useState<RegisterFormValues>({
+    email: '',
+    password: '',
+    username: '',
+    role: 'client',
+    display_name: '',
+    confirmPassword: '',
+    agreement: false,
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof RegisterFormValues, string>>>({});
+
   const { execute: handleRegister, loading } = useAsyncOperation(
     async (values: RegisterRequest) => {
       await authService.register(values);
@@ -40,128 +51,211 @@ export function RegisterForm() {
     }
   );
 
-  const handleSubmit = async (values: RegisterFormValues) => {
-    const { confirmPassword, agreement, ...registerData } = values;
+  const validate = (): boolean => {
+    const newErrors: Partial<Record<keyof RegisterFormValues, string>> = {};
+
+    if (!formData.display_name || formData.display_name.length < 2) {
+      newErrors.display_name = 'Минимум 2 символа';
+    }
+    if (!formData.username || formData.username.length < 3) {
+      newErrors.username = 'Минимум 3 символа';
+    }
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Неверный формат email';
+    }
+    if (!formData.password || formData.password.length < 6) {
+      newErrors.password = 'Минимум 6 символов';
+    }
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Пароли не совпадают';
+    }
+    if (!formData.agreement) {
+      newErrors.agreement = 'Необходимо согласие с условиями';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const { confirmPassword, agreement, ...registerData } = formData;
     await handleRegister(registerData as RegisterRequest);
   };
 
+  const handleChange = (field: keyof RegisterFormValues, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={handleSubmit}
-      size="large"
-      requiredMark={false}
-    >
-      <Form.Item
-        name="display_name"
-        label="Имя"
-        rules={displayNameRules}
-      >
-        <Input
-          prefix={<User size={18} />}
+    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
+      <Stack spacing={3}>
+        <TextField
+          label="Имя"
+          fullWidth
+          value={formData.display_name}
+          onChange={(e) => handleChange('display_name', e.target.value)}
+          error={!!errors.display_name}
+          helperText={errors.display_name}
           placeholder="Иван Иванов"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <User size={18} />
+              </InputAdornment>
+            ),
+          }}
         />
-      </Form.Item>
 
-      <Form.Item
-        name="username"
-        label="Имя пользователя"
-        rules={usernameRules}
-      >
-        <Input
-          prefix={<User size={18} />}
+        <TextField
+          label="Имя пользователя"
+          fullWidth
+          value={formData.username}
+          onChange={(e) => handleChange('username', e.target.value)}
+          error={!!errors.username}
+          helperText={errors.username}
           placeholder="username"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <User size={18} />
+              </InputAdornment>
+            ),
+          }}
         />
-      </Form.Item>
 
-      <Form.Item
-        name="email"
-        label="Email"
-        rules={emailRules}
-      >
-        <Input
-          prefix={<Mail size={18} />}
+        <TextField
+          label="Email"
+          fullWidth
+          type="email"
+          value={formData.email}
+          onChange={(e) => handleChange('email', e.target.value)}
+          error={!!errors.email}
+          helperText={errors.email}
           placeholder="your@email.com"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Mail size={18} />
+              </InputAdornment>
+            ),
+          }}
         />
-      </Form.Item>
 
-      <Form.Item
-        name="role"
-        label="Роль"
-        rules={[{ required: true, message: 'Выберите роль' }]}
-      >
-        <Select placeholder="Выберите роль">
-          <Select.Option value="client">Заказчик</Select.Option>
-          <Select.Option value="freelancer">Фрилансер</Select.Option>
-        </Select>
-      </Form.Item>
+        <FormControl fullWidth error={!!errors.role}>
+          <InputLabel>Роль</InputLabel>
+          <Select
+            value={formData.role}
+            onChange={(e) => handleChange('role', e.target.value)}
+            label="Роль"
+          >
+            <MenuItem value="client">Заказчик</MenuItem>
+            <MenuItem value="freelancer">Фрилансер</MenuItem>
+          </Select>
+          {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
+        </FormControl>
 
-      <Form.Item
-        name="password"
-        label="Пароль"
-        rules={passwordRules}
-      >
-        <Input.Password
-          prefix={<Lock size={18} />}
+        <TextField
+          label="Пароль"
+          fullWidth
+          type={showPassword ? 'text' : 'password'}
+          value={formData.password}
+          onChange={(e) => handleChange('password', e.target.value)}
+          error={!!errors.password}
+          helperText={errors.password}
           placeholder="••••••••"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Lock size={18} />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
-      </Form.Item>
 
-      <Form.Item
-        name="confirmPassword"
-        label="Подтверждение пароля"
-        dependencies={['password']}
-        rules={confirmPasswordRules}
-      >
-        <Input.Password
-          prefix={<Lock size={18} />}
+        <TextField
+          label="Подтверждение пароля"
+          fullWidth
+          type={showConfirmPassword ? 'text' : 'password'}
+          value={formData.confirmPassword}
+          onChange={(e) => handleChange('confirmPassword', e.target.value)}
+          error={!!errors.confirmPassword}
+          helperText={errors.confirmPassword}
           placeholder="••••••••"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Lock size={18} />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
-      </Form.Item>
 
-      <Form.Item
-        name="agreement"
-        valuePropName="checked"
-        rules={[
-          {
-            validator: (_, value) =>
-              value ? Promise.resolve() : Promise.reject(new Error('Необходимо согласие с условиями')),
-          },
-        ]}
-      >
-        <Checkbox>
-          Я согласен с{' '}
-          <Link href="/terms">
-            <AntLink>условиями использования</AntLink>
-          </Link>{' '}
-          и{' '}
-          <Link href="/privacy">
-            <AntLink>политикой конфиденциальности</AntLink>
-          </Link>
-        </Checkbox>
-      </Form.Item>
+        <FormControl error={!!errors.agreement}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.agreement}
+                onChange={(e) => handleChange('agreement', e.target.checked)}
+              />
+            }
+            label={
+              <Typography variant="body2">
+                Я согласен с{' '}
+                <Link href="/terms" style={{ textDecoration: 'none' }}>
+                  <Typography component="span" variant="body2" color="primary">
+                    условиями использования
+                  </Typography>
+                </Link>
+                {' '}и{' '}
+                <Link href="/privacy" style={{ textDecoration: 'none' }}>
+                  <Typography component="span" variant="body2" color="primary">
+                    политикой конфиденциальности
+                  </Typography>
+                </Link>
+              </Typography>
+            }
+          />
+          {errors.agreement && <FormHelperText>{errors.agreement}</FormHelperText>}
+        </FormControl>
 
-      <Form.Item>
         <Button
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          block
+          type="submit"
+          variant="contained"
+          fullWidth
           size="large"
+          disabled={loading}
         >
-          Зарегистрироваться
+          {loading ? 'Регистрация...' : 'Зарегистрироваться'}
         </Button>
-      </Form.Item>
 
-      <Divider>
-        <Text type="secondary" style={{ fontSize: '14px' }}>
-          Уже есть аккаунт?{' '}
-          <Link href="/auth/login">
-            <AntLink>Войти</AntLink>
-          </Link>
-        </Text>
-      </Divider>
-    </Form>
+        <Divider>
+          <Typography variant="body2" color="text.secondary">
+            Уже есть аккаунт?{' '}
+            <Link href="/auth/login" style={{ textDecoration: 'none' }}>
+              <Typography component="span" variant="body2" color="primary">
+                Войти
+              </Typography>
+            </Link>
+          </Typography>
+        </Divider>
+      </Stack>
+    </Box>
   );
 }

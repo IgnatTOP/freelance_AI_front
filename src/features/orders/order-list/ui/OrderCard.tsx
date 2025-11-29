@@ -1,8 +1,10 @@
 "use client";
 
-import { Card, Tag, Space, Typography, theme, Progress } from "antd";
+import { Card, CardContent, Chip, Box, Typography, LinearProgress } from "@mui/material";
+import { Tag, Typography as AntTypography, Progress, theme as antTheme } from "antd";
 import { Calendar, DollarSign, Clock, Code, MessageSquare, User, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "@mui/material/styles";
 import type { Order } from "@/src/entities/order/model/types";
 import { formatPriceRange } from "@/src/shared/lib/utils";
 import { getOrderStatusColor, getOrderStatusLabel } from "@/src/shared/lib/order-utils";
@@ -11,11 +13,11 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ru";
 
+const { Title, Text } = AntTypography;
+const { useToken } = antTheme;
+
 dayjs.extend(relativeTime);
 dayjs.locale("ru");
-
-const { Text, Title } = Typography;
-const { useToken } = theme;
 
 interface OrderCardProps {
   order: Order;
@@ -24,6 +26,7 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, matchScore, matchExplanation }: OrderCardProps) {
+  const theme = useTheme();
   const { token } = useToken();
   const currentUser = authService.getCurrentUser();
   const isMyOrder = currentUser && String(order.client_id) === String(currentUser.id);
@@ -40,29 +43,19 @@ export function OrderCard({ order, matchScore, matchExplanation }: OrderCardProp
     >
       <Card
         onClick={handleCardClick}
-        hoverable
-        style={{
-          borderRadius: token.borderRadius,
-          borderColor: token.colorBorder,
+        sx={{
+          borderRadius: 1,
           cursor: "pointer",
           transition: "all 0.2s ease",
-          boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03)",
-        }}
-        styles={{
-          body: {
-            padding: "20px 24px",
+          boxShadow: 1,
+          "&:hover": {
+            boxShadow: 3,
+            borderColor: theme.palette.primary.main,
           },
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = "0 4px 12px 0 rgba(0, 0, 0, 0.08)";
-          e.currentTarget.style.borderColor = token.colorPrimaryHover;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = "0 1px 2px 0 rgba(0, 0, 0, 0.03)";
-          e.currentTarget.style.borderColor = token.colorBorder;
-        }}
       >
-        <Space direction="vertical" size={18} style={{ width: "100%" }}>
+        <CardContent sx={{ padding: "20px 24px" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.25, width: "100%" }}>
           {/* Header: Title + Status */}
           <div
             style={{
@@ -367,7 +360,8 @@ export function OrderCard({ order, matchScore, matchExplanation }: OrderCardProp
               )}
             </div>
           )}
-        </Space>
+        </Box>
+        </CardContent>
       </Card>
     </motion.div>
   );

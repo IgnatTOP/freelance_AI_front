@@ -1,7 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Badge, Empty, Skeleton, List, Tag, Space, Typography } from "antd";
+import {
+  Card,
+  CardContent,
+  Button,
+  Skeleton,
+  Stack,
+  Typography,
+  Box,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { getMyOrders, getOrders } from "@/src/shared/api/orders";
 import {
   Briefcase,
@@ -15,8 +28,6 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { formatDate } from "@/src/shared/lib/utils/date-utils";
 import { formatPriceRange } from "@/src/shared/lib/utils";
-
-const { Text } = Typography;
 
 interface Order {
   id: string;
@@ -36,14 +47,15 @@ interface RecentOrdersProps {
 }
 
 const statusConfig = {
-  draft: { label: "Черновик", color: "text-gray-400" },
-  published: { label: "Опубликован", color: "text-blue-400" },
-  in_progress: { label: "В работе", color: "text-yellow-400" },
-  completed: { label: "Завершён", color: "text-green-400" },
-  cancelled: { label: "Отменён", color: "text-red-400" },
+  draft: { label: "Черновик", color: "default" as const },
+  published: { label: "Опубликован", color: "info" as const },
+  in_progress: { label: "В работе", color: "warning" as const },
+  completed: { label: "Завершён", color: "success" as const },
+  cancelled: { label: "Отменён", color: "error" as const },
 };
 
 export function RecentOrders({ userRole }: RecentOrdersProps) {
+  const theme = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,109 +95,127 @@ export function RecentOrders({ userRole }: RecentOrdersProps) {
   if (loading) {
     return (
       <Card>
-        <Skeleton active paragraph={{ rows: 4 }} />
+        <CardContent>
+          <Skeleton variant="text" width={200} height={32} />
+          <Skeleton variant="rectangular" height={100} sx={{ mt: 2 }} />
+          <Skeleton variant="rectangular" height={100} sx={{ mt: 2 }} />
+        </CardContent>
       </Card>
     );
   }
 
-  const statusColorMap: Record<string, string> = {
-    draft: 'default',
-    published: 'processing',
-    in_progress: 'warning',
-    completed: 'success',
-    cancelled: 'error',
-  };
-
   return (
-    <Card
-      title={
-        <Space>
-          <Briefcase size={18} />
-          {userRole === "client" ? "Мои заказы" : "Последние заказы"}
-        </Space>
-      }
-      extra={
-        <Link href="/orders">
-          <Button type="text" icon={<ArrowRight size={14} />}>
-            Все
-          </Button>
-        </Link>
-      }
-    >
-      {orders.length === 0 ? (
-        <Empty
-          description="Нет заказов"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
-      ) : (
-        <List
-          dataSource={orders}
-          renderItem={(order, index) => (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
+    <Card>
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Briefcase size={18} />
+            <Typography variant="h6">
+              {userRole === "client" ? "Мои заказы" : "Последние заказы"}
+            </Typography>
+          </Stack>
+          <Link href="/orders" style={{ textDecoration: 'none' }}>
+            <Button
+              size="small"
+              endIcon={<ArrowRight size={14} />}
+              sx={{ color: theme.palette.text.secondary }}
             >
-              <Link href={`/orders/${order.id}`}>
-                <List.Item
-                  style={{
-                    cursor: 'pointer',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    marginBottom: '8px',
-                    background: 'var(--primary-05)',
-                    borderColor: 'var(--primary-12)',
-                    transition: 'all 0.3s',
-                  }}
-                  className="hover:border-primary/50"
-                >
-                  <List.Item.Meta
-                    title={
-                      <Space>
-                        <Text strong style={{ fontSize: '14px' }}>{order.title}</Text>
-                        <Tag color={statusColorMap[order.status]}>
-                          {statusConfig[order.status].label}
-                        </Tag>
-                      </Space>
-                    }
-                    description={
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        {order.ai_summary && (
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {order.ai_summary}
-                          </Text>
-                        )}
-                        <Space split={<span>•</span>} style={{ fontSize: '12px' }}>
-                          <Space size={4}>
-                            <Wallet size={12} />
-                            <Text type="secondary">{formatBudget(order.budget_min, order.budget_max)}</Text>
-                          </Space>
-                          {order.deadline_at && (
-                            <Space size={4}>
-                              <Calendar size={12} />
-                              <Text type="secondary">До {formatDate(order.deadline_at)}</Text>
-                            </Space>
+              Все
+            </Button>
+          </Link>
+        </Stack>
+
+        {orders.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              Нет заказов
+            </Typography>
+          </Box>
+        ) : (
+          <List sx={{ p: 0 }}>
+            {orders.map((order, index) => (
+              <motion.div
+                key={order.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <Link href={`/orders/${order.id}`} style={{ textDecoration: 'none' }}>
+                  <ListItem
+                    sx={{
+                      cursor: 'pointer',
+                      p: 2,
+                      borderRadius: 1.5,
+                      mb: 1,
+                      background: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.05)' : 'rgba(24, 144, 255, 0.03)',
+                      border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.12)' : 'rgba(24, 144, 255, 0.08)'}`,
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        borderColor: theme.palette.primary.main,
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.08)' : 'rgba(24, 144, 255, 0.05)',
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '14px' }}>
+                            {order.title}
+                          </Typography>
+                          <Chip
+                            label={statusConfig[order.status].label}
+                            color={statusConfig[order.status].color}
+                            size="small"
+                          />
+                        </Stack>
+                      }
+                      secondary={
+                        <Stack spacing={1}>
+                          {order.ai_summary && (
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '12px' }}>
+                              {order.ai_summary}
+                            </Typography>
                           )}
-                          <Space size={4}>
-                            <Clock size={12} />
-                            <Text type="secondary">{formatDate(order.created_at)}</Text>
-                          </Space>
-                          {order.proposals_count !== undefined && order.proposals_count > 0 && (
-                            <Space size={4}>
-                              <TagIcon size={12} />
-                              <Text type="secondary">{order.proposals_count} откликов</Text>
-                            </Space>
-                          )}
-                        </Space>
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              </Link>
-            </motion.div>
-          )}
-        />
-      )}
+                          <Stack direction="row" spacing={1} divider={<span>•</span>} sx={{ fontSize: '12px' }}>
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Wallet size={12} />
+                              <Typography variant="caption" color="text.secondary">
+                                {formatBudget(order.budget_min, order.budget_max)}
+                              </Typography>
+                            </Stack>
+                            {order.deadline_at && (
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                <Calendar size={12} />
+                                <Typography variant="caption" color="text.secondary">
+                                  До {formatDate(order.deadline_at)}
+                                </Typography>
+                              </Stack>
+                            )}
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Clock size={12} />
+                              <Typography variant="caption" color="text.secondary">
+                                {formatDate(order.created_at)}
+                              </Typography>
+                            </Stack>
+                            {order.proposals_count !== undefined && order.proposals_count > 0 && (
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                <TagIcon size={12} />
+                                <Typography variant="caption" color="text.secondary">
+                                  {order.proposals_count} откликов
+                                </Typography>
+                              </Stack>
+                            )}
+                          </Stack>
+                        </Stack>
+                      }
+                    />
+                  </ListItem>
+                </Link>
+              </motion.div>
+            ))}
+          </List>
+        )}
+      </CardContent>
     </Card>
   );
 }

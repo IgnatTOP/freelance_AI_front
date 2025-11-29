@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Dropdown } from "antd";
-import type { MenuProps } from "antd";
+import { Menu, MenuItem, Divider, ListItemIcon, ListItemText } from "@mui/material";
+import { useState } from "react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import { useAuth, useMobileMenu } from "@/src/shared/lib/hooks";
 import { useAsyncOperation } from "@/src/shared/lib/hooks/useAsyncOperation";
@@ -27,6 +27,8 @@ export function DashboardDockHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, profile, userRole } = useAuth({ requireAuth: false });
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const userMenuOpen = Boolean(anchorEl);
 
   const { execute: executeLogout } = useAsyncOperation<void, void>(
     async () => {
@@ -41,7 +43,16 @@ export function DashboardDockHeader() {
     }
   );
 
+  const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
+  };
+
   const handleLogout = () => {
+    handleUserMenuClose();
     executeLogout();
   };
 
@@ -65,57 +76,6 @@ export function DashboardDockHeader() {
     icon: item.icon,
   }));
 
-  const userMenuItems: MenuProps["items"] = [
-    {
-      key: "profile",
-      label: (
-        <Link href={user ? `/users/${user.id}` : "/profile"} className="block">
-          <div className="px-2 py-2">
-            <div className="font-semibold text-sm text-foreground leading-tight">
-              {profile?.display_name || user?.username}
-            </div>
-            <div className="text-xs text-foreground-secondary mt-1 leading-tight">
-              {userRole === "client" ? "Заказчик" : "Фрилансер"}
-            </div>
-          </div>
-        </Link>
-      ),
-    },
-    { type: "divider" },
-    {
-      key: "public-profile",
-      label: (
-        <div className="flex items-center gap-1" style={{ margin: 0, padding: 0 }}>
-          <UserIcon size={16} style={{ flexShrink: 0, margin: 0 }} />
-          <span style={{ margin: 0, padding: 0 }}>Публичный профиль</span>
-        </div>
-      ),
-      onClick: () => user && router.push(`/users/${user.id}`),
-    },
-    {
-      key: "settings",
-      label: (
-        <div className="flex items-center gap-1" style={{ margin: 0, padding: 0 }}>
-          <Settings size={16} style={{ flexShrink: 0, margin: 0 }} />
-          <span style={{ margin: 0, padding: 0 }}>Настройки</span>
-        </div>
-      ),
-      onClick: () => router.push("/settings"),
-    },
-    { type: "divider" },
-    {
-      key: "logout",
-      label: (
-        <div className="flex items-center gap-1 text-red-400" style={{ margin: 0, padding: 0 }}>
-          <LogOut size={16} style={{ flexShrink: 0, margin: 0 }} />
-          <span style={{ margin: 0, padding: 0 }}>Выход</span>
-        </div>
-      ),
-      onClick: handleLogout,
-      danger: true,
-    },
-  ];
-
   return (
     <>
       {/* Desktop macOS Dock Bar */}
@@ -129,19 +89,82 @@ export function DashboardDockHeader() {
               <NotificationBell />
               <RoleSwitcher />
             </div>
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              trigger={["click"]}
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="cursor-pointer"
+              onClick={handleUserMenuClick}
             >
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="cursor-pointer"
+              <UserAvatar user={user} profile={profile} size={40} />
+            </motion.div>
+            <Menu
+              anchorEl={anchorEl}
+              open={userMenuOpen}
+              onClose={handleUserMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              slotProps={{
+                paper: {
+                  sx: {
+                    mt: 1,
+                    minWidth: 200,
+                  },
+                },
+              }}
+            >
+              <MenuItem
+                component={Link}
+                href={user ? `/users/${user.id}` : "/profile"}
+                onClick={handleUserMenuClose}
+                sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2 }}
               >
-                <UserAvatar user={user} profile={profile} size={40} />
-              </motion.div>
-            </Dropdown>
+                <div className="font-semibold text-sm text-foreground leading-tight">
+                  {profile?.display_name || user?.username}
+                </div>
+                <div className="text-xs text-foreground-secondary mt-1 leading-tight">
+                  {userRole === "client" ? "Заказчик" : "Фрилансер"}
+                </div>
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  handleUserMenuClose();
+                  user && router.push(`/users/${user.id}`);
+                }}
+              >
+                <ListItemIcon>
+                  <UserIcon size={16} />
+                </ListItemIcon>
+                <ListItemText>Публичный профиль</ListItemText>
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleUserMenuClose();
+                  router.push("/settings");
+                }}
+              >
+                <ListItemIcon>
+                  <Settings size={16} />
+                </ListItemIcon>
+                <ListItemText>Настройки</ListItemText>
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={handleLogout}
+                sx={{ color: 'rgb(248 113 113)' }}
+              >
+                <ListItemIcon>
+                  <LogOut size={16} style={{ color: 'rgb(248 113 113)' }} />
+                </ListItemIcon>
+                <ListItemText>Выход</ListItemText>
+              </MenuItem>
+            </Menu>
           </>
         }
       />

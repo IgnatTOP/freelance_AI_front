@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Empty, Skeleton, Row, Col, Tag, Space, Typography, Progress, Avatar, theme } from "antd";
+import { Card, CardContent, Button, Skeleton, Stack, Typography, Box, Chip, LinearProgress, useTheme } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { getMyOrders, getOrders } from "@/src/shared/api/orders";
 import {
   Briefcase,
@@ -16,9 +17,6 @@ import { motion } from "framer-motion";
 import { formatDate as formatDateUtil } from "@/src/shared/lib/utils/date-utils";
 import Link from "next/link";
 import { formatPriceRange } from "@/src/shared/lib/utils";
-
-const { Text, Paragraph } = Typography;
-const { useToken } = theme;
 
 interface Order {
   id: string;
@@ -39,15 +37,15 @@ interface ProjectsCardsProps {
 }
 
 const statusConfig = {
-  draft: { label: "Черновик", color: "default" },
-  published: { label: "Опубликован", color: "processing" },
-  in_progress: { label: "В работе", color: "warning" },
-  completed: { label: "Завершён", color: "success" },
-  cancelled: { label: "Отменён", color: "error" },
+  draft: { label: "Черновик", color: "default" as const },
+  published: { label: "Опубликован", color: "info" as const },
+  in_progress: { label: "В работе", color: "warning" as const },
+  completed: { label: "Завершён", color: "success" as const },
+  cancelled: { label: "Отменён", color: "error" as const },
 };
 
 export function ProjectsCards({ userRole }: ProjectsCardsProps) {
-  const { token } = useToken();
+  const theme = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,214 +83,210 @@ export function ProjectsCards({ userRole }: ProjectsCardsProps) {
 
   if (loading) {
     return (
-      <Card
-        title={userRole === "client" ? "Мои проекты" : "Доступные заказы"}
-        style={{
-          borderColor: token.colorBorder,
-          borderRadius: token.borderRadiusLG,
-        }}
-      >
-        <Skeleton active paragraph={{ rows: 4 }} />
+      <Card>
+        <CardContent>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2 }}>
+            <Briefcase size={20} />
+            <Typography variant="h6">{userRole === "client" ? "Мои проекты" : "Доступные заказы"}</Typography>
+          </Box>
+          <Skeleton variant="rectangular" height={120} />
+          <Skeleton variant="rectangular" height={120} sx={{ mt: 2 }} />
+          <Skeleton variant="rectangular" height={120} sx={{ mt: 2 }} />
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card
-      title={
-        <Space>
-          <Briefcase size={20} style={{ color: token.colorPrimary }} />
-          <span>{userRole === "client" ? "Мои проекты" : "Доступные заказы"}</span>
-        </Space>
-      }
-      extra={
-        <Link href="/orders">
-          <Button type="text" icon={<ArrowRight size={16} />}>
-            Все
-          </Button>
-        </Link>
-      }
-      style={{
-        borderColor: token.colorBorder,
-        borderRadius: token.borderRadiusLG,
-      }}
-    >
-      {orders.length === 0 ? (
-        <Empty
-          description={userRole === "client" ? "Нет проектов" : "Нет доступных заказов"}
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
-      ) : (
-        <Row gutter={[token.margin, token.margin]}>
-          {orders.map((order, index) => {
-            const statusInfo = statusConfig[order.status];
-            // Прогресс на основе статуса (можно будет добавить реальный прогресс из API)
-            const progress = order.status === "in_progress"
-              ? 50 // По умолчанию 50% для заказов в работе
-              : order.status === "completed"
-              ? 100
-              : 0;
+    <Card>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Briefcase size={20} style={{ color: theme.palette.primary.main }} />
+            <Typography variant="h6">{userRole === "client" ? "Мои проекты" : "Доступные заказы"}</Typography>
+          </Box>
+          <Link href="/orders" style={{ textDecoration: 'none' }}>
+            <Button variant="text" endIcon={<ArrowRight size={16} />}>
+              Все
+            </Button>
+          </Link>
+        </Box>
 
-            return (
-              <Col xs={24} key={order.id}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <Link href={`/orders/${order.id}`}>
-                    <Card
-                      hoverable
-                      style={{
-                        borderColor: token.colorBorder,
-                        borderRadius: token.borderRadiusLG,
-                        cursor: 'pointer',
-                      }}
-                      styles={{
-                        body: { padding: token.paddingLG }
-                      }}
-                    >
-                      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                        {/* Header */}
-                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                          <Space>
-                            <div
-                              style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: token.borderRadius,
-                                background: `${token.colorPrimary}15`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <Briefcase size={20} style={{ color: token.colorPrimary }} />
-                            </div>
-                            <div>
-                              <Text strong style={{ fontSize: token.fontSizeLG }}>
-                                {order.title}
-                              </Text>
-                              <br />
-                              <Tag color={statusInfo.color} style={{ marginTop: 4 }}>
-                                {statusInfo.label}
-                              </Tag>
-                            </div>
-                          </Space>
-                        </Space>
+        {orders.length === 0 ? (
+          <Box textAlign="center" py={4}>
+            <Typography variant="body2" color="text.secondary">
+              {userRole === "client" ? "Нет проектов" : "Нет доступных заказов"}
+            </Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={2}>
+            {orders.map((order, index) => {
+              const statusInfo = statusConfig[order.status];
+              const progress = order.status === "in_progress"
+                ? 50
+                : order.status === "completed"
+                ? 100
+                : 0;
 
-                        {/* Description */}
-                        {order.ai_summary && (
-                          <Paragraph
-                            ellipsis={{ rows: 2 }}
-                            type="secondary"
-                            style={{ margin: 0, fontSize: token.fontSize }}
-                          >
-                            {order.ai_summary}
-                          </Paragraph>
-                        )}
+              return (
+                <Grid size={{ xs: 12 }} key={order.id}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <Link href={`/orders/${order.id}`} style={{ textDecoration: 'none' }}>
+                      <Card
+                        sx={{
+                          cursor: 'pointer',
+                          '&:hover': {
+                            boxShadow: 2,
+                          }
+                        }}
+                      >
+                        <CardContent>
+                          <Stack spacing={2}>
+                            {/* Header */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                                <Box
+                                  sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 1,
+                                    bgcolor: `${theme.palette.primary.main}15`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <Briefcase size={20} style={{ color: theme.palette.primary.main }} />
+                                </Box>
+                                <Box>
+                                  <Typography variant="body1" fontWeight="bold">
+                                    {order.title}
+                                  </Typography>
+                                  <Chip label={statusInfo.label} color={statusInfo.color} size="small" sx={{ mt: 0.5 }} />
+                                </Box>
+                              </Box>
+                            </Box>
 
-                        {/* Progress Bar */}
-                        {progress > 0 && (
-                          <div>
-                            <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}>
-                              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                Прогресс
-                              </Text>
-                              <Text strong style={{ fontSize: token.fontSizeSM }}>
-                                {progress}%
-                              </Text>
-                            </Space>
-                            <Progress
-                              percent={progress}
-                              strokeColor={{
-                                "0%": token.colorPrimary,
-                                "100%": token.colorSuccess,
-                              }}
-                              trailColor={token.colorBgContainer}
-                              showInfo={false}
-                            />
-                          </div>
-                        )}
+                            {/* Description */}
+                            {order.ai_summary && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                {order.ai_summary}
+                              </Typography>
+                            )}
 
-                        {/* Meta Info */}
-                        <Row gutter={[token.marginSM, token.marginSM]}>
-                          <Col xs={12} sm={8}>
-                            <Space size={4}>
-                              <Wallet size={14} style={{ color: token.colorTextSecondary }} />
-                              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                {formatPriceRange(order.budget_min, order.budget_max)}
-                              </Text>
-                            </Space>
-                          </Col>
-                          {order.deadline_at && (
-                            <Col xs={12} sm={8}>
-                              <Space size={4}>
-                                <Calendar size={14} style={{ color: token.colorTextSecondary }} />
-                                <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                  {formatDate(order.deadline_at)}
-                                </Text>
-                              </Space>
-                            </Col>
-                          )}
-                          {order.proposals_count !== undefined && order.proposals_count > 0 && (
-                            <Col xs={12} sm={8}>
-                              <Space size={4}>
-                                <User size={14} style={{ color: token.colorTextSecondary }} />
-                                <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                  {order.proposals_count} откликов
-                                </Text>
-                              </Space>
-                            </Col>
-                          )}
-                        </Row>
+                            {/* Progress Bar */}
+                            {progress > 0 && (
+                              <Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Прогресс
+                                  </Typography>
+                                  <Typography variant="caption" fontWeight="bold">
+                                    {progress}%
+                                  </Typography>
+                                </Box>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={progress}
+                                  sx={{
+                                    height: 6,
+                                    borderRadius: 1,
+                                    bgcolor: theme.palette.background.default,
+                                  }}
+                                />
+                              </Box>
+                            )}
 
-                        {/* Footer Actions */}
-                        <Space style={{ width: '100%', justifyContent: 'space-between', paddingTop: token.paddingXS, borderTop: `1px solid ${token.colorBorder}` }}>
-                          <Space size={4}>
-                            <Clock size={14} style={{ color: token.colorTextSecondary }} />
-                            <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                              {formatDate(order.created_at)}
-                            </Text>
-                          </Space>
-                          {userRole === "client" && (
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<MessageSquare size={14} />}
-                              style={{ fontSize: token.fontSizeSM }}
-                            >
-                              Сообщения
-                            </Button>
-                          )}
-                        </Space>
-                      </Space>
-                    </Card>
-                  </Link>
-                </motion.div>
-              </Col>
-            );
-          })}
-        </Row>
-      )}
+                            {/* Meta Info */}
+                            <Grid container spacing={1}>
+                              <Grid size={{ xs: 12, sm: 4 }}>
+                                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                                  <Wallet size={14} style={{ color: theme.palette.text.secondary }} />
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatPriceRange(order.budget_min, order.budget_max)}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                              {order.deadline_at && (
+                                <Grid size={{ xs: 12, sm: 4 }}>
+                                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                                    <Calendar size={14} style={{ color: theme.palette.text.secondary }} />
+                                    <Typography variant="caption" color="text.secondary">
+                                      {formatDate(order.deadline_at)}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              )}
+                              {order.proposals_count !== undefined && order.proposals_count > 0 && (
+                                <Grid size={{ xs: 12, sm: 4 }}>
+                                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                                    <User size={14} style={{ color: theme.palette.text.secondary }} />
+                                    <Typography variant="caption" color="text.secondary">
+                                      {order.proposals_count} откликов
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              )}
+                            </Grid>
 
-      {/* View All Button */}
-      {orders.length > 0 && (
-        <Link href="/orders">
-          <Button
-            type="primary"
-            block
-            size="large"
-            icon={<ArrowRight size={16} />}
-            style={{
-              marginTop: token.marginLG,
-              borderRadius: token.borderRadiusLG,
-            }}
-          >
-            {userRole === "client" ? "Все проекты" : "Все заказы"}
-          </Button>
-        </Link>
-      )}
+                            {/* Footer Actions */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: `1px solid ${theme.palette.divider}` }}>
+                              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                                <Clock size={14} style={{ color: theme.palette.text.secondary }} />
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatDate(order.created_at)}
+                                </Typography>
+                              </Box>
+                              {userRole === "client" && (
+                                <Button
+                                  variant="text"
+                                  size="small"
+                                  startIcon={<MessageSquare size={14} />}
+                                  sx={{ fontSize: '0.75rem' }}
+                                >
+                                  Сообщения
+                                </Button>
+                              )}
+                            </Box>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </motion.div>
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
+
+        {/* View All Button */}
+        {orders.length > 0 && (
+          <Link href="/orders" style={{ textDecoration: 'none' }}>
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              endIcon={<ArrowRight size={16} />}
+              sx={{ mt: 2 }}
+            >
+              {userRole === "client" ? "Все проекты" : "Все заказы"}
+            </Button>
+          </Link>
+        )}
+      </CardContent>
     </Card>
   );
 }

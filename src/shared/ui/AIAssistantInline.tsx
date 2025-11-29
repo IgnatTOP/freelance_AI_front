@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Space, Typography, Spin, theme } from "antd";
+import { Button, Stack, Typography, CircularProgress, Box, IconButton, useTheme } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { Sparkles, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-const { Text } = Typography;
-const { useToken } = theme;
 
 interface AIAssistantInlineProps {
   onImprove: (onChunk: (chunk: string) => void) => Promise<void>;
@@ -22,7 +19,7 @@ export function AIAssistantInline({
   disabled = false,
   size = "middle",
 }: AIAssistantInlineProps) {
-  const { token } = useToken();
+  const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [improvedText, setImprovedText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -60,20 +57,23 @@ export function AIAssistantInline({
     setImprovedText("");
   };
 
+  const buttonPadding = size === "small" ? "4px 8px" : size === "large" ? "4px 16px" : "4px 12px";
+  const fontSize = size === "small" ? 12 : size === "large" ? 14 : 13;
+
   return (
     <div>
       <Button
-        type="text"
+        variant="text"
         size={size}
-        icon={loading ? <Spin size="small" /> : <Sparkles size={14} />}
+        startIcon={loading ? <CircularProgress size={14} /> : <Sparkles size={14} />}
         onClick={handleImprove}
         disabled={disabled || loading}
-        loading={loading}
-        style={{
+        sx={{
           color: "var(--primary)",
-          padding: size === "small" ? "4px 8px" : size === "large" ? "4px 16px" : "4px 12px",
+          padding: buttonPadding,
           height: "auto",
-          fontSize: size === "small" ? "12px" : size === "large" ? "14px" : "13px",
+          fontSize: fontSize,
+          textTransform: "none",
         }}
       >
         {loading ? "Генерирую..." : "Улучшить с AI"}
@@ -95,40 +95,40 @@ export function AIAssistantInline({
               boxShadow: "0 4px 12px var(--primary-08)",
             }}
           >
-            <Space direction="vertical" size={12} style={{ width: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <Space size={8}>
+            <Stack spacing={1.5} sx={{ width: "100%" }}>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Stack direction="row" spacing={1} alignItems="center">
                   <Sparkles size={16} style={{ color: "var(--primary)" }} />
-                  <Text strong style={{ fontSize: 13, color: "var(--primary)" }}>
+                  <Typography variant="body2" fontWeight="bold" sx={{ fontSize: 13, color: "var(--primary)" }}>
                     AI улучшил текст
-                  </Text>
-                </Space>
-                <Button
-                  type="text"
+                  </Typography>
+                </Stack>
+                <IconButton
                   size="small"
-                  icon={<X size={12} />}
                   onClick={handleCancel}
-                  style={{ padding: 0, width: 20, height: 20 }}
-                />
-              </div>
-              
-              <div
-                style={{
-                  background: token.colorBgContainer,
-                  borderRadius: 6,
-                  padding: 12,
-                  border: `1px solid ${token.colorBorderSecondary}`,
+                  sx={{ padding: 0, width: 20, height: 20 }}
+                >
+                  <X size={12} />
+                </IconButton>
+              </Box>
+
+              <Box
+                sx={{
+                  background: theme.palette.background.paper,
+                  borderRadius: "6px",
+                  padding: "12px",
+                  border: `1px solid ${theme.palette.divider}`,
                   maxHeight: 200,
                   overflowY: "auto",
-                  boxShadow: token.boxShadowSecondary,
+                  boxShadow: theme.shadows[1],
                 }}
               >
-                <Text
-                  style={{
+                <Typography
+                  sx={{
                     whiteSpace: "pre-wrap",
                     fontSize: 13,
                     lineHeight: "20px",
-                    color: token.colorText,
+                    color: theme.palette.text.primary,
                     display: "block",
                   }}
                 >
@@ -142,32 +142,35 @@ export function AIAssistantInline({
                       ▊
                     </motion.span>
                   )}
-                </Text>
-              </div>
+                </Typography>
+              </Box>
 
-              <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+              <Stack direction="row" spacing={1} sx={{ width: "100%", justifyContent: "flex-end" }}>
                 <Button
                   size="small"
                   onClick={handleCancel}
-                  style={{ fontSize: 12 }}
+                  sx={{ fontSize: 12, textTransform: "none" }}
                 >
                   Отмена
                 </Button>
                 <Button
-                  type="primary"
+                  variant="contained"
                   size="small"
-                  icon={<Check size={12} />}
+                  startIcon={<Check size={12} />}
                   onClick={handleApply}
-                  style={{
+                  sx={{
                     background: "var(--primary)",
-                    borderColor: "var(--primary)",
                     fontSize: 12,
+                    textTransform: "none",
+                    "&:hover": {
+                      background: "var(--primary-dark)",
+                    },
                   }}
                 >
                   Применить
                 </Button>
-              </Space>
-            </Space>
+              </Stack>
+            </Stack>
           </motion.div>
         )}
       </AnimatePresence>

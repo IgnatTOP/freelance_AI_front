@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, Typography, Badge, Avatar, theme } from "antd";
-import { MessageSquare, User, Briefcase } from "lucide-react";
+import { Card, Badge, Avatar, Typography, useTheme } from "@mui/material";
+import { User, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import type { ConversationListItem } from "@/src/entities/conversation/model/types";
@@ -9,12 +9,10 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ru";
 import { getMediaUrl } from "@/src/shared/lib/api/axios";
+import { Box } from "@mui/material";
 
 dayjs.extend(relativeTime);
 dayjs.locale("ru");
-
-const { Text } = Typography;
-const { useToken } = theme;
 
 interface ConversationCardProps {
   conversation: ConversationListItem;
@@ -22,10 +20,10 @@ interface ConversationCardProps {
 
 export function ConversationCard({ conversation }: ConversationCardProps) {
   const router = useRouter();
-  const { token } = useToken();
-  
-  const avatarUrl = conversation.other_user.photo_url 
-    ? getMediaUrl(conversation.other_user.photo_url) 
+  const theme = useTheme();
+
+  const avatarUrl = conversation.other_user.photo_url
+    ? getMediaUrl(conversation.other_user.photo_url)
     : null;
 
   const hasUnread = conversation.unread_count && conversation.unread_count > 0;
@@ -37,52 +35,71 @@ export function ConversationCard({ conversation }: ConversationCardProps) {
       transition={{ duration: 0.3 }}
     >
       <Card
-        className="hover:border-primary/50 transition-colors cursor-pointer"
-        hoverable
         onClick={() => router.push(`/messages/${conversation.id}`)}
-        style={{
-          marginBottom: 8,
+        sx={{
+          marginBottom: 1,
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            boxShadow: 2,
+          },
         }}
       >
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <Badge count={hasUnread ? conversation.unread_count : 0}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, p: 2 }}>
+          <Badge badgeContent={hasUnread ? conversation.unread_count : 0} color="error">
             <Avatar
-              size={48}
               src={avatarUrl || undefined}
-              style={{
-                backgroundColor: "#e6f4ff",
-                color: "#1890ff",
+              sx={{
+                width: 48,
+                height: 48,
+                backgroundColor: theme.palette.primary.light,
+                color: theme.palette.primary.main,
               }}
             >
               {conversation.other_user.display_name?.charAt(0).toUpperCase() || <User size={20} />}
             </Avatar>
           </Badge>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="font-bold text-lg">
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>
                   {conversation.other_user.display_name}
-                </h3>
-                <div className="flex items-center gap-1 mt-1">
-                  <Briefcase size={12} className="text-foreground-tertiary" />
-                  <Text className="text-sm text-foreground-tertiary">
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
+                  <Briefcase size={12} style={{ opacity: 0.6 }} />
+                  <Typography variant="caption" sx={{ opacity: 0.6 }}>
                     {conversation.order_title}
-                  </Text>
-                </div>
-              </div>
-            </div>
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
             {conversation.last_message && (
-              <div className="flex items-center justify-between">
-                <Text className="text-foreground-secondary truncate">
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    opacity: 0.7,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
+                  }}
+                >
                   {conversation.last_message.content}
-                </Text>
-                <Text className="text-xs text-foreground-tertiary ml-2 flex-shrink-0">
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    opacity: 0.6,
+                    ml: 1,
+                    flexShrink: 0
+                  }}
+                >
                   {dayjs(conversation.last_message.created_at).fromNow()}
-                </Text>
-              </div>
+                </Typography>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
       </Card>
     </motion.div>
   );

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AntdProvider } from "@/src/app/providers";
+import { MuiProvider } from "@/src/app/providers";
 import { AppShell } from "@/src/widgets/AppShell";
 import {
   PageLoader,
@@ -115,13 +115,13 @@ export default function RootLayout({
         <CursorTrail />
         <LenisScroll />
         <ProgressBar />
-        <AntdProvider>
+        <MuiProvider>
           <ToastProvider>
             <AppShell>{children}</AppShell>
             <ScrollToTop />
             <OnboardingProvider />
           </ToastProvider>
-        </AntdProvider>
+        </MuiProvider>
       </body>
     </html>
   );

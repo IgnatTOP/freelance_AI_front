@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Statistic, Progress, Skeleton, Row, Col, Space, theme } from "antd";
+import {
+  Card,
+  CardContent,
+  Typography,
+  LinearProgress,
+  Skeleton,
+  Box,
+  Stack,
+  useTheme,
+} from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { formatCurrency } from "@/src/shared/lib/utils";
 import { getStats } from "@/src/shared/api/stats";
 import {
@@ -15,8 +25,6 @@ import {
   Award,
 } from "lucide-react";
 import { motion } from "framer-motion";
-
-const { useToken } = theme;
 
 interface Stats {
   orders: {
@@ -41,7 +49,7 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ userRole }: DashboardStatsProps) {
-  const { token: antToken } = useToken();
+  const theme = useTheme();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -82,7 +90,11 @@ export function DashboardStats({ userRole }: DashboardStatsProps) {
   if (loading) {
     return (
       <Card>
-        <Skeleton active paragraph={{ rows: 2 }} />
+        <CardContent>
+          <Skeleton variant="text" width="40%" height={32} />
+          <Skeleton variant="text" width="60%" />
+          <Skeleton variant="text" width="80%" />
+        </CardContent>
       </Card>
     );
   }
@@ -96,25 +108,25 @@ export function DashboardStats({ userRole }: DashboardStatsProps) {
             title: "Всего заказов",
             value: stats.orders.total,
             icon: Briefcase,
-            color: antToken.colorPrimary,
+            color: theme.palette.primary.main,
           },
           {
             title: "Активные",
             value: stats.orders.open,
             icon: Clock,
-            color: antToken.colorInfo,
+            color: theme.palette.info.main,
           },
           {
             title: "В работе",
             value: stats.orders.in_progress,
             icon: TrendingUp,
-            color: antToken.colorWarning,
+            color: theme.palette.warning.main,
           },
           {
             title: "Завершено",
             value: stats.orders.completed,
             icon: CheckCircle,
-            color: antToken.colorSuccess,
+            color: theme.palette.success.main,
           },
         ]
       : [
@@ -122,25 +134,25 @@ export function DashboardStats({ userRole }: DashboardStatsProps) {
             title: "Откликов отправлено",
             value: stats.proposals?.total || 0,
             icon: FileText,
-            color: antToken.colorPrimary,
+            color: theme.palette.primary.main,
           },
           {
             title: "На рассмотрении",
             value: stats.proposals?.pending || 0,
             icon: Clock,
-            color: antToken.colorWarning,
+            color: theme.palette.warning.main,
           },
           {
             title: "Принято",
             value: stats.proposals?.accepted || 0,
             icon: CheckCircle,
-            color: antToken.colorSuccess,
+            color: theme.palette.success.main,
           },
           {
             title: "Проектов завершено",
             value: stats.orders.completed,
             icon: Award,
-            color: antToken.colorPrimary,
+            color: theme.palette.primary.main,
           },
         ];
 
@@ -154,183 +166,173 @@ export function DashboardStats({ userRole }: DashboardStatsProps) {
       : "0";
 
   return (
-    <Card
-      title={
-        <Space>
-          <TrendingUp size={18} />
-          <span>Статистика</span>
-        </Space>
-      }
-      styles={{
-        body: { padding: antToken.paddingLG }
-      }}
-    >
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        {/* Main Stats Grid */}
-        <Row gutter={[antToken.margin, antToken.margin]}>
-          {statsConfig.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Col xs={12} sm={12} md={6} key={stat.title}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <Card
-                    hoverable
-                    styles={{
-                      body: { padding: antToken.padding }
-                    }}
-                    style={{
-                      background: `${antToken.colorPrimaryBg}`,
-                      borderColor: antToken.colorBorder,
-                      borderRadius: antToken.borderRadiusLG,
-                    }}
+    <Card>
+      <CardContent sx={{ p: 3 }}>
+        <Stack spacing={3} width="100%">
+          {/* Header */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            <TrendingUp size={18} />
+            <Typography variant="h6">Статистика</Typography>
+          </Stack>
+
+          {/* Main Stats Grid */}
+          <Grid container spacing={2}>
+            {statsConfig.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <Grid size={{ xs: 6, sm: 6, md: 3 }} key={stat.title}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
-                    <Statistic
-                      title={
-                        <span style={{
-                          fontSize: antToken.fontSizeSM,
-                          color: antToken.colorTextSecondary
-                        }}>
-                          {stat.title}
-                        </span>
-                      }
-                      value={stat.value}
-                      prefix={
-                        <Icon
-                          size={16}
-                          style={{ color: stat.color }}
-                        />
-                      }
-                      valueStyle={{
-                        fontSize: antToken.fontSizeHeading3,
-                        fontWeight: 'bold',
-                        color: antToken.colorText
+                    <Card
+                      sx={{
+                        height: "100%",
+                        background: theme.palette.background.paper,
+                        borderColor: theme.palette.divider,
+                        cursor: "pointer",
+                        transition: "all 0.3s",
+                        "&:hover": {
+                          boxShadow: `0 4px 12px ${theme.palette.primary.main}40`,
+                          transform: "translateY(-2px)",
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ p: 2 }}>
+                        <Stack spacing={1}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontSize: "0.8125rem" }}
+                          >
+                            {stat.title}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Icon size={16} style={{ color: stat.color }} />
+                            <Typography
+                              variant="h4"
+                              sx={{
+                                fontWeight: "bold",
+                                color: "text.primary",
+                              }}
+                            >
+                              {stat.value}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              );
+            })}
+          </Grid>
+
+          {/* Additional Stats */}
+          <Grid container spacing={2}>
+            {/* Rating */}
+            <Grid size={{ xs: 24, sm: 8 }}>
+              <Card
+                sx={{
+                  height: "100%",
+                  background: theme.palette.background.paper,
+                  borderColor: theme.palette.divider,
+                }}
+              >
+                <CardContent sx={{ p: 2 }}>
+                  <Stack spacing={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.8125rem" }}
+                    >
+                      Рейтинг
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Star size={16} style={{ color: "#fbbf24", fill: "#fbbf24" }} />
+                      <Typography variant="h5" fontWeight="bold">
+                        {stats.average_rating.toFixed(1)}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Success Rate */}
+            <Grid size={{ xs: 24, sm: 8 }}>
+              <Card
+                sx={{
+                  height: "100%",
+                  background: theme.palette.background.paper,
+                  borderColor: theme.palette.divider,
+                }}
+              >
+                <CardContent sx={{ p: 2 }}>
+                  <Stack spacing={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.8125rem" }}
+                    >
+                      {userRole === "client" ? "Завершено" : "Принято"}
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      color="success.main"
+                    >
+                      {successRate}%
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Number(successRate)}
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: theme.palette.background.default,
+                        "& .MuiLinearProgress-bar": {
+                          background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.success.main} 100%)`,
+                        },
                       }}
                     />
-                  </Card>
-                </motion.div>
-              </Col>
-            );
-          })}
-        </Row>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
 
-        {/* Additional Stats */}
-        <Row gutter={[antToken.margin, antToken.margin]}>
-          {/* Rating */}
-          <Col xs={24} sm={8}>
-            <Card
-              styles={{
-                body: { padding: antToken.padding }
-              }}
-              style={{
-                background: `${antToken.colorPrimaryBg}`,
-                borderColor: antToken.colorBorder,
-                borderRadius: antToken.borderRadiusLG,
-              }}
-            >
-              <Statistic
-                title={
-                  <span style={{
-                    fontSize: antToken.fontSizeSM,
-                    color: antToken.colorTextSecondary
-                  }}>
-                    Рейтинг
-                  </span>
-                }
-                value={stats.average_rating.toFixed(1)}
-                prefix={
-                  <Space size={4}>
-                    <Star size={16} style={{ color: '#fbbf24', fill: '#fbbf24' }} />
-                  </Space>
-                }
-                valueStyle={{
-                  fontSize: antToken.fontSizeHeading4,
-                  fontWeight: 'bold',
-                  color: antToken.colorText
+            {/* Balance */}
+            <Grid size={{ xs: 24, sm: 8 }}>
+              <Card
+                sx={{
+                  height: "100%",
+                  background: theme.palette.background.paper,
+                  borderColor: theme.palette.divider,
                 }}
-              />
-            </Card>
-          </Col>
-
-          {/* Success Rate */}
-          <Col xs={24} sm={8}>
-            <Card
-              styles={{
-                body: { padding: antToken.padding }
-              }}
-              style={{
-                background: `${antToken.colorPrimaryBg}`,
-                borderColor: antToken.colorBorder,
-                borderRadius: antToken.borderRadiusLG,
-              }}
-            >
-              <Statistic
-                title={
-                  <span style={{
-                    fontSize: antToken.fontSizeSM,
-                    color: antToken.colorTextSecondary
-                  }}>
-                    {userRole === "client" ? "Завершено" : "Принято"}
-                  </span>
-                }
-                value={successRate}
-                suffix="%"
-                valueStyle={{
-                  fontSize: antToken.fontSizeHeading4,
-                  fontWeight: 'bold',
-                  color: antToken.colorSuccess
-                }}
-              />
-              <Progress
-                percent={Number(successRate)}
-                strokeColor={{
-                  "0%": antToken.colorPrimary,
-                  "100%": antToken.colorSuccess,
-                }}
-                trailColor={antToken.colorBgContainer}
-                showInfo={false}
-                size="small"
-                style={{ marginTop: antToken.marginXS }}
-              />
-            </Card>
-          </Col>
-
-          {/* Balance */}
-          <Col xs={24} sm={8}>
-            <Card
-              styles={{
-                body: { padding: antToken.padding }
-              }}
-              style={{
-                background: `${antToken.colorPrimaryBg}`,
-                borderColor: antToken.colorBorder,
-                borderRadius: antToken.borderRadiusLG,
-              }}
-            >
-              <Statistic
-                title={
-                  <span style={{
-                    fontSize: antToken.fontSizeSM,
-                    color: antToken.colorTextSecondary
-                  }}>
-                    Баланс
-                  </span>
-                }
-                value={formatCurrency(stats.balance)}
-                prefix={<Wallet size={14} />}
-                valueStyle={{
-                  fontSize: antToken.fontSizeHeading4,
-                  fontWeight: 'bold',
-                  color: antToken.colorText
-                }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      </Space>
+              >
+                <CardContent sx={{ p: 2 }}>
+                  <Stack spacing={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.8125rem" }}
+                    >
+                      Баланс
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Wallet size={14} />
+                      <Typography variant="h5" fontWeight="bold">
+                        {formatCurrency(stats.balance)}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Stack>
+      </CardContent>
     </Card>
   );
 }

@@ -6,9 +6,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Layout } from "antd";
-
-const { Content } = Layout;
+import { Box } from "@mui/material";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -16,9 +14,15 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content>{children}</Content>
-    </Layout>
+    <Box
+      component="main"
+      sx={{
+        minHeight: "100vh",
+        backgroundColor: "transparent",
+      }}
+    >
+      {children}
+    </Box>
   );
 }
 

@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Button, Space, Typography, Steps } from "antd";
+import { Card, CardContent, Button, Stack, Typography, Box, IconButton, useTheme } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-
-const { Text, Paragraph } = Typography;
 import {
   Bot,
   Sparkles,
@@ -157,6 +155,8 @@ export function AIGuide({ userRole }: AIGuideProps) {
     }
   };
 
+  const theme = useTheme();
+
   if (isMinimized) {
     return (
       <motion.div
@@ -164,38 +164,37 @@ export function AIGuide({ userRole }: AIGuideProps) {
         animate={{ scale: 1, opacity: 1 }}
       >
         <Card
-          hoverable
           onClick={() => setIsMinimized(false)}
-          style={{ cursor: 'pointer' }}
+          sx={{ cursor: 'pointer', '&:hover': { boxShadow: 2 } }}
         >
-          <Space>
-            <div className="relative">
-              <Bot size={20} style={{ color: 'var(--primary)' }} />
-              <motion.div
-                className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
-                animate={{
-                  scale: [1, 1.3, 1],
-                  opacity: [1, 0.6, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <Text strong style={{ fontSize: '14px' }}>AI Гид</Text>
-              <div>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  {steps[currentStep]?.title || "Начните работу"}
-                </Text>
+          <CardContent>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <div className="relative">
+                <Bot size={20} style={{ color: 'var(--primary)' }} />
+                <motion.div
+                  className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [1, 0.6, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
               </div>
-            </div>
-            <Button type="text" size="small">
-              Развернуть
-            </Button>
-          </Space>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" fontWeight="bold">AI Гид</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {steps[currentStep]?.title || "Начните работу"}
+                </Typography>
+              </Box>
+              <Button variant="text" size="small">
+                Развернуть
+              </Button>
+            </Box>
+          </CardContent>
         </Card>
       </motion.div>
     );
@@ -209,181 +208,203 @@ export function AIGuide({ userRole }: AIGuideProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card
-        title={
-          <Space>
-            <div className="relative">
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, var(--primary-12) 0%, rgba(139, 92, 246, 0.2) 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Bot size={24} style={{ color: 'var(--primary)' }} />
+      <Card>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <div className="relative">
+                <Box sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 1.5,
+                  background: 'linear-gradient(135deg, var(--primary-12) 0%, rgba(139, 92, 246, 0.2) 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Bot size={24} style={{ color: 'var(--primary)' }} />
+                </Box>
+                <motion.div
+                  className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [1, 0.6, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
               </div>
-              <motion.div
-                className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
-                animate={{
-                  scale: [1, 1.3, 1],
-                  opacity: [1, 0.6, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            </div>
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold' }}>AI Гид</div>
-              <div style={{ fontSize: '12px', opacity: 0.7 }}>Ваш персональный помощник</div>
-            </div>
-          </Space>
-        }
-        extra={
-          <Button
-            type="text"
-            size="small"
-            icon={<X size={16} />}
-            onClick={() => setIsMinimized(true)}
-          />
-        }
-      >
+              <Box>
+                <Typography variant="h6">AI Гид</Typography>
+                <Typography variant="caption" sx={{ opacity: 0.7 }}>Ваш персональный помощник</Typography>
+              </Box>
+            </Box>
+            <IconButton
+              size="small"
+              onClick={() => setIsMinimized(true)}
+            >
+              <X size={16} />
+            </IconButton>
+          </Box>
 
-        {/* AI Message */}
-        {aiMessage && (
-          <Card
-            size="small"
-            style={{
-              marginBottom: 24,
-              background: 'var(--primary-06)',
-              borderColor: 'var(--primary-18)',
-            }}
-          >
-            <Space>
-              <Bot size={18} style={{ color: 'var(--primary)' }} />
-              <Text style={{ fontSize: '14px' }}>
-                {aiMessage}
-              </Text>
-            </Space>
-          </Card>
-        )}
+          {/* AI Message */}
+          {aiMessage && (
+            <Card
+              sx={{
+                mb: 3,
+                bgcolor: 'var(--primary-06)',
+                borderColor: 'var(--primary-18)',
+              }}
+            >
+              <CardContent sx={{ p: 1.5 }}>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Bot size={18} style={{ color: 'var(--primary)' }} />
+                  <Typography variant="body2">
+                    {aiMessage}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Steps Progress */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">
-              Шаг {currentStep + 1} из {steps.length}
-            </span>
-            <div className="flex gap-1">
-              {steps.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === currentStep
-                      ? "bg-primary w-6"
-                      : index < currentStep
-                      ? "bg-primary/50"
-                      : "bg-border"
-                  }`}
+          {/* Steps Progress */}
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" fontWeight="medium">
+                Шаг {currentStep + 1} из {steps.length}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {steps.map((_, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      width: index === currentStep ? 24 : 8,
+                      height: 8,
+                      borderRadius: 1,
+                      bgcolor: index === currentStep
+                        ? 'primary.main'
+                        : index < currentStep
+                        ? 'primary.light'
+                        : 'action.disabled',
+                      transition: 'all 0.3s',
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            <AnimatePresence mode="wait">
+              {activeStep && (
+                <motion.div
+                  key={activeStep.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <Stack spacing={2}>
+                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                      <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1.5,
+                        bgcolor: 'primary.main',
+                        opacity: 0.1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        {activeStep.completed ? (
+                          <CheckCircle size={20} className="text-green-400" />
+                        ) : (
+                          <Target size={20} className="text-primary" />
+                        )}
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight="bold" sx={{ mb: 0.5 }}>
+                          {activeStep.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {activeStep.description}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {activeStep.action && (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Link href={activeStep.action.href} style={{ flex: 1, textDecoration: 'none' }}>
+                          <Button
+                            variant="contained"
+                            fullWidth
+                            startIcon={<Wand2 size={16} />}
+                            onClick={() => handleStepComplete(activeStep.id)}
+                          >
+                            {activeStep.action.label}
+                          </Button>
+                        </Link>
+                        {!activeStep.completed && (
+                          <Button
+                            variant="outlined"
+                            startIcon={<CheckCircle size={16} />}
+                            onClick={() => handleStepComplete(activeStep.id)}
+                          >
+                            Пропустить
+                          </Button>
+                        )}
+                      </Box>
+                    )}
+                  </Stack>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Box>
+
+          {/* Navigation */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid var(--primary-12)' }}>
+            <Button
+              size="small"
+              startIcon={<ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} />}
+              onClick={prevStep}
+              disabled={currentStep === 0}
+            >
+              Назад
+            </Button>
+
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              {steps.map((step, index) => (
+                <Box
+                  key={step.id}
+                  component="button"
+                  onClick={() => setCurrentStep(index)}
+                  sx={{
+                    width: index === currentStep ? 24 : 8,
+                    height: 8,
+                    borderRadius: 0.5,
+                    border: 'none',
+                    bgcolor: index === currentStep ? 'primary.main' : 'var(--primary-18)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      opacity: 0.8,
+                    }
+                  }}
                 />
               ))}
-            </div>
-          </div>
+            </Box>
 
-          <AnimatePresence mode="wait">
-            {activeStep && (
-              <motion.div
-                key={activeStep.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    {activeStep.completed ? (
-                      <CheckCircle size={20} className="text-green-400" />
-                    ) : (
-                      <Target size={20} className="text-primary" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                      <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>{activeStep.title}</Text>
-                      <Text type="secondary" style={{ fontSize: '13px' }}>
-                        {activeStep.description}
-                      </Text>
-                  </div>
-                </div>
-
-                {activeStep.action && (
-                  <Space style={{ width: '100%' }}>
-                    <Link href={activeStep.action.href} style={{ flex: 1 }}>
-                      <Button
-                        type="primary"
-                        block
-                        icon={<Wand2 size={16} />}
-                        onClick={() => handleStepComplete(activeStep.id)}
-                      >
-                        {activeStep.action.label}
-                      </Button>
-                    </Link>
-                    {!activeStep.completed && (
-                      <Button
-                        icon={<CheckCircle size={16} />}
-                        onClick={() => handleStepComplete(activeStep.id)}
-                      >
-                        Пропустить
-                      </Button>
-                    )}
-                  </Space>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Navigation */}
-        <Space style={{ width: '100%', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid var(--primary-12)' }}>
-          <Button
-            size="small"
-            icon={<ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} />}
-            onClick={prevStep}
-            disabled={currentStep === 0}
-          >
-            Назад
-          </Button>
-
-          <Space>
-            {steps.map((step, index) => (
-              <button
-                key={step.id}
-                onClick={() => setCurrentStep(index)}
-                style={{
-                  width: index === currentStep ? '24px' : '8px',
-                  height: '8px',
-                  borderRadius: '4px',
-                  border: 'none',
-                  background: index === currentStep ? 'var(--primary)' : 'var(--primary-18)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                }}
-              />
-            ))}
-          </Space>
-
-          <Button
-            size="small"
-            icon={<ArrowRight size={16} />}
-            onClick={nextStep}
-            disabled={currentStep === steps.length - 1}
-          >
-            Далее
-          </Button>
-        </Space>
+            <Button
+              size="small"
+              endIcon={<ArrowRight size={16} />}
+              onClick={nextStep}
+              disabled={currentStep === steps.length - 1}
+            >
+              Далее
+            </Button>
+          </Box>
+        </CardContent>
       </Card>
     </motion.div>
   );

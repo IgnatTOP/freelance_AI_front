@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Typography, Card, Skeleton, Empty, Input, Space } from "antd";
+import { Typography, Card, Skeleton, TextField, Box, InputAdornment } from "@mui/material";
 import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { ConversationCard } from "./ConversationCard";
@@ -9,8 +9,6 @@ import { getMyConversations } from "@/src/shared/api/conversations";
 import { useAuth } from "@/src/shared/lib/hooks/useAuth";
 import { websocketService } from "@/src/shared/lib/notifications/websocket.service";
 import type { ConversationListItem } from "@/src/entities/conversation/model/types";
-
-const { Title, Text } = Typography;
 
 export function MessageListFeature() {
   const { loading: authLoading } = useAuth();
@@ -34,7 +32,7 @@ export function MessageListFeature() {
   useEffect(() => {
     if (!authLoading) {
       loadConversations();
-      
+
       // Подключаемся к WebSocket для обновлений в реальном времени
       const connectWebSocket = async () => {
         try {
@@ -55,7 +53,7 @@ export function MessageListFeature() {
           setConversations((prev) => {
             const conversationId = chatData.conversation.id;
             const existingIndex = prev.findIndex((c) => c.id === conversationId);
-            
+
             if (existingIndex >= 0) {
               // Обновляем существующий чат
               const updated = [...prev];
@@ -85,7 +83,6 @@ export function MessageListFeature() {
     }
   }, [authLoading, loadConversations]);
 
-
   const filteredConversations = conversations.filter((conv) => {
     if (!search) return true;
     const searchLower = search.toLowerCase();
@@ -103,45 +100,60 @@ export function MessageListFeature() {
       transition={{ duration: 0.4 }}
     >
       {/* Header */}
-      <div className="mb-6">
-        <Title level={2} className="mb-0">Сообщения</Title>
-        <Text className="text-foreground-tertiary">
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: "bold", mb: 0.5 }}>
+          Сообщения
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.6 }}>
           Общайтесь с заказчиками и исполнителями
-        </Text>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Search */}
-      <Card className="mb-6">
-        <Input
+      <Card sx={{ mb: 3, p: 2 }}>
+        <TextField
+          fullWidth
           placeholder="Поиск по сообщениям..."
-          size="large"
-          prefix={<Search size={18} />}
+          size="medium"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          allowClear
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={18} />
+              </InputAdornment>
+            ),
+          }}
+          variant="outlined"
         />
       </Card>
 
       {/* Conversations List */}
       {loading ? (
-        <div className="space-y-4">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} active paragraph={{ rows: 2 }} />
+            <Skeleton key={i} variant="rectangular" height={100} />
           ))}
-        </div>
+        </Box>
       ) : filteredConversations.length === 0 ? (
-        <Card>
-          <Empty
-            description={search ? "Не найдено по запросу" : "Нет сообщений"}
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
+        <Card sx={{ p: 4 }}>
+          <Box sx={{ textAlign: "center" }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {search ? "Не найдено по запросу" : "Нет сообщений"}
+            </Typography>
+            {!search && (
+              <Typography variant="body2" sx={{ opacity: 0.6 }}>
+                Начните новый диалог с другим пользователем
+              </Typography>
+            )}
+          </Box>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {filteredConversations.map((conversation) => (
             <ConversationCard key={conversation.id} conversation={conversation} />
           ))}
-        </div>
+        </Box>
       )}
     </motion.div>
   );
