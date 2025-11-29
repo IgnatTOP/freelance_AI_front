@@ -1,21 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Layout, Card, Form, Input, Button, Typography, Space } from "antd";
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Stack,
+  InputAdornment,
+  useTheme,
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { Mail, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft, KeyRound } from "lucide-react";
 import Link from "next/link";
-
-const { Content } = Layout;
-const { Title, Text } = Typography;
+import { motion } from "framer-motion";
 
 export default function ForgotPasswordPage() {
+  const theme = useTheme();
   const router = useRouter();
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
 
-  const handleSubmit = async (values: { email: string }) => {
+  const validateEmail = (email: string) => {
+    if (!email) {
+      setEmailError("Введите email");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Введите корректный email");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!validateEmail(email)) {
+      return;
+    }
+
     try {
       setLoading(true);
       // TODO: Implement password reset API call
@@ -32,72 +61,137 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content
-        style={{
+    <Box sx={{ minHeight: "100vh", background: "transparent" }}>
+      <Box
+        sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "24px",
+          minHeight: "100vh",
+          padding: { xs: "24px", md: "40px 24px" },
         }}
       >
-        <Card
-          style={{
-            width: "100%",
-            maxWidth: "400px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          }}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          style={{ width: "100%", maxWidth: 480 }}
         >
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
-            <div>
-              <Title level={2} style={{ marginBottom: 8 }}>
-                Восстановление пароля
-              </Title>
-              <Text type="secondary">
-                Введите email, и мы отправим вам инструкции по восстановлению пароля
-              </Text>
-            </div>
-
-            <Form form={form} layout="vertical" onFinish={handleSubmit}>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: "Введите email" },
-                  { type: "email", message: "Введите корректный email" },
-                ]}
+          <Stack spacing={4}>
+            {/* Header */}
+            <Box sx={{ textAlign: "center" }}>
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: theme.shape.borderRadius * 2,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
               >
-                <Input
-                  prefix={<Mail size={16} />}
-                  placeholder="your@email.com"
-                  size="large"
-                />
-              </Form.Item>
+                <KeyRound size={32} strokeWidth={2} style={{ color: "#fff" }} />
+              </motion.div>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{ fontWeight: 600, mb: 1 }}
+              >
+                Восстановление пароля
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Введите email, и мы отправим вам инструкции по восстановлению пароля
+              </Typography>
+            </Box>
 
-              <Form.Item>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  size="large"
-                  block
-                >
-                  Отправить инструкции
-                </Button>
-              </Form.Item>
-            </Form>
+            {/* Form Card */}
+            <Card
+              sx={{
+                borderRadius: 2,
+                borderColor: theme.palette.divider,
+              }}
+            >
+              <CardContent sx={{ p: 4 }}>
+                <form onSubmit={handleSubmit}>
+                  <Stack spacing={3}>
+                    {/* Email Field */}
+                    <TextField
+                      label="Email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setEmailError("");
+                      }}
+                      onBlur={() => validateEmail(email)}
+                      error={!!emailError}
+                      helperText={emailError}
+                      disabled={loading}
+                      placeholder="your@email.com"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Mail size={16} style={{ color: theme.palette.text.secondary }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      fullWidth
+                      required
+                      autoFocus
+                    />
 
-            <div style={{ textAlign: "center" }}>
-              <Link href="/auth/login">
-                <Button type="link" icon={<ArrowLeft size={16} />}>
-                  Вернуться к входу
-                </Button>
-              </Link>
-            </div>
-          </Space>
-        </Card>
-      </Content>
-    </Layout>
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      disabled={loading}
+                      fullWidth
+                      sx={{
+                        height: 48,
+                        fontSize: 16,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {loading ? "Отправка..." : "Отправить инструкции"}
+                    </Button>
+
+                    {/* Back to Login Link */}
+                    <Box
+                      sx={{
+                        pt: 3,
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                        textAlign: "center",
+                      }}
+                    >
+                      <Link href="/auth/login" style={{ textDecoration: "none" }}>
+                        <Button
+                          variant="text"
+                          startIcon={<ArrowLeft size={16} />}
+                          sx={{
+                            color: theme.palette.text.secondary,
+                            "&:hover": {
+                              color: theme.palette.primary.main,
+                            },
+                          }}
+                        >
+                          Вернуться к входу
+                        </Button>
+                      </Link>
+                    </Box>
+                  </Stack>
+                </form>
+              </CardContent>
+            </Card>
+          </Stack>
+        </motion.div>
+      </Box>
+    </Box>
   );
 }
 
