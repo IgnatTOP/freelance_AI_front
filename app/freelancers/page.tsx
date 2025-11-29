@@ -2,15 +2,26 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Layout, Card, Row, Col, Input, Avatar, Typography, Space, Button, Skeleton, Empty } from "antd";
+import {
+  Box,
+  Container,
+  Card,
+  CardContent,
+  Grid,
+  TextField,
+  Avatar,
+  Typography,
+  Stack,
+  Button,
+  Skeleton,
+  InputAdornment,
+  Chip
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { Search, User, Star, Briefcase, MapPin } from "lucide-react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
 import api from "@/src/shared/lib/api/axios";
-
-const { Content } = Layout;
-const { Title, Text } = Typography;
 
 interface Freelancer {
   id: string;
@@ -116,170 +127,232 @@ function FreelancersPageContent() {
   });
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div>
-            <Title level={2}>Фрилансеры</Title>
-            <Text type="secondary">Найдите подходящего исполнителя для вашего проекта</Text>
-          </div>
+    <Box sx={{ minHeight: "100vh" }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          py: { xs: 2, md: 3 },
+          px: { xs: 2, md: 3 }
+        }}
+      >
+        <Stack spacing={{ xs: 2, md: 3 }}>
+          <Box>
+            <Typography variant="h4" component="h2" gutterBottom sx={{ fontSize: { xs: "1.5rem", md: "2.125rem" } }}>
+              Фрилансеры
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Найдите подходящего исполнителя для вашего проекта
+            </Typography>
+          </Box>
 
-          <Input
-            size="large"
+          <TextField
+            fullWidth
             placeholder="Поиск по имени, навыкам или описанию..."
-            prefix={<Search size={18} />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ maxWidth: "600px" }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ maxWidth: { xs: "100%", md: "600px" } }}
           />
 
           {loading ? (
-            <Row gutter={[16, 16]}>
+            <Grid container spacing={2}>
               {[1, 2, 3, 4].map((i) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={i}>
+                <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
                   <Card>
-                    <Skeleton active avatar paragraph={{ rows: 2 }} />
+                    <CardContent>
+                      <Stack spacing={1} alignItems="center">
+                        <Skeleton variant="circular" width={64} height={64} />
+                        <Skeleton variant="text" width="80%" />
+                        <Skeleton variant="text" width="60%" />
+                        <Skeleton variant="rectangular" height={60} width="100%" />
+                      </Stack>
+                    </CardContent>
                   </Card>
-                </Col>
+                </Grid>
               ))}
-            </Row>
+            </Grid>
           ) : filteredFreelancers.length === 0 ? (
-            <Empty
-              description="Фрилансеры не найдены"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <Typography variant="body1" color="text.secondary">
+                Фрилансеры не найдены
+              </Typography>
+            </Box>
           ) : (
-            <Row gutter={[16, 16]}>
+            <Grid container spacing={2}>
               {filteredFreelancers.map((freelancer) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={freelancer.id}>
-                  <Link href={`/users/${freelancer.id}`}>
+                <Grid item xs={12} sm={6} md={4} lg={3} key={freelancer.id}>
+                  <Link href={`/users/${freelancer.id}`} style={{ textDecoration: "none" }}>
                     <Card
-                      hoverable
-                      style={{ height: "100%" }}
-                      actions={[
-                        <Button type="link" key="view">
-                          Посмотреть профиль
-                        </Button>,
-                      ]}
+                      sx={{
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        transition: "transform 0.2s, box-shadow 0.2s",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          boxShadow: 4,
+                        },
+                      }}
                     >
-                      <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                        <div style={{ textAlign: "center" }}>
-                          <Avatar
-                            size={64}
-                            style={{
-                              background: "var(--primary-06)",
-                              color: "var(--primary)",
-                              fontSize: 24,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {(freelancer.display_name || freelancer.username)?.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Title level={4} style={{ marginTop: 12, marginBottom: 4 }}>
-                            {freelancer.display_name || freelancer.username}
-                          </Title>
-                          <Text type="secondary">@{freelancer.username}</Text>
-                        </div>
+                      <CardContent sx={{ flexGrow: 1 }}>
+                        <Stack spacing={2}>
+                          <Box sx={{ textAlign: "center" }}>
+                            <Avatar
+                              sx={{
+                                width: 64,
+                                height: 64,
+                                bgcolor: "primary.light",
+                                color: "primary.main",
+                                fontSize: 24,
+                                fontWeight: 600,
+                                mx: "auto",
+                              }}
+                            >
+                              {(freelancer.display_name || freelancer.username)?.charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Typography
+                              variant="h6"
+                              component="h4"
+                              sx={{ mt: 1.5, mb: 0.5, fontSize: { xs: "1rem", md: "1.25rem" } }}
+                            >
+                              {freelancer.display_name || freelancer.username}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              @{freelancer.username}
+                            </Typography>
+                          </Box>
 
-                        {freelancer.profile?.bio && (
-                          <Text
-                            type="secondary"
-                            ellipsis
-                            style={{ 
-                              fontSize: 12, 
-                              display: "-webkit-box", 
-                              WebkitLineClamp: 2, 
-                              WebkitBoxOrient: "vertical", 
-                              overflow: "hidden",
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word"
-                            }}
-                          >
-                            {freelancer.profile.bio}
-                          </Text>
-                        )}
+                          {freelancer.profile?.bio && (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{
+                                fontSize: 12,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {freelancer.profile.bio}
+                            </Typography>
+                          )}
 
-                        <Space direction="vertical" size="small" style={{ width: "100%" }}>
-                          {freelancer.profile?.experience_level && (
-                            <Space size="small">
-                              <Briefcase size={14} />
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {freelancer.profile.experience_level}
-                              </Text>
-                            </Space>
-                          )}
-                          {freelancer.profile?.location && (
-                            <Space size="small">
-                              <MapPin size={14} />
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {freelancer.profile.location}
-                              </Text>
-                            </Space>
-                          )}
-                          {freelancer.profile?.rating && (
-                            <Space size="small">
-                              <Star size={14} fill="#ffc107" color="#ffc107" />
-                              <Text style={{ fontSize: 12 }}>
-                                {freelancer.profile.rating.toFixed(1)}
-                              </Text>
-                            </Space>
-                          )}
-                        </Space>
-
-                        {freelancer.profile?.skills && freelancer.profile.skills.length > 0 && (
-                          <div>
-                            {freelancer.profile.skills.slice(0, 3).map((skill, idx) => (
-                              <span
-                                key={idx}
-                                style={{
-                                  display: "inline-block",
-                                  padding: "2px 8px",
-                                  margin: "2px",
-                                  background: "var(--primary-06)",
-                                  borderRadius: "4px",
-                                  fontSize: 11,
-                                  color: "var(--primary)",
-                                }}
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                            {freelancer.profile.skills.length > 3 && (
-                              <Text type="secondary" style={{ fontSize: 11 }}>
-                                +{freelancer.profile.skills.length - 3}
-                              </Text>
+                          <Stack spacing={0.5}>
+                            {freelancer.profile?.experience_level && (
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                <Briefcase size={14} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+                                  {freelancer.profile.experience_level}
+                                </Typography>
+                              </Stack>
                             )}
-                          </div>
-                        )}
-                      </Space>
+                            {freelancer.profile?.location && (
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                <MapPin size={14} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+                                  {freelancer.profile.location}
+                                </Typography>
+                              </Stack>
+                            )}
+                            {freelancer.profile?.rating && (
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                <Star size={14} fill="#ffc107" color="#ffc107" />
+                                <Typography variant="body2" sx={{ fontSize: 12 }}>
+                                  {freelancer.profile.rating.toFixed(1)}
+                                </Typography>
+                              </Stack>
+                            )}
+                          </Stack>
+
+                          {freelancer.profile?.skills && freelancer.profile.skills.length > 0 && (
+                            <Box>
+                              {freelancer.profile.skills.slice(0, 3).map((skill, idx) => (
+                                <Chip
+                                  key={idx}
+                                  label={skill}
+                                  size="small"
+                                  sx={{
+                                    m: 0.25,
+                                    height: "auto",
+                                    py: 0.25,
+                                    fontSize: 11,
+                                    bgcolor: "primary.light",
+                                    color: "primary.main",
+                                  }}
+                                />
+                              ))}
+                              {freelancer.profile.skills.length > 3 && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ ml: 0.5, fontSize: 11 }}
+                                >
+                                  +{freelancer.profile.skills.length - 3}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+                        </Stack>
+                      </CardContent>
+                      <Box sx={{ p: 2, pt: 0 }}>
+                        <Button
+                          fullWidth
+                          variant="text"
+                          sx={{ minHeight: 44 }}
+                        >
+                          Посмотреть профиль
+                        </Button>
+                      </Box>
                     </Card>
                   </Link>
-                </Col>
+                </Grid>
               ))}
-            </Row>
+            </Grid>
           )}
-        </Space>
-      </Content>
-    </Layout>
+        </Stack>
+      </Container>
+    </Box>
   );
 }
 
 export default function FreelancersPage() {
   return (
     <Suspense fallback={
-      <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-        <Content style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-          <Row gutter={[16, 16]}>
+      <Box sx={{ minHeight: "100vh" }}>
+        <Container
+          maxWidth="xl"
+          sx={{
+            py: { xs: 2, md: 3 },
+            px: { xs: 2, md: 3 }
+          }}
+        >
+          <Grid container spacing={2}>
             {[1, 2, 3, 4].map((i) => (
-              <Col xs={24} sm={12} md={8} lg={6} key={i}>
+              <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
                 <Card>
-                  <Skeleton active avatar paragraph={{ rows: 2 }} />
+                  <CardContent>
+                    <Stack spacing={1} alignItems="center">
+                      <Skeleton variant="circular" width={64} height={64} />
+                      <Skeleton variant="text" width="80%" />
+                      <Skeleton variant="text" width="60%" />
+                      <Skeleton variant="rectangular" height={60} width="100%" />
+                    </Stack>
+                  </CardContent>
                 </Card>
-              </Col>
+              </Grid>
             ))}
-          </Row>
-        </Content>
-      </Layout>
+          </Grid>
+        </Container>
+      </Box>
     }>
       <FreelancersPageContent />
     </Suspense>

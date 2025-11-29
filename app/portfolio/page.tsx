@@ -1,23 +1,27 @@
 "use client";
 
-import { Layout } from "antd";
+import { Box, Container } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { PortfolioList } from "@/src/features/portfolio/portfolio-list/ui/PortfolioList";
-
-const { Content } = Layout;
 
 export default function PortfolioPage() {
   const router = useRouter();
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+    <Box sx={{ minHeight: "100vh" }}>
+      <Container
+        maxWidth="lg"
+        sx={{
+          py: { xs: 2, md: 3 },
+          px: { xs: 2, md: 3 }
+        }}
+      >
         <PortfolioList
           onCreateNew={() => router.push("/portfolio/create")}
           onEdit={(id) => router.push(`/portfolio/${id}/edit`)}
         />
-      </Content>
-    </Layout>
+      </Container>
+    </Box>
   );
 }
 

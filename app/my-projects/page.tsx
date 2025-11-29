@@ -2,16 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Layout, Card, Row, Col, Typography, Space, Empty, Tag, Button } from "antd";
+import {
+  Box,
+  Container,
+  Card,
+  CardContent,
+  CardActions,
+  Grid,
+  Typography,
+  Stack,
+  Chip,
+  Button
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { FileText, Clock, CheckCircle2, MessageSquare, DollarSign } from "lucide-react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
 import type { Order } from "@/src/entities/order/model/types";
 import { formatPriceRange } from "@/src/shared/lib/utils";
-
-const { Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
 
 export default function MyProjectsPage() {
   const router = useRouter();
@@ -70,10 +78,10 @@ export default function MyProjectsPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): "info" | "success" | "default" => {
     switch (status) {
       case "in_progress":
-        return "processing";
+        return "info";
       case "completed":
         return "success";
       default:
@@ -93,94 +101,126 @@ export default function MyProjectsPage() {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div>
-            <Title level={2}>Мои проекты</Title>
-            <Text type="secondary">Активные заказы, над которыми вы работаете</Text>
-          </div>
+    <Box sx={{ minHeight: "100vh" }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          py: { xs: 2, md: 3 },
+          px: { xs: 2, md: 3 }
+        }}
+      >
+        <Stack spacing={{ xs: 2, md: 3 }}>
+          <Box>
+            <Typography variant="h4" component="h2" gutterBottom sx={{ fontSize: { xs: "1.5rem", md: "2.125rem" } }}>
+              Мои проекты
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Активные заказы, над которыми вы работаете
+            </Typography>
+          </Box>
 
           {loading ? (
             <Card>
-              <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                <Text>Загрузка...</Text>
-              </Space>
+              <CardContent>
+                <Typography>Загрузка...</Typography>
+              </CardContent>
             </Card>
           ) : orders.length === 0 ? (
-            <Empty
-              description="У вас пока нет активных проектов"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            >
-              <Link href="/orders">
-                <Button type="primary">Найти заказы</Button>
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <Typography variant="body1" color="text.secondary" gutterBottom>
+                У вас пока нет активных проектов
+              </Typography>
+              <Link href="/orders" style={{ textDecoration: "none" }}>
+                <Button variant="contained" sx={{ mt: 2, minHeight: 44 }}>
+                  Найти заказы
+                </Button>
               </Link>
-            </Empty>
+            </Box>
           ) : (
-            <Row gutter={[16, 16]}>
+            <Grid container spacing={2}>
               {orders.map((order) => (
-                <Col xs={24} key={order.id}>
-                  <Link href={`/orders/${order.id}`}>
-                    <Card
-                      hoverable
-                      actions={[
-                        <Link key="view" href={`/orders/${order.id}`}>
-                          <Button type="link">Открыть</Button>
-                        </Link>,
-                        <Link key="chat" href={`/messages?order=${order.id}`}>
-                          <Button type="link" icon={<MessageSquare size={16} />}>
-                            Чат
-                          </Button>
-                        </Link>,
-                      ]}
-                    >
-                      <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                          <div style={{ flex: 1 }}>
-                            <Title level={4} style={{ marginBottom: 8 }}>
+                <Grid item xs={12} key={order.id}>
+                  <Card
+                    sx={{
+                      transition: "transform 0.2s, box-shadow 0.2s",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        boxShadow: 4,
+                      },
+                    }}
+                  >
+                    <CardContent>
+                      <Stack spacing={2}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
+                          <Box sx={{ flex: 1, minWidth: { xs: "100%", sm: "auto" } }}>
+                            <Typography
+                              variant="h6"
+                              component="h4"
+                              gutterBottom
+                              sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}
+                            >
                               {order.title}
-                            </Title>
-                            <Paragraph
-                              ellipsis={{ rows: 2, expandable: false }}
-                              type="secondary"
-                              style={{ margin: 0 }}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
                             >
                               {order.description}
-                            </Paragraph>
-                          </div>
-                          <Tag color={getStatusColor(order.status)}>
-                            {getStatusText(order.status)}
-                          </Tag>
-                        </div>
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label={getStatusText(order.status)}
+                            color={getStatusColor(order.status)}
+                            size="small"
+                          />
+                        </Box>
 
-                        <Space>
+                        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                           {(order.budget_min || order.budget_max) && (
-                            <Space size="small">
+                            <Stack direction="row" spacing={0.5} alignItems="center">
                               <DollarSign size={16} />
-                              <Text strong>
+                              <Typography variant="body2" fontWeight="bold">
                                 {formatPriceRange(order.budget_min || 0, order.budget_max || 0)}
-                              </Text>
-                            </Space>
+                              </Typography>
+                            </Stack>
                           )}
                           {order.deadline_at && (
-                            <Space size="small">
+                            <Stack direction="row" spacing={0.5} alignItems="center">
                               <Clock size={16} />
-                              <Text type="secondary">
+                              <Typography variant="body2" color="text.secondary">
                                 До {new Date(order.deadline_at).toLocaleDateString("ru-RU")}
-                              </Text>
-                            </Space>
+                              </Typography>
+                            </Stack>
                           )}
-                        </Space>
-                      </Space>
-                    </Card>
-                  </Link>
-                </Col>
+                        </Stack>
+                      </Stack>
+                    </CardContent>
+                    <CardActions sx={{ px: 2, pb: 2, gap: 1, flexWrap: "wrap" }}>
+                      <Link href={`/orders/${order.id}`} style={{ textDecoration: "none" }}>
+                        <Button variant="text" sx={{ minHeight: 44 }}>
+                          Открыть
+                        </Button>
+                      </Link>
+                      <Link href={`/messages?order=${order.id}`} style={{ textDecoration: "none" }}>
+                        <Button variant="text" startIcon={<MessageSquare size={16} />} sx={{ minHeight: 44 }}>
+                          Чат
+                        </Button>
+                      </Link>
+                    </CardActions>
+                  </Card>
+                </Grid>
               ))}
-            </Row>
+            </Grid>
           )}
-        </Space>
-      </Content>
-    </Layout>
+        </Stack>
+      </Container>
+    </Box>
   );
 }
 
