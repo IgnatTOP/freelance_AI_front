@@ -24,11 +24,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { getOrder, updateOrder } from "@/src/shared/api/orders";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
-import dayjs from "dayjs";
 import type { OrderRequirement, SkillLevel } from "@/src/entities/order/model/types";
-import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import "dayjs/locale/ru";
 
 const COMMON_SKILLS = [
   "JavaScript", "TypeScript", "React", "Vue.js", "Angular", "Node.js",
@@ -55,7 +51,7 @@ export default function EditOrderPage() {
   const [description, setDescription] = useState("");
   const [budgetMin, setBudgetMin] = useState<number | "">("");
   const [budgetMax, setBudgetMax] = useState<number | "">("");
-  const [deadline, setDeadline] = useState<dayjs.Dayjs | null>(null);
+  const [deadline, setDeadline] = useState("");
   const [status, setStatus] = useState("published");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -88,7 +84,12 @@ export default function EditOrderPage() {
       setDescription(order.description);
       setBudgetMin(order.budget_min || "");
       setBudgetMax(order.budget_max || "");
-      setDeadline(order.deadline_at ? dayjs(order.deadline_at) : null);
+      // Convert ISO datetime to datetime-local format (YYYY-MM-DDTHH:mm)
+      if (order.deadline_at) {
+        const date = new Date(order.deadline_at);
+        const formatted = date.toISOString().slice(0, 16);
+        setDeadline(formatted);
+      }
       setStatus(order.status || "published");
     } catch (error: any) {
       console.error("Error loading order:", error);
@@ -146,7 +147,7 @@ export default function EditOrderPage() {
         description: description.trim(),
         budget_min: budgetMin || undefined,
         budget_max: budgetMax || undefined,
-        deadline_at: deadline ? deadline.toISOString() : undefined,
+        deadline_at: deadline ? new Date(deadline).toISOString() : undefined,
         status,
         requirements,
       });
@@ -184,8 +185,7 @@ export default function EditOrderPage() {
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-      <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
         <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 }, width: "100%" }}>
           <Stack spacing={{ xs: 3, md: 4 }}>
             <Box>
@@ -276,15 +276,14 @@ export default function EditOrderPage() {
                     </Grid>
                   </Box>
 
-                  <DateTimePicker
+                  <TextField
+                    fullWidth
                     label="Срок выполнения"
+                    type="datetime-local"
                     value={deadline}
-                    onChange={(newValue) => setDeadline(newValue)}
-                    format="DD.MM.YYYY HH:mm"
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                      },
+                    onChange={(e) => setDeadline(e.target.value)}
+                    InputLabelProps={{
+                      shrink: true,
                     }}
                   />
 
@@ -337,6 +336,5 @@ export default function EditOrderPage() {
           </Stack>
         </Container>
       </Box>
-    </LocalizationProvider>
   );
 }
