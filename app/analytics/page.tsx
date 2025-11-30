@@ -55,7 +55,7 @@ export default function AnalyticsPage() {
             <Skeleton variant="text" width="60%" />
             <Grid container spacing={2}>
               {[1, 2, 3, 4].map((i) => (
-                <Grid item xs={12} sm={6} md={3} key={i}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
                   <Card>
                     <CardContent>
                       <Skeleton variant="text" width="60%" />
@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
           </Box>
 
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <StatisticCard
                 title={userRole === "client" ? "Всего проектов" : "Всего откликов"}
                 value={userRole === "client" ? stats?.orders?.total || 0 : stats?.proposals?.total || 0}
@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
                 color="#1890ff"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <StatisticCard
                 title="Активных"
                 value={userRole === "client" ? stats?.orders?.in_progress || 0 : stats?.proposals?.pending || 0}
@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
                 color="#52c41a"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <StatisticCard
                 title="Завершено"
                 value={userRole === "client" ? stats?.orders?.completed || 0 : stats?.proposals?.accepted || 0}
@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
                 color="#722ed1"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <StatisticCard
                 title={userRole === "client" ? "Потрачено" : "Заработано"}
                 value={stats?.balance || 0}

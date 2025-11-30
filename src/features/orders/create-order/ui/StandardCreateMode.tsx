@@ -3,21 +3,20 @@
 import { useState } from "react";
 import {
   Card,
-  Form,
-  Input,
-  InputNumber,
-  DatePicker,
+  TextField,
   Button,
-  Space,
+  Stack,
   Typography,
-  Row,
-  Col,
-  theme,
-  Select,
-  Tag,
+  Grid,
   Divider,
-  message,
-} from "antd";
+  Chip,
+  Box,
+  Autocomplete,
+  InputAdornment,
+} from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import {
   FileText,
   DollarSign,
@@ -27,12 +26,11 @@ import {
   CheckCircle,
 } from "lucide-react";
 import type { GeneratedOrderData } from "./QuickCreateMode";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { formatNumber, parseFormattedNumber, COMMON_SKILLS } from "@/src/shared/lib/utils";
+import "dayjs/locale/ru";
 
-const { TextArea } = Input;
-const { Title, Text } = Typography;
-const { useToken } = theme;
+dayjs.locale("ru");
 
 interface StandardCreateModeProps {
   initialData?: GeneratedOrderData;
@@ -47,414 +45,274 @@ export function StandardCreateMode({
   onSwitchMode,
   loading = false,
 }: StandardCreateModeProps) {
-  const { token } = useToken();
-  const [form] = Form.useForm();
+  const [formData, setFormData] = useState({
+    title: initialData?.title || '',
+    description: initialData?.description || '',
+    budget_min: initialData?.budget_min || 0,
+    budget_max: initialData?.budget_max || 0,
+    deadline: initialData?.deadline ? dayjs(initialData.deadline) : null as Dayjs | null,
+  });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(initialData?.skills || []);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (values: any) => {
-    const formData = {
-      ...values,
-      skills: selectedSkills,
-      deadline: values.deadline ? values.deadline.toISOString() : undefined,
-    };
-    await onSubmit(formData);
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title) {
+      newErrors.title = 'Введите название заказа';
+    } else if (formData.title.length < 10) {
+      newErrors.title = 'Минимум 10 символов';
+    } else if (formData.title.length > 200) {
+      newErrors.title = 'Максимум 200 символов';
+    }
+
+    if (!formData.description) {
+      newErrors.description = 'Введите описание проекта';
+    } else if (formData.description.length < 50) {
+      newErrors.description = 'Минимум 50 символов';
+    }
+
+    if (!formData.budget_min) {
+      newErrors.budget_min = 'Укажите минимальный бюджет';
+    } else if (formData.budget_min < 1000) {
+      newErrors.budget_min = 'Минимум 1 000 ₽';
+    }
+
+    if (!formData.budget_max) {
+      newErrors.budget_max = 'Укажите максимальный бюджет';
+    } else if (formData.budget_max < 1000) {
+      newErrors.budget_max = 'Минимум 1 000 ₽';
+    } else if (formData.budget_max < formData.budget_min) {
+      newErrors.budget_max = 'Должен быть больше минимального';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validate()) {
+      const submitData = {
+        ...formData,
+        skills: selectedSkills,
+        deadline: formData.deadline ? formData.deadline.toISOString() : undefined,
+      };
+      await onSubmit(submitData);
+    }
+  };
+
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      <Card
-        style={{
-          borderRadius: token.borderRadiusLG,
-          borderColor: token.colorBorder,
-        }}
-        styles={{
-          body: { padding: 0 }
-        }}
-      >
-        {/* Заголовок Card */}
-        <div style={{ padding: "24px 24px 16px 24px", borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-          <Space align="center" size={16}>
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: token.borderRadiusLG,
-                background: `${token.colorPrimary}10`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <FileText size={28} strokeWidth={2} style={{ color: token.colorPrimary }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <Title
-                level={2}
-                style={{
-                  margin: 0,
-                  fontSize: 24,
-                  lineHeight: "32px",
-                  fontWeight: 600,
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
+      <Box sx={{ maxWidth: 960, mx: "auto" }}>
+        <Card sx={{ borderRadius: 2 }}>
+          {/* Заголовок Card */}
+          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box
+                sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 2,
+                  bgcolor: 'primary.main',
+                  backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))',
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                Создание заказа
-              </Title>
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: 14,
-                  lineHeight: "22px",
-                  display: "block",
-                  marginTop: 4,
-                }}
+                <FileText size={28} strokeWidth={2} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h5" fontWeight={600}>
+                  Создание заказа
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Заполните детали вашего проекта
+                </Typography>
+              </Box>
+              <Button
+                variant="text"
+                startIcon={<Sparkles size={16} />}
+                onClick={onSwitchMode}
+                sx={{ fontSize: 14, height: 32 }}
               >
-                Заполните детали вашего проекта
-              </Text>
-            </div>
-            <Button
-              type="text"
-              icon={<Sparkles size={16} />}
-              onClick={onSwitchMode}
-              style={{
-                fontSize: 14,
-                height: 32,
-              }}
-            >
-              Быстрое создание
-            </Button>
-          </Space>
-        </div>
+                Быстрое создание
+              </Button>
+            </Stack>
+          </Box>
 
-        {/* Форма */}
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          size="large"
-          initialValues={{
-            title: initialData?.title,
-            description: initialData?.description,
-            budget_min: initialData?.budget_min,
-            budget_max: initialData?.budget_max,
-            deadline: initialData?.deadline ? dayjs(initialData.deadline) : undefined,
-          }}
-          style={{ padding: 24 }}
-        >
-          {/* Секция 1: Основная информация */}
-          <div style={{ marginBottom: 32 }}>
-            <Space align="center" size={12} style={{ marginBottom: 16 }}>
-              <FileText size={20} style={{ color: token.colorPrimary }} />
-              <Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  lineHeight: "24px",
-                  fontWeight: 600,
-                }}
-              >
-                Основная информация
-              </Title>
-            </Space>
+          {/* Форма */}
+          <Box component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
+            {/* Секция 1: Основная информация */}
+            <Box sx={{ mb: 4 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+                <FileText size={20} />
+                <Typography variant="h6" fontWeight={600}>
+                  Основная информация
+                </Typography>
+              </Stack>
 
-            <Row gutter={[16, 0]}>
-              <Col span={24}>
-                <Form.Item
-                  name="title"
-                  label={
-                    <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                      Название заказа
-                    </Text>
-                  }
-                  rules={[
-                    { required: true, message: "Введите название заказа" },
-                    { min: 10, message: "Минимум 10 символов" },
-                    { max: 200, message: "Максимум 200 символов" },
-                  ]}
-                  style={{ marginBottom: 24 }}
-                >
-                  <Input
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Название заказа"
+                    value={formData.title}
+                    onChange={(e) => handleChange('title', e.target.value)}
+                    error={!!errors.title}
+                    helperText={errors.title || `${formData.title.length}/200`}
                     placeholder="Например: Разработка веб-приложения для управления задачами"
-                    maxLength={200}
-                    showCount
-                    style={{
-                      fontSize: 14,
-                      lineHeight: "22px",
-                      height: 40,
-                    }}
+                    inputProps={{ maxLength: 200 }}
                   />
-                </Form.Item>
-              </Col>
+                </Grid>
 
-              <Col span={24}>
-                <Form.Item
-                  name="description"
-                  label={
-                    <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                      Описание проекта
-                    </Text>
-                  }
-                  rules={[
-                    { required: true, message: "Введите описание проекта" },
-                    { min: 50, message: "Минимум 50 символов" },
-                  ]}
-                  extra={
-                    <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-                      Опишите детально: цели, требования, функционал, технические детали
-                    </Text>
-                  }
-                  style={{ marginBottom: 24 }}
-                >
-                  <TextArea
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    required
+                    multiline
                     rows={8}
+                    label="Описание проекта"
+                    value={formData.description}
+                    onChange={(e) => handleChange('description', e.target.value)}
+                    error={!!errors.description}
+                    helperText={errors.description || `${formData.description.length}/5000 • Опишите детально: цели, требования, функционал, технические детали`}
                     placeholder="Опишите детально требования к проекту..."
-                    maxLength={5000}
-                    showCount
-                    style={{
-                      fontSize: 14,
-                      lineHeight: "22px",
-                      resize: "none",
-                    }}
+                    inputProps={{ maxLength: 5000 }}
                   />
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
+                </Grid>
+              </Grid>
+            </Box>
 
-          <Divider style={{ margin: "32px 0" }} />
+            <Divider sx={{ my: 4 }} />
 
-          {/* Секция 2: Бюджет и сроки */}
-          <div style={{ marginBottom: 32 }}>
-            <Space align="center" size={12} style={{ marginBottom: 16 }}>
-              <DollarSign size={20} style={{ color: token.colorSuccess }} />
-              <Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  lineHeight: "24px",
-                  fontWeight: 600,
-                }}
-              >
-                Бюджет и сроки
-              </Title>
-            </Space>
+            {/* Секция 2: Бюджет и сроки */}
+            <Box sx={{ mb: 4 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+                <DollarSign size={20} />
+                <Typography variant="h6" fontWeight={600}>
+                  Бюджет и сроки
+                </Typography>
+              </Stack>
 
-            <Row gutter={[16, 0]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="budget_min"
-                  label={
-                    <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                      Минимальный бюджет (₽)
-                    </Text>
-                  }
-                  rules={[
-                    { required: true, message: "Укажите минимальный бюджет" },
-                    { type: "number", min: 1000, message: "Минимум 1 000 ₽" },
-                  ]}
-                  style={{ marginBottom: 24 }}
-                >
-                  <InputNumber
-                    min={1000}
-                    max={10000000}
-                    step={1000}
-                    style={{
-                      width: "100%",
-                      fontSize: 14,
-                      height: 40,
-                    }}
-                    formatter={(value) => formatNumber(value)}
-                    parser={(value) => parseFormattedNumber(value!) as any}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="number"
+                    label="Минимальный бюджет (₽)"
+                    value={formData.budget_min || ''}
+                    onChange={(e) => handleChange('budget_min', parseFloat(e.target.value) || 0)}
+                    error={!!errors.budget_min}
+                    helperText={errors.budget_min}
                     placeholder="10 000"
+                    inputProps={{ min: 1000, max: 10000000, step: 1000 }}
                   />
-                </Form.Item>
-              </Col>
+                </Grid>
 
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="budget_max"
-                  label={
-                    <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                      Максимальный бюджет (₽)
-                    </Text>
-                  }
-                  rules={[
-                    { required: true, message: "Укажите максимальный бюджет" },
-                    { type: "number", min: 1000, message: "Минимум 1 000 ₽" },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        const min = getFieldValue("budget_min");
-                        if (!value || !min || value >= min) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(
-                          new Error("Должен быть больше минимального")
-                        );
-                      },
-                    }),
-                  ]}
-                  style={{ marginBottom: 24 }}
-                >
-                  <InputNumber
-                    min={1000}
-                    max={10000000}
-                    step={1000}
-                    style={{
-                      width: "100%",
-                      fontSize: 14,
-                      height: 40,
-                    }}
-                    formatter={(value) => formatNumber(value)}
-                    parser={(value) => parseFormattedNumber(value!) as any}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="number"
+                    label="Максимальный бюджет (₽)"
+                    value={formData.budget_max || ''}
+                    onChange={(e) => handleChange('budget_max', parseFloat(e.target.value) || 0)}
+                    error={!!errors.budget_max}
+                    helperText={errors.budget_max}
                     placeholder="50 000"
+                    inputProps={{ min: 1000, max: 10000000, step: 1000 }}
                   />
-                </Form.Item>
-              </Col>
+                </Grid>
 
-              <Col span={24}>
-                <Form.Item
-                  name="deadline"
-                  label={
-                    <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                      Срок выполнения
-                    </Text>
-                  }
-                  extra={
-                    <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-                      Когда проект должен быть завершён (опционально)
-                    </Text>
-                  }
-                  style={{ marginBottom: 24 }}
-                >
+                <Grid size={{ xs: 12 }}>
                   <DatePicker
-                    style={{
-                      width: "100%",
-                      fontSize: 14,
-                      height: 40,
-                    }}
+                    label="Срок выполнения"
+                    value={formData.deadline}
+                    onChange={(newValue) => handleChange('deadline', newValue)}
                     format="DD.MM.YYYY"
-                    placeholder="Выберите дату"
-                    disabledDate={(current) => {
-                      return current && current < dayjs().startOf("day");
+                    minDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        helperText: 'Когда проект должен быть завершён (опционально)',
+                        placeholder: 'Выберите дату',
+                      },
                     }}
                   />
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
+                </Grid>
+              </Grid>
+            </Box>
 
-          <Divider style={{ margin: "32px 0" }} />
+            <Divider sx={{ my: 4 }} />
 
-          {/* Секция 3: Навыки */}
-          <div style={{ marginBottom: 32 }}>
-            <Space align="center" size={12} style={{ marginBottom: 16 }}>
-              <Code size={20} style={{ color: token.colorInfo }} />
-              <Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  lineHeight: "24px",
-                  fontWeight: 600,
-                }}
-              >
-                Требуемые навыки
-              </Title>
-            </Space>
+            {/* Секция 3: Навыки */}
+            <Box sx={{ mb: 4 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+                <Code size={20} />
+                <Typography variant="h6" fontWeight={600}>
+                  Требуемые навыки
+                </Typography>
+              </Stack>
 
-            <Select
-              mode="tags"
-              style={{ width: "100%", fontSize: 14 }}
-              size="large"
-              placeholder="Выберите или введите навыки"
-              value={selectedSkills}
-              onChange={setSelectedSkills}
-              options={COMMON_SKILLS.map((skill) => ({
-                label: skill,
-                value: skill,
-              }))}
-              filterOption={(input, option) =>
-                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-              }
-              maxTagCount="responsive"
-            />
+              <Autocomplete
+                multiple
+                freeSolo
+                options={COMMON_SKILLS}
+                value={selectedSkills}
+                onChange={(_, newValue) => setSelectedSkills(newValue)}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      label={option}
+                      {...getTagProps({ index })}
+                      key={option}
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ))
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Выберите или введите навыки"
+                    helperText={
+                      selectedSkills.length > 0
+                        ? `Выбрано: ${selectedSkills.length}`
+                        : 'Добавьте навыки, необходимые для выполнения проекта'
+                    }
+                  />
+                )}
+              />
+            </Box>
 
-            {selectedSkills.length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: 12,
-                    lineHeight: "20px",
-                    display: "block",
-                    marginBottom: 8,
-                  }}
-                >
-                  Выбрано: {selectedSkills.length}
-                </Text>
-                <Space wrap size={[8, 8]}>
-                  {selectedSkills.map((skill) => (
-                    <Tag
-                      key={skill}
-                      closable
-                      onClose={() => {
-                        setSelectedSkills(selectedSkills.filter((s) => s !== skill));
-                      }}
-                      color="processing"
-                      style={{
-                        fontSize: 14,
-                        lineHeight: "22px",
-                        padding: "4px 12px",
-                        borderRadius: token.borderRadius,
-                      }}
-                    >
-                      {skill}
-                    </Tag>
-                  ))}
-                </Space>
-              </div>
-            )}
+            <Divider sx={{ my: 3 }} />
 
-            {selectedSkills.length === 0 && (
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: 12,
-                  lineHeight: "20px",
-                  display: "block",
-                  marginTop: 8,
-                }}
-              >
-                Добавьте навыки, необходимые для выполнения проекта
-              </Text>
-            )}
-          </div>
-
-          <Divider style={{ margin: "32px 0 24px 0" }} />
-
-          {/* Кнопки */}
-          <Form.Item style={{ marginBottom: 0 }}>
+            {/* Кнопки */}
             <Button
-              type="primary"
-              htmlType="submit"
-              icon={<CheckCircle size={20} strokeWidth={2} />}
+              type="submit"
+              variant="contained"
               size="large"
-              loading={loading}
-              block
-              style={{
-                height: 48,
-                fontSize: 16,
-                lineHeight: "24px",
-                fontWeight: 500,
-              }}
+              startIcon={<CheckCircle size={20} strokeWidth={2} />}
+              disabled={loading}
+              fullWidth
+              sx={{ height: 48, fontSize: 16, fontWeight: 500 }}
             >
               {loading ? "Создаю заказ..." : "Создать заказ"}
             </Button>
-          </Form.Item>
-        </Form>
-      </Card>
-    </div>
+          </Box>
+        </Card>
+      </Box>
+    </LocalizationProvider>
   );
 }

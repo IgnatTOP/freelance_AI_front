@@ -1,12 +1,10 @@
 "use client";
 
-import { Upload, Button, Space, Typography, List } from "antd";
-import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { Button, Box, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton, Typography, CircularProgress } from "@mui/material";
+import { Upload, X } from "lucide-react";
+import { useState, useRef } from "react";
 import { uploadPhoto } from "@/src/shared/api/media";
 import { toastService } from "@/src/shared/lib/toast";
-
-const { Text } = Typography;
 
 interface CreateOrderFileUploadProps {
   attachments: string[];
@@ -18,19 +16,26 @@ export function CreateOrderFileUpload({
   onAttachmentsChange,
 }: CreateOrderFileUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
     setUploading(true);
     try {
-      const response = await uploadPhoto(file);
-      onAttachmentsChange([...attachments, response.id]);
-      toastService.success("Файл успешно загружен");
-      return false; // Предотвращаем автоматическую загрузку
+      const uploadPromises = Array.from(files).map(file => uploadPhoto(file));
+      const responses = await Promise.all(uploadPromises);
+      const newIds = responses.map(response => response.id);
+      onAttachmentsChange([...attachments, ...newIds]);
+      toastService.success(`Загружено файлов: ${newIds.length}`);
     } catch (error: any) {
       toastService.error(error.response?.data?.error || "Ошибка загрузки файла");
-      return false;
     } finally {
       setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -39,51 +44,64 @@ export function CreateOrderFileUpload({
   };
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <Upload
-        beforeUpload={handleFileUpload}
-        fileList={[]}
-        accept="image/*,.pdf,.doc,.docx"
+    <Box>
+      <input
+        ref={fileInputRef}
+        type="file"
         multiple
-        showUploadList={false}
+        accept="image/*,.pdf,.doc,.docx"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
+      <Button
+        variant="outlined"
+        startIcon={uploading ? <CircularProgress size={20} /> : <Upload size={20} />}
+        disabled={uploading}
+        onClick={() => fileInputRef.current?.click()}
       >
-        <Button 
-          icon={<UploadOutlined />} 
-          disabled={uploading}
-          loading={uploading}
-        >
-          {uploading ? 'Загрузка...' : 'Выбрать файлы'}
-        </Button>
-      </Upload>
+        {uploading ? 'Загрузка...' : 'Выбрать файлы'}
+      </Button>
 
       {attachments.length > 0 && (
         <List
-          size="small"
-          dataSource={attachments}
-          renderItem={(id) => (
-            <List.Item
-              actions={[
-                <Button
-                  key="delete"
-                  type="text"
-                  danger
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleRemoveAttachment(id)}
-                />
-              ]}
-            >
-              <Text style={{ fontSize: '13px' }}>Файл {id.substring(0, 8)}...</Text>
-            </List.Item>
-          )}
-          style={{
-            background: 'var(--primary-05)',
-            borderRadius: '8px',
-            padding: '8px',
+          sx={{
+            mt: 2,
+            bgcolor: 'action.hover',
+            borderRadius: 2,
+            p: 1,
           }}
-        />
+        >
+          {attachments.map((id) => (
+            <ListItem
+              key={id}
+              dense
+              sx={{
+                borderRadius: 1,
+                mb: 0.5,
+                '&:last-child': { mb: 0 },
+              }}
+            >
+              <ListItemText
+                primary={
+                  <Typography variant="body2">
+                    Файл {id.substring(0, 8)}...
+                  </Typography>
+                }
+              />
+              <ListItemSecondaryAction>
+                <IconButton
+                  edge="end"
+                  size="small"
+                  onClick={() => handleRemoveAttachment(id)}
+                  color="error"
+                >
+                  <X size={18} />
+                </IconButton>
+              </ListItemSecondaryAction>
+            </ListItem>
+          ))}
+        </List>
       )}
-    </Space>
+    </Box>
   );
 }
-

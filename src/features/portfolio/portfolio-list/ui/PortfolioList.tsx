@@ -1,15 +1,30 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Row, Col, Button, Empty, Skeleton, Modal, Space, Tag, Typography } from "antd";
+import {
+  Card,
+  Grid,
+  Button,
+  Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stack,
+  Chip,
+  Typography,
+  Box,
+  CardMedia,
+  CardContent,
+  CardActions,
+  IconButton,
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { Plus, Edit, Trash2, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getMyPortfolio, deletePortfolioItem } from "@/src/shared/api/portfolio";
 import type { PortfolioItem } from "@/src/entities/portfolio/model/types";
 import { getMediaUrl } from "@/src/shared/lib/api/axios";
-
-const { Text, Title, Paragraph } = Typography;
 
 interface PortfolioListProps {
   onCreateNew?: () => void;
@@ -73,162 +88,178 @@ export function PortfolioList({ onCreateNew, onEdit }: PortfolioListProps) {
 
   if (loading) {
     return (
-      <Row gutter={[16, 16]}>
+      <Grid container spacing={2}>
         {[1, 2, 3].map((i) => (
-          <Col xs={24} sm={12} md={8} key={i}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
             <Card>
-              <Skeleton.Image active style={{ width: "100%", height: 200 }} />
-              <Skeleton active paragraph={{ rows: 2 }} />
+              <Skeleton variant="rectangular" height={200} />
+              <CardContent>
+                <Skeleton variant="text" width="80%" />
+                <Skeleton variant="text" width="60%" />
+              </CardContent>
             </Card>
-          </Col>
+          </Grid>
         ))}
-      </Row>
+      </Grid>
     );
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Title level={3} style={{ margin: 0 }}>
+    <Box>
+      <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h4">
           Моё портфолио
-        </Title>
+        </Typography>
         {onCreateNew && (
-          <Button type="primary" icon={<Plus size={16} />} onClick={onCreateNew}>
+          <Button variant="contained" startIcon={<Plus size={16} />} onClick={onCreateNew}>
             Добавить работу
           </Button>
         )}
-      </div>
+      </Box>
 
       {!portfolio || portfolio.length === 0 ? (
-        <Card>
-          <Empty
-            description="У вас пока нет работ в портфолио"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          >
-            {onCreateNew && (
-              <Button type="primary" icon={<Plus size={16} />} onClick={onCreateNew}>
-                Добавить первую работу
-              </Button>
-            )}
-          </Empty>
+        <Card sx={{ p: 6, textAlign: "center" }}>
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+            У вас пока нет работ в портфолио
+          </Typography>
+          {onCreateNew && (
+            <Button variant="contained" startIcon={<Plus size={16} />} onClick={onCreateNew}>
+              Добавить первую работу
+            </Button>
+          )}
         </Card>
       ) : (
-        <Row gutter={[16, 16]}>
+        <Grid container spacing={2}>
           {portfolio.map((item) => {
             const coverUrl = getCoverImageUrl(item);
             return (
-              <Col xs={24} sm={12} md={8} key={item.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.id}>
                 <Card
-                  hoverable
-                  cover={
-                    coverUrl ? (
-                      <div style={{ height: 200, overflow: "hidden" }}>
-                        <img
-                          alt={item.title}
-                          src={coverUrl}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          height: 200,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "#f0f0f0",
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      boxShadow: 4,
+                      transform: 'translateY(-4px)',
+                    },
+                  }}
+                >
+                  {coverUrl ? (
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={coverUrl}
+                      alt={item.title}
+                      sx={{ objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        height: 200,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: "grey.200",
+                      }}
+                    >
+                      <ImageIcon size={48} color="#999" />
+                    </Box>
+                  )}
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                      <Typography variant="h6" component="div">
+                        {item.title}
+                      </Typography>
+                      {item.external_link && (
+                        <IconButton
+                          component="a"
+                          href={item.external_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                        >
+                          <ExternalLink size={14} />
+                        </IconButton>
+                      )}
+                    </Stack>
+                    {item.description && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          mb: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
                         }}
                       >
-                        <ImageIcon size={48} color="#999" />
-                      </div>
-                    )
-                  }
-                  actions={[
-                    onEdit && (
+                        {item.description}
+                      </Typography>
+                    )}
+                    {item.ai_tags && item.ai_tags.length > 0 && (
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                        {item.ai_tags.map((tag, idx) => (
+                          <Chip key={idx} label={tag} size="small" color="primary" variant="outlined" />
+                        ))}
+                      </Stack>
+                    )}
+                  </CardContent>
+                  <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
+                    {onEdit && (
                       <Button
-                        key="edit"
-                        type="text"
-                        icon={<Edit size={16} />}
+                        size="small"
+                        startIcon={<Edit size={16} />}
                         onClick={() => onEdit(item.id)}
                       >
                         Редактировать
                       </Button>
-                    ),
+                    )}
                     <Button
-                      key="delete"
-                      type="text"
-                      danger
-                      icon={<Trash2 size={16} />}
+                      size="small"
+                      color="error"
+                      startIcon={<Trash2 size={16} />}
                       onClick={() => handleDelete(item.id)}
                     >
                       Удалить
-                    </Button>,
-                  ].filter(Boolean)}
-                >
-                  <Card.Meta
-                    title={
-                      <div>
-                        <Text strong style={{ fontSize: 16 }}>
-                          {item.title}
-                        </Text>
-                        {item.external_link && (
-                          <a
-                            href={item.external_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ marginLeft: 8 }}
-                          >
-                            <ExternalLink size={14} />
-                          </a>
-                        )}
-                      </div>
-                    }
-                    description={
-                      <div>
-                        {item.description && (
-                          <Typography.Paragraph
-                            ellipsis={{ rows: 2, expandable: false }}
-                            type="secondary"
-                            style={{ marginBottom: 8 }}
-                          >
-                            {item.description}
-                          </Typography.Paragraph>
-                        )}
-                        {item.ai_tags && item.ai_tags.length > 0 && (
-                          <Space wrap size={[4, 4]}>
-                            {item.ai_tags.map((tag, idx) => (
-                              <Tag key={idx} color="blue" style={{ margin: 0 }}>
-                                {tag}
-                              </Tag>
-                            ))}
-                          </Space>
-                        )}
-                      </div>
-                    }
-                  />
+                    </Button>
+                  </CardActions>
                 </Card>
-              </Col>
+              </Grid>
             );
           })}
-        </Row>
+        </Grid>
       )}
 
       {/* Delete Modal */}
-      <Modal
+      <Dialog
         open={deleteModalOpen}
-        onOk={handleDeleteConfirm}
-        onCancel={() => {
+        onClose={() => {
           setDeleteModalOpen(false);
           setItemToDelete(null);
         }}
-        okText="Удалить"
-        cancelText="Отмена"
-        okType="danger"
-        title="Удалить работу из портфолио?"
       >
-        <p>Это действие нельзя отменить.</p>
-      </Modal>
-    </div>
+        <DialogTitle>Удалить работу из портфолио?</DialogTitle>
+        <DialogContent>
+          <Typography>Это действие нельзя отменить.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeleteModalOpen(false);
+              setItemToDelete(null);
+            }}
+          >
+            Отмена
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
-

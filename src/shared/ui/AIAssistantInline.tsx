@@ -10,14 +10,14 @@ interface AIAssistantInlineProps {
   onImprove: (onChunk: (chunk: string) => void) => Promise<void>;
   onApply: (text: string) => void;
   disabled?: boolean;
-  size?: "small" | "middle" | "large";
+  size?: "small" | "medium" | "large";
 }
 
 export function AIAssistantInline({
   onImprove,
   onApply,
   disabled = false,
-  size = "middle",
+  size = "medium",
 }: AIAssistantInlineProps) {
   const theme = useTheme();
   const [loading, setLoading] = useState(false);

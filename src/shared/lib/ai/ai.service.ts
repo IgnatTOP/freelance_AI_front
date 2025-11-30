@@ -671,6 +671,126 @@ class AIService {
       }
     );
   }
+
+  // Генерация предложений для создания заказа (навыки, бюджет, сроки и т.д.)
+  async generateOrderSuggestions(data: {
+    title: string;
+    description: string;
+  }): Promise<{
+    skills?: string[];
+    budget_min?: number;
+    budget_max?: number;
+    deadline_days?: number;
+    needs_attachments?: boolean;
+    attachment_description?: string;
+  }> {
+    const response = await api.post(
+      "/ai/orders/suggestions",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация предложений для создания заказа (стриминг)
+  async generateOrderSuggestionsStream(
+    data: {
+      title: string;
+      description: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/orders/suggestions/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Order suggestions stream error:", error);
+      },
+    });
+  }
+
+  // Генерация списка навыков для заказа
+  async generateOrderSkills(data: {
+    title: string;
+    description: string;
+  }): Promise<{ skills: string[] }> {
+    const response = await api.post<{ skills: string[] }>(
+      "/ai/orders/skills",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация списка навыков для заказа (стриминг)
+  async generateOrderSkillsStream(
+    data: {
+      title: string;
+      description: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/orders/skills/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Order skills stream error:", error);
+      },
+    });
+  }
+
+  // Генерация бюджета для заказа
+  async generateOrderBudget(data: {
+    title: string;
+    description: string;
+  }): Promise<{
+    budget_min?: number;
+    budget_max?: number;
+  }> {
+    const response = await api.post(
+      "/ai/orders/budget",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация бюджета для заказа (стриминг)
+  async generateOrderBudgetStream(
+    data: {
+      title: string;
+      description: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/orders/budget/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Order budget stream error:", error);
+      },
+    });
+  }
+
+  // Генерация приветственного сообщения
+  async generateWelcomeMessage(data: {
+    user_role: string;
+  }): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>(
+      "/ai/welcome-message",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация приветственного сообщения (стриминг)
+  async generateWelcomeMessageStream(
+    data: {
+      user_role: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/welcome-message/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Welcome message stream error:", error);
+      },
+    });
+  }
 }
 
 export const aiService = new AIService();

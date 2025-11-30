@@ -100,8 +100,10 @@ export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
         onClick={() => setIsOpen(true)}
         sx={{
           minWidth: 160,
-          bgcolor: 'var(--primary-08)',
-          borderColor: 'var(--primary-25)',
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.08)' : 'rgba(24, 144, 255, 0.05)',
+          borderColor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.25)' : 'rgba(24, 144, 255, 0.15)',
+          borderWidth: 1,
+          borderStyle: 'solid',
           cursor: 'pointer',
           '&:hover': {
             boxShadow: 2,
@@ -110,20 +112,30 @@ export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
       >
         <CardContent>
           <Stack spacing={1.5} alignItems="center" textAlign="center">
-            <div className="relative">
+            <Box sx={{ position: 'relative' }}>
               <Box sx={{
                 width: 40,
                 height: 40,
                 borderRadius: 1.25,
-                background: 'linear-gradient(135deg, var(--primary-12) 0%, rgba(139, 92, 246, 0.12) 100%)',
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(24, 144, 255, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%)'
+                  : 'linear-gradient(135deg, rgba(24, 144, 255, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <Sparkles size={18} style={{ color: 'var(--primary)' }} />
+                <Sparkles size={18} style={{ color: theme.palette.primary.main }} />
               </Box>
               <motion.div
-                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full"
+                style={{
+                  position: 'absolute',
+                  top: -2,
+                  right: -2,
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: theme.palette.primary.main,
+                }}
                 animate={{
                   scale: [1, 1.2, 1],
                   opacity: [1, 0.7, 1],
@@ -134,7 +146,7 @@ export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
                   ease: "easeInOut",
                 }}
               />
-            </div>
+            </Box>
             <Box>
               <Typography variant="body2" fontWeight="bold">
                 Быстрое создание
@@ -156,7 +168,7 @@ export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Sparkles size={18} style={{ color: 'var(--primary)' }} />
+            <Sparkles size={18} style={{ color: theme.palette.primary.main }} />
             <span>Быстрое создание заказа</span>
           </Box>
         </DialogTitle>
@@ -203,10 +215,10 @@ export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
                 >
                   <Alert
                     severity="success"
-                    icon={<Bot size={16} style={{ color: 'var(--primary)' }} />}
+                    icon={<Bot size={16} style={{ color: theme.palette.primary.main }} />}
                     sx={{
-                      bgcolor: 'var(--primary-08)',
-                      borderColor: 'var(--primary-25)',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.08)' : 'rgba(24, 144, 255, 0.05)',
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.25)' : 'rgba(24, 144, 255, 0.15)',
                     }}
                   >
                     <Typography variant="body2" fontWeight="bold">
@@ -243,7 +255,7 @@ export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
                       )}
                       {!streaming && aiDescription && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Check size={16} style={{ color: 'var(--primary)' }} />
+                          <Check size={16} style={{ color: theme.palette.primary.main }} />
                           <Typography variant="caption" color="text.secondary">
                             Перенаправление на форму создания заказа...
                           </Typography>

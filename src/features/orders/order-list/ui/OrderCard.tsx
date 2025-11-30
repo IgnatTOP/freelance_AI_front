@@ -1,7 +1,6 @@
 "use client";
 
-import { Card, CardContent, Chip, Box, Typography, LinearProgress } from "@mui/material";
-import { Tag, Typography as AntTypography, Progress, theme as antTheme } from "antd";
+import { Card, CardContent, Chip, Box, Typography, LinearProgress, Stack } from "@mui/material";
 import { Calendar, DollarSign, Clock, Code, MessageSquare, User, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@mui/material/styles";
@@ -13,9 +12,6 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ru";
 
-const { Title, Text } = AntTypography;
-const { useToken } = antTheme;
-
 dayjs.extend(relativeTime);
 dayjs.locale("ru");
 
@@ -25,9 +21,16 @@ interface OrderCardProps {
   matchExplanation?: string;
 }
 
+const statusColorMap: Record<string, string> = {
+  open: 'info',
+  in_progress: 'warning',
+  completed: 'success',
+  cancelled: 'error',
+  pending: 'default',
+};
+
 export function OrderCard({ order, matchScore, matchExplanation }: OrderCardProps) {
   const theme = useTheme();
-  const { token } = useToken();
   const currentUser = authService.getCurrentUser();
   const isMyOrder = currentUser && String(order.client_id) === String(currentUser.id);
 
@@ -44,323 +47,173 @@ export function OrderCard({ order, matchScore, matchExplanation }: OrderCardProp
       <Card
         onClick={handleCardClick}
         sx={{
-          borderRadius: 1,
+          borderRadius: 2,
           cursor: "pointer",
           transition: "all 0.2s ease",
-          boxShadow: 1,
           "&:hover": {
-            boxShadow: 3,
-            borderColor: theme.palette.primary.main,
+            boxShadow: 4,
+            transform: 'translateY(-2px)',
           },
         }}
       >
-        <CardContent sx={{ padding: "20px 24px" }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.25, width: "100%" }}>
-          {/* Header: Title + Status */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 16,
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Stack spacing={2}>
+            {/* Header: Title + Status */}
+            <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
+              <Box flex={1} minWidth={0}>
                 {isMyOrder && (
-                  <Tag
-                    color="blue"
-                    icon={<User size={11} />}
-                    style={{
-                      margin: 0,
-                      fontSize: 10,
-                      lineHeight: "18px",
-                      padding: "2px 8px",
-                      borderRadius: token.borderRadiusSM,
-                      fontWeight: 600,
-                      border: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    Мой заказ
-                  </Tag>
+                  <Chip
+                    icon={<User size={12} />}
+                    label="Мой заказ"
+                    size="small"
+                    color="info"
+                    sx={{ mb: 0.5, height: 20, fontSize: '0.6875rem' }}
+                  />
                 )}
-              </div>
-              <Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: 18,
-                  lineHeight: "26px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "color 0.2s ease",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  color: token.colorTextHeading,
-                  letterSpacing: "-0.01em",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = token.colorPrimary;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = token.colorTextHeading;
-                }}
-              >
-                {order.title}
-              </Title>
-              {/* Match Score and Explanation */}
-              {matchScore !== undefined && matchScore >= 0 && (
-                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Sparkles size={14} style={{ color: token.colorPrimary }} />
-                    <Text strong style={{ fontSize: 13, color: token.colorPrimary }}>
-                      Совместимость: {Math.round(matchScore * 10)}%
-                    </Text>
-                    <Progress
-                      percent={Math.round(matchScore * 10)}
-                      size="small"
-                      strokeColor={matchScore >= 9 ? "#52c41a" : matchScore >= 8 ? "#1890ff" : "#faad14"}
-                      showInfo={false}
-                      style={{ flex: 1, maxWidth: 120 }}
-                    />
-                  </div>
-                  {matchExplanation && (
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: 12,
-                        lineHeight: "18px",
-                        color: token.colorTextSecondary,
-                        fontStyle: "italic",
-                      }}
-                    >
-                      {matchExplanation}
-                    </Text>
-                  )}
-                </div>
-              )}
-            </div>
-            <Tag
-              color={getOrderStatusColor(order.status)}
-              style={{
-                margin: 0,
-                fontSize: 11,
-                lineHeight: "20px",
-                padding: "4px 10px",
-                borderRadius: token.borderRadiusSM,
-                flexShrink: 0,
-                fontWeight: 500,
-                border: "none",
-              }}
-            >
-              {getOrderStatusLabel(order.status)}
-            </Tag>
-          </div>
-
-          {/* Description */}
-          <Text
-            type="secondary"
-            style={{
-              fontSize: 14,
-              lineHeight: "22px",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              color: token.colorTextSecondary,
-            }}
-          >
-            {order.description}
-          </Text>
-
-          {/* Meta Info: Budget, Deadline, Created, Proposals */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 20,
-              alignItems: "center",
-              paddingTop: 4,
-            }}
-          >
-            {order.budget_min && (
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <DollarSign
-                  size={15}
-                  style={{
-                    color: token.colorSuccess,
-                    flexShrink: 0,
-                  }}
-                />
-                <Text
-                  strong
-                  style={{
-                    fontSize: 13,
-                    lineHeight: "20px",
-                    color: token.colorText,
-                    fontWeight: 500,
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    transition: "color 0.2s",
+                    "&:hover": {
+                      color: theme.palette.primary.main,
+                    }
                   }}
                 >
-                  {formatPriceRange(order.budget_min, order.budget_max)}
-                </Text>
-              </div>
-            )}
-            {order.deadline_at && (
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <Calendar
-                  size={15}
-                  style={{
-                    color: token.colorWarning,
-                    flexShrink: 0,
-                  }}
-                />
-                <Text
-                  style={{
-                    fontSize: 13,
-                    lineHeight: "20px",
-                    color: token.colorTextSecondary,
-                  }}
-                >
-                  {dayjs(order.deadline_at).format("DD MMM YYYY")}
-                </Text>
-              </div>
-            )}
-            <div
-              style={{
-                fontSize: 13,
-                lineHeight: "20px",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <Clock
-                size={15}
-                style={{
-                  color: token.colorTextTertiary,
-                  flexShrink: 0,
-                }}
+                  {order.title}
+                </Typography>
+
+                {/* Match Score */}
+                {matchScore !== undefined && matchScore >= 0 && (
+                  <Stack spacing={0.5} mt={1}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Sparkles size={14} color={theme.palette.primary.main} />
+                      <Typography variant="caption" color="primary" fontWeight={600}>
+                        Совместимость: {Math.round(matchScore * 10)}%
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.round(matchScore * 10)}
+                        sx={{
+                          flex: 1,
+                          maxWidth: 120,
+                          height: 4,
+                          borderRadius: 2,
+                          backgroundColor: theme.palette.action.hover,
+                        }}
+                      />
+                    </Box>
+                    {matchExplanation && (
+                      <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                        {matchExplanation}
+                      </Typography>
+                    )}
+                  </Stack>
+                )}
+              </Box>
+
+              <Chip
+                label={getOrderStatusLabel(order.status)}
+                size="small"
+                color={statusColorMap[order.status] as any || 'default'}
+                sx={{ flexShrink: 0 }}
               />
-              <Text
-                style={{
-                  fontSize: 13,
-                  lineHeight: "20px",
-                  color: token.colorTextSecondary,
-                }}
-              >
-                {dayjs(order.created_at).fromNow()}
-              </Text>
-            </div>
-            {order.proposals_count !== undefined && order.proposals_count > 0 && (
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <MessageSquare
-                  size={15}
-                  style={{
-                    color: token.colorInfo,
-                    flexShrink: 0,
-                  }}
-                />
-                <Text
-                  style={{
-                    fontSize: 13,
-                    lineHeight: "20px",
-                    color: token.colorTextSecondary,
-                  }}
-                >
-                  {order.proposals_count}{" "}
-                  {order.proposals_count === 1
-                    ? "отклик"
-                    : order.proposals_count < 5
-                    ? "отклика"
-                    : "откликов"}
-                </Text>
-              </div>
-            )}
-          </div>
+            </Box>
 
-          {/* Skills */}
-          {order.requirements && order.requirements.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                paddingTop: 16,
-                borderTop: `1px solid ${token.colorBorderSecondary}`,
+            {/* Description */}
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
-              {order.requirements.slice(0, 8).map((req, idx) => (
-                <Tag
-                  key={idx}
-                  color="processing"
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "20px",
-                    padding: "3px 10px",
-                    borderRadius: token.borderRadiusSM,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 5,
-                    fontWeight: 500,
-                    border: "none",
-                  }}
-                >
-                  <Code size={11} style={{ flexShrink: 0 }} />
-                  {req.skill}
-                </Tag>
-              ))}
-              {order.requirements.length > 8 && (
-                <Tag
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "20px",
-                    padding: "3px 10px",
-                    borderRadius: token.borderRadiusSM,
-                    background: token.colorBgTextHover,
-                    borderColor: token.colorBorder,
-                    color: token.colorTextSecondary,
-                    fontWeight: 500,
-                  }}
-                >
-                  +{order.requirements.length - 8}
-                </Tag>
+              {order.description}
+            </Typography>
+
+            {/* Meta Info */}
+            <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
+              {order.budget_min && (
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <DollarSign size={15} color={theme.palette.success.main} />
+                  <Typography variant="caption" fontWeight={500}>
+                    {formatPriceRange(order.budget_min, order.budget_max)}
+                  </Typography>
+                </Box>
               )}
-            </div>
-          )}
-        </Box>
+
+              {order.deadline_at && (
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <Calendar size={15} color={theme.palette.warning.main} />
+                  <Typography variant="caption" color="text.secondary">
+                    {dayjs(order.deadline_at).format("DD MMM YYYY")}
+                  </Typography>
+                </Box>
+              )}
+
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <Clock size={15} color={theme.palette.text.disabled} />
+                <Typography variant="caption" color="text.secondary">
+                  {dayjs(order.created_at).fromNow()}
+                </Typography>
+              </Box>
+
+              {order.proposals_count !== undefined && order.proposals_count > 0 && (
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <MessageSquare size={15} color={theme.palette.info.main} />
+                  <Typography variant="caption" color="text.secondary">
+                    {order.proposals_count}{" "}
+                    {order.proposals_count === 1
+                      ? "отклик"
+                      : order.proposals_count < 5
+                      ? "отклика"
+                      : "откликов"}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+
+            {/* Skills */}
+            {order.requirements && order.requirements.length > 0 && (
+              <Box
+                display="flex"
+                flexWrap="wrap"
+                gap={1}
+                pt={1}
+                borderTop={1}
+                borderColor="divider"
+              >
+                {order.requirements.slice(0, 8).map((req, idx) => (
+                  <Chip
+                    key={idx}
+                    icon={<Code size={11} />}
+                    label={req.skill}
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    sx={{ height: 24, fontSize: '0.6875rem' }}
+                  />
+                ))}
+                {order.requirements.length > 8 && (
+                  <Chip
+                    label={`+${order.requirements.length - 8}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: 24, fontSize: '0.6875rem' }}
+                  />
+                )}
+              </Box>
+            )}
+          </Stack>
         </CardContent>
       </Card>
     </motion.div>

@@ -61,17 +61,35 @@ export function DashboardMobileMenu({
           <Link
             href={user ? `/users/${user.id}` : "/profile"}
             onClick={onClose}
-            className="flex items-center gap-4 px-2 py-3 rounded-xl transition-colors"
             style={{
-              background: "var(--primary-10)",
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              padding: '8px 12px',
+              borderRadius: 12,
+              transition: 'colors 0.2s',
+              background: 'rgba(24, 144, 255, 0.1)',
             }}
           >
             <UserAvatar user={user} profile={profile} size={48} />
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-base text-foreground leading-tight truncate">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontWeight: 600,
+                fontSize: '1rem',
+                lineHeight: 'tight',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
                 {displayName}
               </div>
-              <div className="text-sm text-foreground-secondary mt-0.5 leading-tight">
+              <div style={{
+                fontSize: '0.875rem',
+                opacity: 0.7,
+                marginTop: 2,
+                lineHeight: 'tight',
+              }}>
                 {roleLabel}
               </div>
             </div>
@@ -80,7 +98,7 @@ export function DashboardMobileMenu({
           {additionalContent}
 
           {/* Navigation */}
-          <div className="flex flex-col space-y-1">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -90,13 +108,17 @@ export function DashboardMobileMenu({
                 <Link
                   key={item.key}
                   href={item.key}
-                  className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-medium transition-colors ${
-                    isActive
-                      ? "text-primary"
-                      : "text-foreground-secondary hover:text-primary"
-                  }`}
                   style={{
-                    background: isActive ? "var(--primary-20)" : "transparent",
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    fontWeight: 500,
+                    transition: 'colors 0.2s',
+                    color: isActive ? '#1890ff' : 'inherit',
+                    background: isActive ? "rgba(24, 144, 255, 0.2)" : "transparent",
                   }}
                   onClick={onClose}
                 >

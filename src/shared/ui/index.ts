@@ -21,3 +21,4 @@ export { UserAvatar } from "./UserAvatar";
 export { DesktopDock } from "./DesktopDock";
 export { DashboardMobileMenu } from "./DashboardMobileMenu";
 export { StructuredData } from "./StructuredData";
+export { ThemeToggle } from "./ThemeToggle";

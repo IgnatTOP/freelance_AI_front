@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Typography, Skeleton, theme, Space, Alert, Button } from "antd";
+import { Card, Typography, Skeleton, Stack, Alert, Button, Box } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { motion } from "framer-motion";
-import { Form } from "antd";
 import { Edit3, Info, Lightbulb, CheckCircle, FolderKanban, Plus } from "lucide-react";
 import Link from "next/link";
 import { EditProfileForm } from "./EditProfileForm";
@@ -14,14 +13,29 @@ import { authService } from "@/src/shared/lib/auth/auth.service";
 import { useAuth } from "@/src/shared/lib/hooks/useAuth";
 import type { Profile, UpdateProfileRequest } from "@/src/entities/user/model/types";
 
-const { Title, Text, Paragraph } = Typography;
-const { useToken } = theme;
-
 export function EditProfileFeature() {
-  const { token } = useToken();
   const router = useRouter();
   const { loading: authLoading } = useAuth();
-  const [form] = Form.useForm();
+  const [formData, setFormData] = useState<any>({
+    display_name: '',
+    bio: '',
+    hourly_rate: 0,
+    experience_level: '',
+    location: '',
+  });
+  
+  // Create form object with stable function references
+  const form = useMemo(() => ({
+    getFieldValue: (field: string) => {
+      return formData[field as keyof typeof formData];
+    },
+    setFieldValue: (field: string, value: any) => {
+      setFormData((prev: typeof formData) => ({ ...prev, [field]: value }));
+    },
+    setFieldsValue: (values: any) => {
+      setFormData((prev: typeof formData) => ({ ...prev, ...values }));
+    },
+  }), [formData]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -43,13 +57,14 @@ export function EditProfileFeature() {
 
       setProfile(profileData);
       setSkills(profileData.skills || []);
-      form.setFieldsValue({
+      const newFormData = {
         display_name: profileData.display_name,
         bio: profileData.bio || "",
         hourly_rate: profileData.hourly_rate,
         experience_level: profileData.experience_level,
         location: profileData.location || "",
-      });
+      };
+      setFormData(newFormData);
 
       // Обновляем локальный профиль в localStorage
       if (typeof window !== "undefined") {
@@ -62,13 +77,14 @@ export function EditProfileFeature() {
       if (profileData) {
         setProfile(profileData);
         setSkills(profileData.skills || []);
-        form.setFieldsValue({
+        const newFormData = {
           display_name: profileData.display_name,
           bio: profileData.bio || "",
           hourly_rate: profileData.hourly_rate,
           experience_level: profileData.experience_level,
           location: profileData.location || "",
-        });
+        };
+        setFormData(newFormData);
       } else {
         toastService.error("Ошибка загрузки профиля");
       }
@@ -106,387 +122,207 @@ export function EditProfileFeature() {
 
   if (loading || authLoading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          padding: "40px 24px",
-          maxWidth: 1200,
-          margin: "0 auto",
-          width: "100%",
-        }}
-      >
-        <Card
-          style={{
-            borderRadius: token.borderRadiusLG,
-            borderColor: token.colorBorder,
-          }}
-        >
-          <Skeleton active paragraph={{ rows: 8 }} />
+      <Box sx={{ minHeight: "100vh", py: 5, px: 3, maxWidth: 1200, mx: "auto", width: "100%" }}>
+        <Card sx={{ p: 3, borderRadius: 2 }}>
+          <Skeleton variant="text" width="40%" height={40} />
+          <Skeleton variant="text" width="60%" sx={{ mt: 1 }} />
+          <Skeleton variant="rectangular" height={300} sx={{ mt: 3 }} />
         </Card>
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        padding: "40px 24px",
-        maxWidth: 1200,
-        margin: "0 auto",
-        width: "100%",
-      }}
-    >
+    <Box sx={{ minHeight: "100vh", py: 5, px: 3, maxWidth: 1200, mx: "auto", width: "100%" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <Space direction="vertical" size={32} style={{ width: "100%" }}>
+        <Stack spacing={4}>
           {/* Header */}
-          <div>
-            <Title
-              level={1}
-              style={{
-                margin: 0,
-                fontSize: 32,
-                lineHeight: "40px",
-                fontWeight: 600,
-              }}
-            >
+          <Box>
+            <Typography variant="h3" fontWeight={600} sx={{ mb: 1 }}>
               Редактирование профиля
-            </Title>
-            <Text
-              type="secondary"
-              style={{
-                fontSize: 14,
-                lineHeight: "22px",
-                display: "block",
-                marginTop: 8,
-              }}
-            >
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
               Обновите информацию о себе, чтобы заказчики или фрилансеры знали о вас больше
-            </Text>
-          </div>
+            </Typography>
+          </Box>
 
           {/* Content */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(1, 1fr)",
-              gap: 24,
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, 1fr)' },
+              gap: 3,
             }}
-            className="lg:grid-cols-3"
           >
             {/* Main Form */}
-            <div style={{ gridColumn: "span 1" }} className="lg:col-span-2">
-              <Card
-                style={{
-                  borderRadius: token.borderRadiusLG,
-                  borderColor: token.colorBorder,
-                }}
-                styles={{
-                  body: { padding: 0 },
-                }}
-              >
+            <Box sx={{ gridColumn: { xs: 'span 1', lg: 'span 2' } }}>
+              <Card sx={{ borderRadius: 2 }}>
                 {/* Card Header */}
-                <div
-                  style={{
-                    padding: "24px 24px 16px 24px",
-                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                  }}
-                >
-                  <Space align="center" size={16}>
-                    <div
-                      style={{
+                <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
                         width: 56,
                         height: 56,
-                        borderRadius: token.borderRadiusLG,
-                        background: `${token.colorPrimary}10`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
+                        borderRadius: 2,
+                        bgcolor: 'primary.main',
+                        backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      <Edit3
-                        size={28}
-                        strokeWidth={2}
-                        style={{ color: token.colorPrimary }}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <Title
-                        level={2}
-                        style={{
-                          margin: 0,
-                          fontSize: 24,
-                          lineHeight: "32px",
-                          fontWeight: 600,
-                        }}
-                      >
+                      <Edit3 size={28} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h5" fontWeight={600}>
                         Основная информация
-                      </Title>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: 14,
-                          lineHeight: "22px",
-                          display: "block",
-                          marginTop: 4,
-                        }}
-                      >
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                         Заполните детали вашего профиля
-                      </Text>
-                    </div>
-                  </Space>
-                </div>
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
 
                 {/* Form */}
-                <div style={{ padding: 24 }}>
+                <Box sx={{ p: 3 }}>
                   <EditProfileForm
+                    key={formData.display_name || 'new'}
                     form={form}
                     skills={skills}
                     onSkillsChange={setSkills}
                     onSubmit={handleSubmit}
                     loading={saving}
                   />
-                </div>
+                </Box>
               </Card>
-            </div>
+            </Box>
 
             {/* Sidebar */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 24,
-                gridColumn: "span 1",
-              }}
-            >
+            <Stack spacing={3}>
               {/* Tips Card */}
-              <Card
-                style={{
-                  borderRadius: token.borderRadiusLG,
-                  borderColor: token.colorBorder,
-                }}
-                styles={{
-                  body: { padding: 24 },
-                }}
-              >
-                <Space direction="vertical" size={16} style={{ width: "100%" }}>
-                  <Space align="center" size={12}>
-                    <div
-                      style={{
+              <Card sx={{ p: 3, borderRadius: 2 }}>
+                <Stack spacing={2}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Box
+                      sx={{
                         width: 40,
                         height: 40,
-                        borderRadius: token.borderRadius,
-                        background: `${token.colorWarning}1A`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        borderRadius: 1,
+                        bgcolor: 'warning.main',
+                        backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      <Lightbulb
-                        size={20}
-                        style={{ color: token.colorWarning }}
-                      />
-                    </div>
-                    <Title
-                      level={4}
-                      style={{
-                        margin: 0,
-                        fontSize: 16,
-                        lineHeight: "24px",
-                        fontWeight: 600,
-                      }}
-                    >
+                      <Lightbulb size={20} />
+                    </Box>
+                    <Typography variant="h6" fontWeight={600}>
                       Советы
-                    </Title>
-                  </Space>
+                    </Typography>
+                  </Stack>
 
-                  <div style={{ paddingLeft: 52 }}>
-                    <Space direction="vertical" size={12}>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <CheckCircle
-                          size={16}
-                          style={{
-                            color: token.colorSuccess,
-                            flexShrink: 0,
-                            marginTop: 3,
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            lineHeight: "22px",
-                            color: token.colorTextSecondary,
-                          }}
-                        >
-                          Заполните все поля для создания полного профиля
-                        </Text>
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <CheckCircle
-                          size={16}
-                          style={{
-                            color: token.colorSuccess,
-                            flexShrink: 0,
-                            marginTop: 3,
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            lineHeight: "22px",
-                            color: token.colorTextSecondary,
-                          }}
-                        >
-                          Добавьте как можно больше навыков
-                        </Text>
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <CheckCircle
-                          size={16}
-                          style={{
-                            color: token.colorSuccess,
-                            flexShrink: 0,
-                            marginTop: 3,
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            lineHeight: "22px",
-                            color: token.colorTextSecondary,
-                          }}
-                        >
-                          Укажите реалистичную почасовую ставку
-                        </Text>
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <CheckCircle
-                          size={16}
-                          style={{
-                            color: token.colorSuccess,
-                            flexShrink: 0,
-                            marginTop: 3,
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            lineHeight: "22px",
-                            color: token.colorTextSecondary,
-                          }}
-                        >
-                          Обновляйте профиль регулярно
-                        </Text>
-                      </div>
-                    </Space>
-                  </div>
-                </Space>
+                  <Stack spacing={1.5} sx={{ pl: 6.5 }}>
+                    <Stack direction="row" spacing={1}>
+                      <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 3 }} color="success" />
+                      <Typography variant="body2" color="text.secondary">
+                        Заполните все поля для создания полного профиля
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                      <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 3 }} color="success" />
+                      <Typography variant="body2" color="text.secondary">
+                        Добавьте как можно больше навыков
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                      <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 3 }} color="success" />
+                      <Typography variant="body2" color="text.secondary">
+                        Укажите реалистичную почасовую ставку
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                      <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 3 }} color="success" />
+                      <Typography variant="body2" color="text.secondary">
+                        Обновляйте профиль регулярно
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Stack>
               </Card>
 
               {/* Portfolio Card - только для фрилансеров */}
               {user && (user.role === "admin" ? "client" : user.role) === "freelancer" && (
                 <Card
-                  style={{
-                    borderRadius: token.borderRadiusLG,
-                    borderColor: token.colorPrimary,
-                    background: `linear-gradient(135deg, ${token.colorPrimary}08 0%, ${token.colorPrimary}03 100%)`,
-                  }}
-                  styles={{
-                    body: { padding: 24 },
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    borderColor: 'primary.main',
+                    bgcolor: 'primary.main',
+                    backgroundImage: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
                   }}
                 >
-                  <Space direction="vertical" size={16} style={{ width: "100%" }}>
-                    <Space align="center" size={12}>
-                      <div
-                        style={{
+                  <Stack spacing={2}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Box
+                        sx={{
                           width: 40,
                           height: 40,
-                          borderRadius: token.borderRadius,
-                          background: `${token.colorPrimary}1A`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          borderRadius: 1,
+                          bgcolor: 'primary.main',
+                          backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
-                        <FolderKanban
-                          size={20}
-                          style={{ color: token.colorPrimary }}
-                        />
-                      </div>
-                      <Title
-                        level={4}
-                        style={{
-                          margin: 0,
-                          fontSize: 16,
-                          lineHeight: "24px",
-                          fontWeight: 600,
-                        }}
-                      >
+                        <FolderKanban size={20} />
+                      </Box>
+                      <Typography variant="h6" fontWeight={600}>
                         Портфолио
-                      </Title>
-                    </Space>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        lineHeight: "22px",
-                        color: token.colorTextSecondary,
-                      }}
-                    >
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary">
                       Покажите свои лучшие работы заказчикам. Добавьте проекты в портфолио, чтобы увеличить шансы получить заказ.
-                    </Text>
-                    <Link href="/portfolio">
+                    </Typography>
+                    <Link href="/portfolio" style={{ textDecoration: 'none' }}>
                       <Button
-                        type="primary"
-                        icon={<Plus size={16} />}
-                        block
-                        style={{
-                          height: 40,
-                          borderRadius: token.borderRadius,
-                        }}
+                        variant="contained"
+                        startIcon={<Plus size={16} />}
+                        fullWidth
+                        sx={{ height: 40 }}
                       >
                         Управлять портфолио
                       </Button>
                     </Link>
-                  </Space>
+                  </Stack>
                 </Card>
               )}
 
               {/* Info Card */}
               <Alert
-                message={
-                  <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                    Информация о профиле
-                  </Text>
-                }
-                description={
-                  <Paragraph
-                    style={{
-                      margin: "8px 0 0 0",
-                      fontSize: 14,
-                      lineHeight: "22px",
-                      color: token.colorTextSecondary,
-                    }}
-                  >
-                    Ваш профиль виден всем пользователям платформы. Чем полнее
-                    профиль, тем выше шанс получить заказ или найти исполнителя.
-                  </Paragraph>
-                }
-                type="info"
-                showIcon
+                severity="info"
                 icon={<Info size={16} />}
-                style={{
-                  borderRadius: token.borderRadius,
-                }}
-              />
-            </div>
-          </div>
-        </Space>
+                sx={{ borderRadius: 1 }}
+              >
+                <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+                  Информация о профиле
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Ваш профиль виден всем пользователям платформы. Чем полнее
+                  профиль, тем выше шанс получить заказ или найти исполнителя.
+                </Typography>
+              </Alert>
+            </Stack>
+          </Box>
+        </Stack>
       </motion.div>
-    </div>
+    </Box>
   );
 }

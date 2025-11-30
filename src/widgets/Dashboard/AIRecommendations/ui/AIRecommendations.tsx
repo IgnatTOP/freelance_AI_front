@@ -286,10 +286,18 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
       {!embedded && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <div className="relative">
+            <Box sx={{ position: 'relative' }}>
               <Bot size={20} />
               <motion.div
-                className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: theme.palette.primary.main,
+                }}
                 animate={{
                   scale: [1, 1.5, 1],
                   opacity: [1, 0.5, 1],
@@ -300,15 +308,22 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                   ease: "easeInOut",
                 }}
               />
-            </div>
+            </Box>
             <Typography variant="subtitle1" fontWeight={600}>AI Рекомендации</Typography>
           </Box>
           <IconButton
             size="small"
             onClick={() => fetchRecommendations(false)}
             disabled={refreshing}
+            sx={{
+              animation: refreshing ? 'spin 1s linear infinite' : 'none',
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            }}
           >
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} />
           </IconButton>
         </Box>
       )}
@@ -322,8 +337,8 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
         {explanation && explanation.trim() && (
           <Card
             sx={{
-              bgcolor: 'var(--primary-06)',
-              borderColor: 'var(--primary-18)',
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.18)' : 'rgba(24, 144, 255, 0.12)',
               mb: 2,
               overflow: 'visible',
               wordBreak: 'break-word',
@@ -331,7 +346,7 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
           >
             <CardContent sx={{ p: 1.5 }}>
               <Stack spacing={0.5}>
-                <Typography variant="caption" fontWeight="bold" sx={{ color: 'var(--primary)' }}>
+                <Typography variant="caption" fontWeight="bold" sx={{ color: theme.palette.primary.main }}>
                   Почему эти заказы?
                 </Typography>
                 <Typography
@@ -371,8 +386,8 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                         cursor: 'pointer',
                         p: 2,
                         borderRadius: 1.5,
-                        bgcolor: 'var(--primary-05)',
-                        border: '1px solid var(--primary-12)',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.05)' : 'rgba(24, 144, 255, 0.03)',
+                        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.12)' : 'rgba(24, 144, 255, 0.08)'}`,
                         overflow: 'hidden',
                         wordBreak: 'break-word',
                         '&:hover': {
@@ -383,7 +398,7 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                     >
                       <Box sx={{ display: 'flex', gap: 1.5 }}>
                         <Box sx={{
-                          bgcolor: 'var(--primary-06)',
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.06)' : 'rgba(24, 144, 255, 0.04)',
                           p: 1,
                           borderRadius: 1,
                           display: 'flex',
@@ -392,7 +407,7 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                           flexShrink: 0,
                           height: 'fit-content',
                         }}>
-                          <Icon size={18} style={{ color: 'var(--primary)' }} />
+                          <Icon size={18} style={{ color: theme.palette.primary.main }} />
                         </Box>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Box sx={{
@@ -460,7 +475,7 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                             </Typography>
                             {rec.reason && rec.reason.length > 0 && (
                               <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'flex-start' }}>
-                                <Sparkles size={12} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
+                                <Sparkles size={12} style={{ color: theme.palette.primary.main, flexShrink: 0, marginTop: 2 }} />
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
@@ -508,7 +523,12 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
       <Card>
         <CardContent>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2 }}>
-            <Bot size={20} className="animate-pulse" />
+            <motion.div
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              <Bot size={20} />
+            </motion.div>
             <Typography variant="h6">AI Рекомендации</Typography>
           </Box>
           <Skeleton variant="text" width="60%" />
@@ -529,10 +549,18 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <div className="relative">
+            <Box sx={{ position: 'relative' }}>
               <Bot size={20} />
               <motion.div
-                className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: theme.palette.primary.main,
+                }}
                 animate={{
                   scale: [1, 1.5, 1],
                   opacity: [1, 0.5, 1],
@@ -543,15 +571,22 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
                   ease: "easeInOut",
                 }}
               />
-            </div>
+            </Box>
             <Typography variant="h6">AI Рекомендации</Typography>
           </Box>
           <IconButton
             size="small"
             onClick={() => fetchRecommendations(false)}
             disabled={refreshing}
+            sx={{
+              animation: refreshing ? 'spin 1s linear infinite' : 'none',
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            }}
           >
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} />
           </IconButton>
         </Box>
         {content}

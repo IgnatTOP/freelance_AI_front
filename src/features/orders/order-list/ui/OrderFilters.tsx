@@ -1,13 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Input, Select, Button, Typography, InputNumber, Space, Tag, Divider, theme } from "antd";
+import {
+  TextField,
+  Select,
+  MenuItem,
+  Button,
+  Typography,
+  Box,
+  Chip,
+  Divider,
+  Stack,
+  InputAdornment,
+  Collapse,
+  FormControl,
+  InputLabel,
+  Autocomplete,
+  OutlinedInput,
+} from "@mui/material";
 import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, DollarSign, Tag as TagIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-
-import { formatNumber, parseFormattedNumber, COMMON_SKILLS } from "@/src/shared/lib/utils";
-
-const { Text } = Typography;
-const { useToken } = theme;
+import { useTheme } from "@mui/material/styles";
+import { COMMON_SKILLS } from "@/src/shared/lib/utils";
 
 interface OrderFiltersProps {
   search: string;
@@ -48,12 +61,12 @@ export function OrderFilters({
   userRole,
   onSmartSearch,
 }: OrderFiltersProps) {
-  const { token } = useToken();
+  const theme = useTheme();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const hasActiveFilters = 
-    search.length > 0 || 
-    statusFilter !== "all" || 
+  const hasActiveFilters =
+    search.length > 0 ||
+    statusFilter !== "all" ||
     (skillsFilter && skillsFilter.length > 0) ||
     budgetMin !== undefined ||
     budgetMax !== undefined ||
@@ -69,543 +82,258 @@ export function OrderFilters({
   ].filter(Boolean).length;
 
   return (
-    <div style={{ width: "100%" }}>
-      {/* Заголовок секции фильтров */}
-      <div
-        style={{
-          marginBottom: 18,
-          paddingBottom: 14,
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-        }}
-      >
-        <Text
-          strong
-          style={{
-            fontSize: 14,
-            lineHeight: "22px",
-            fontWeight: 600,
-            color: token.colorTextHeading,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Фильтры поиска
-        </Text>
-        {activeFiltersCount > 0 && (
-          <Tag
-            color="blue"
-            style={{
-              marginLeft: 8,
-              fontSize: 11,
-              lineHeight: "18px",
-              padding: "2px 8px",
-              borderRadius: token.borderRadiusSM,
-              fontWeight: 500,
-            }}
-          >
-            {activeFiltersCount} активных
-          </Tag>
-        )}
-      </div>
+    <Box sx={{ width: "100%" }}>
+      {/* Header */}
+      <Box sx={{ mb: 2, pb: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography variant="subtitle2" fontWeight={600}>
+            Фильтры поиска
+          </Typography>
+          {activeFiltersCount > 0 && (
+            <Chip
+              label={`${activeFiltersCount} активных`}
+              size="small"
+              color="primary"
+              sx={{ height: 20, fontSize: '0.6875rem' }}
+            />
+          )}
+        </Box>
+      </Box>
 
-      <Space direction="vertical" size={18} style={{ width: "100%" }}>
-        {/* Поиск */}
-        <div>
-            <Text
-              strong
-              style={{
-                fontSize: 11,
-                lineHeight: "18px",
-                display: "block",
-                marginBottom: 8,
-                color: token.colorTextSecondary,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Поиск
-            </Text>
-          <Input
-            size="middle"
+      <Stack spacing={2}>
+        {/* Search */}
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>
+            Поиск
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
             placeholder={userRole === "freelancer" ? "Поиск заказов..." : "По названию или описанию..."}
-            prefix={<Search size={14} style={{ color: token.colorTextTertiary }} />}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            allowClear
-            style={{
-              width: "100%",
-              borderRadius: token.borderRadius,
-              fontSize: 13,
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={16} />
+                </InputAdornment>
+              ),
             }}
           />
-          {userRole === "freelancer" && (
+          {userRole === "freelancer" && onSmartSearch && (
             <Button
-              type="primary"
-              icon={<Sparkles size={14} />}
+              fullWidth
+              variant="contained"
+              startIcon={<Sparkles size={16} />}
               onClick={onSmartSearch}
-              block
-              style={{
-                width: "100%",
-                marginTop: 8,
-                height: 36,
-                borderRadius: token.borderRadius,
-                fontWeight: 500,
-                fontSize: 13,
-              }}
+              sx={{ mt: 1 }}
             >
               Умный поиск AI
             </Button>
           )}
-        </div>
+        </Box>
 
-        <Divider
-          style={{
-            margin: 0,
-            borderColor: token.colorBorderSecondary,
-          }}
-        />
+        <Divider />
 
-        {/* Статус */}
-        <div>
-            <div
-              style={{
-                fontSize: 11,
-                lineHeight: "18px",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 8,
-                color: token.colorTextSecondary,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              <Filter size={12} style={{ color: token.colorTextTertiary, flexShrink: 0 }} />
-              <Text
-                strong
-                style={{
-                  fontSize: 11,
-                  lineHeight: "18px",
-                  color: token.colorTextSecondary,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  margin: 0,
-                }}
-              >
-                Статус заказа
-              </Text>
-            </div>
+        {/* Status */}
+        <FormControl fullWidth size="small">
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>
+            <Filter size={12} />
+            Статус заказа
+          </Typography>
           <Select
-            size="middle"
-            placeholder="Выберите статус"
             value={statusFilter}
-            onChange={onStatusFilterChange}
-            style={{ width: "100%", fontSize: 13 }}
-            popupMatchSelectWidth={false}
-            options={[
-              { label: "Все статусы", value: "all" },
-              { label: "Опубликован", value: "published" },
-              { label: "В работе", value: "in_progress" },
-              { label: "Завершен", value: "completed" },
-              { label: "Отменен", value: "cancelled" },
-            ]}
-          />
-        </div>
-
-        {/* Сортировка */}
-        <div>
-            <div
-              style={{
-                fontSize: 11,
-                lineHeight: "18px",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 8,
-                color: token.colorTextSecondary,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              <ArrowUpDown size={12} style={{ color: token.colorTextTertiary, flexShrink: 0 }} />
-              <Text
-                strong
-                style={{
-                  fontSize: 11,
-                  lineHeight: "18px",
-                  color: token.colorTextSecondary,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  margin: 0,
-                }}
-              >
-                Сортировка
-              </Text>
-            </div>
-          <Space direction="vertical" size={8} style={{ width: "100%" }}>
-            <Select
-              size="middle"
-              placeholder="Сортировать по"
-              value={sortBy}
-              onChange={onSortByChange}
-              style={{ width: "100%", fontSize: 13 }}
-              popupMatchSelectWidth={false}
-              options={[
-                { label: "По дате создания", value: "date" },
-                { label: "По бюджету", value: "budget" },
-                { label: "По количеству откликов", value: "proposals" },
-              ]}
-            />
-            <Select
-              size="middle"
-              value={sortOrder}
-              onChange={onSortOrderChange}
-              suffixIcon={sortOrder === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-              style={{ width: "100%", fontSize: 13 }}
-              popupMatchSelectWidth={false}
-              options={[
-                { label: "По убыванию", value: "desc" },
-                { label: "По возрастанию", value: "asc" },
-              ]}
-            />
-          </Space>
-        </div>
-
-        <Divider
-          style={{
-            margin: 0,
-            borderColor: token.colorBorderSecondary,
-          }}
-        />
-
-        {/* Расширенные фильтры */}
-        <div>
-          <Button
-            type="text"
-            icon={showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            block
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "8px 0",
-              height: "auto",
-              fontWeight: 600,
-              color: token.colorTextHeading,
-              fontSize: 13,
-            }}
+            onChange={(e) => onStatusFilterChange(e.target.value)}
           >
-            <Text
-              strong
-              style={{
-                fontSize: 11,
-                lineHeight: "18px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: token.colorTextSecondary,
-              }}
-            >
-              Расширенные фильтры
-            </Text>
-            {activeFiltersCount > 0 && !showAdvanced && (
-              <Tag
-                color="blue"
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  lineHeight: "18px",
-                  padding: "2px 8px",
-                  borderRadius: token.borderRadiusSM,
-                  fontWeight: 500,
-                }}
+            <MenuItem value="all">Все статусы</MenuItem>
+            <MenuItem value="published">Опубликован</MenuItem>
+            <MenuItem value="in_progress">В работе</MenuItem>
+            <MenuItem value="completed">Завершен</MenuItem>
+            <MenuItem value="cancelled">Отменен</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Sort */}
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>
+            <ArrowUpDown size={12} />
+            Сортировка
+          </Typography>
+          <Stack spacing={1}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={sortBy}
+                onChange={(e) => onSortByChange?.(e.target.value)}
               >
-                {activeFiltersCount}
-              </Tag>
-            )}
-          </Button>
+                <MenuItem value="date">По дате создания</MenuItem>
+                <MenuItem value="budget">По бюджету</MenuItem>
+                <MenuItem value="proposals">По количеству откликов</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small">
+              <Select
+                value={sortOrder}
+                onChange={(e) => onSortOrderChange?.(e.target.value as "asc" | "desc")}
+              >
+                <MenuItem value="desc">По убыванию</MenuItem>
+                <MenuItem value="asc">По возрастанию</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </Box>
 
-          {showAdvanced && (
-            <Space direction="vertical" size={18} style={{ width: "100%", marginTop: 12 }}>
-              {/* Навыки */}
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 8,
-                    color: token.colorTextSecondary,
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  <TagIcon size={12} style={{ color: token.colorTextTertiary, flexShrink: 0 }} />
-                  <Text
-                    strong
-                    style={{
-                      fontSize: 11,
-                      lineHeight: "18px",
-                      color: token.colorTextSecondary,
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      margin: 0,
-                    }}
-                  >
-                    Требуемые навыки
-                  </Text>
-                </div>
-                <Select
-                  mode="multiple"
-                  size="middle"
-                  placeholder="Выберите навыки..."
-                  value={skillsFilter}
-                  onChange={onSkillsFilterChange}
-                  options={COMMON_SKILLS.map(skill => ({ label: skill, value: skill }))}
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                  }
-                  maxTagCount="responsive"
-                  style={{ width: "100%", fontSize: 13 }}
-                  popupMatchSelectWidth={false}
-                />
-              </div>
+        <Divider />
 
-              {/* Бюджет */}
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 8,
-                    color: token.colorTextSecondary,
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  <DollarSign size={12} style={{ color: token.colorTextTertiary, flexShrink: 0 }} />
-                  <Text
-                    strong
-                    style={{
-                      fontSize: 11,
-                      lineHeight: "18px",
-                      color: token.colorTextSecondary,
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      margin: 0,
-                    }}
-                  >
-                    Бюджет (₽)
-                  </Text>
-                </div>
-                <Space direction="vertical" size={8} style={{ width: "100%" }}>
-                  <Space.Compact style={{ width: "100%" }}>
-                    <span style={{ fontSize: 13, display: "flex", alignItems: "center", padding: "0 8px", background: token.colorFillAlter, border: `1px solid ${token.colorBorder}`, borderRight: "none", borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px` }}>От</span>
-                    <InputNumber
-                      size="middle"
-                      placeholder="Минимальная сумма"
-                      value={budgetMin}
-                      onChange={onBudgetMinChange}
-                      min={0}
-                      style={{ flex: 1, fontSize: 13, borderRadius: `0 ${token.borderRadius}px ${token.borderRadius}px 0` }}
-                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}
-                      parser={((value: string | undefined): number => {
-                        const cleaned = value?.replace(/\s?/g, "") || "";
-                        return cleaned ? Number(cleaned) : 0;
-                      })}
-                    />
-                  </Space.Compact>
-                  <Space.Compact style={{ width: "100%" }}>
-                    <span style={{ fontSize: 13, display: "flex", alignItems: "center", padding: "0 8px", background: token.colorFillAlter, border: `1px solid ${token.colorBorder}`, borderRight: "none", borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px` }}>До</span>
-                    <InputNumber
-                      size="middle"
-                      placeholder="Максимальная сумма"
-                      value={budgetMax}
-                      onChange={onBudgetMaxChange}
-                      min={budgetMin || 0}
-                      style={{ flex: 1, fontSize: 13, borderRadius: `0 ${token.borderRadius}px ${token.borderRadius}px 0` }}
-                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}
-                      parser={((value: string | undefined): number => {
-                        const cleaned = value?.replace(/\s?/g, "") || "";
-                        return cleaned ? Number(cleaned) : 0;
-                      })}
-                    />
-                  </Space.Compact>
-                </Space>
-              </div>
-            </Space>
-          )}
-        </div>
-
-        <Divider
-          style={{
-            margin: 0,
-            borderColor: token.colorBorderSecondary,
-          }}
-        />
-
-        {/* Кнопка сброса */}
+        {/* Advanced Filters Toggle */}
         <Button
-          size="middle"
-          icon={<X size={14} />}
+          fullWidth
+          variant="text"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          endIcon={showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          sx={{ justifyContent: 'space-between' }}
+        >
+          <Typography variant="caption" textTransform="uppercase" fontWeight={600} letterSpacing={0.5}>
+            Расширенные фильтры
+          </Typography>
+          {activeFiltersCount > 0 && !showAdvanced && (
+            <Chip
+              label={activeFiltersCount}
+              size="small"
+              color="primary"
+              sx={{ height: 20, fontSize: '0.6875rem' }}
+            />
+          )}
+        </Button>
+
+        {/* Advanced Filters Content */}
+        <Collapse in={showAdvanced}>
+          <Stack spacing={2}>
+            {/* Skills */}
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>
+                <TagIcon size={12} />
+                Требуемые навыки
+              </Typography>
+              <Autocomplete
+                multiple
+                size="small"
+                options={COMMON_SKILLS}
+                value={skillsFilter}
+                onChange={(_, newValue) => onSkillsFilterChange?.(newValue)}
+                renderInput={(params) => (
+                  <TextField {...params} placeholder="Выберите навыки..." />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip {...getTagProps({ index })} key={option} label={option} size="small" />
+                  ))
+                }
+              />
+            </Box>
+
+            {/* Budget */}
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>
+                <DollarSign size={12} />
+                Бюджет (₽)
+              </Typography>
+              <Stack spacing={1}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="От"
+                  value={budgetMin || ''}
+                  onChange={(e) => onBudgetMinChange?.(e.target.value ? Number(e.target.value) : null)}
+                  inputProps={{ min: 0 }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="До"
+                  value={budgetMax || ''}
+                  onChange={(e) => onBudgetMaxChange?.(e.target.value ? Number(e.target.value) : null)}
+                  inputProps={{ min: budgetMin || 0 }}
+                />
+              </Stack>
+            </Box>
+          </Stack>
+        </Collapse>
+
+        <Divider />
+
+        {/* Reset Button */}
+        <Button
+          fullWidth
+          variant="outlined"
+          color="error"
+          startIcon={<X size={16} />}
           onClick={onReset}
           disabled={!hasActiveFilters}
-          block
-          danger={hasActiveFilters}
-          style={{
-            width: "100%",
-            height: 36,
-            borderRadius: token.borderRadius,
-            fontWeight: 500,
-            fontSize: 13,
-          }}
         >
           Сбросить все фильтры
         </Button>
 
-        {/* Активные фильтры (теги) */}
+        {/* Active Filters Tags */}
         {hasActiveFilters && (
-          <div
-            style={{
-              paddingTop: 14,
-              borderTop: `1px solid ${token.colorBorderSecondary}`,
-            }}
-          >
-            <Text
-              strong
-              style={{
-                fontSize: 11,
-                lineHeight: "18px",
-                display: "block",
-                marginBottom: 10,
-                color: token.colorTextSecondary,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
+          <Box sx={{ pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>
               Активные фильтры
-            </Text>
-            <Space wrap size={[8, 8]} style={{ width: "100%" }}>
+            </Typography>
+            <Box display="flex" flexWrap="wrap" gap={1}>
               {search && (
-                <Tag
-                  closable
-                  onClose={() => onSearchChange("")}
-                  color="blue"
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    padding: "3px 8px",
-                    borderRadius: token.borderRadiusSM,
-                    fontWeight: 500,
-                  }}
-                >
-                  Поиск: "{search.length > 20 ? search.substring(0, 20) + "..." : search}"
-                </Tag>
+                <Chip
+                  label={`Поиск: "${search.length > 20 ? search.substring(0, 20) + "..." : search}"`}
+                  size="small"
+                  onDelete={() => onSearchChange("")}
+                  color="primary"
+                />
               )}
               {statusFilter !== "all" && (
-                <Tag
-                  closable
-                  onClose={() => onStatusFilterChange("all")}
-                  color="blue"
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    padding: "3px 8px",
-                    borderRadius: token.borderRadiusSM,
-                    fontWeight: 500,
-                  }}
-                >
-                  {getStatusLabel(statusFilter)}
-                </Tag>
+                <Chip
+                  label={getStatusLabel(statusFilter)}
+                  size="small"
+                  onDelete={() => onStatusFilterChange("all")}
+                  color="primary"
+                />
               )}
               {skillsFilter && skillsFilter.length > 0 && (
-                <Tag
-                  closable
-                  onClose={() => onSkillsFilterChange?.([])}
-                  color="blue"
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    padding: "3px 8px",
-                    borderRadius: token.borderRadiusSM,
-                    fontWeight: 500,
-                  }}
-                >
-                  Навыки ({skillsFilter.length})
-                </Tag>
+                <Chip
+                  label={`Навыки (${skillsFilter.length})`}
+                  size="small"
+                  onDelete={() => onSkillsFilterChange?.([])}
+                  color="primary"
+                />
               )}
               {budgetMin !== undefined && (
-                <Tag
-                  closable
-                  onClose={() => onBudgetMinChange?.(null)}
-                  color="blue"
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    padding: "3px 8px",
-                    borderRadius: token.borderRadiusSM,
-                    fontWeight: 500,
-                  }}
-                >
-                  От {budgetMin.toLocaleString("ru-RU")} ₽
-                </Tag>
+                <Chip
+                  label={`От ${budgetMin.toLocaleString("ru-RU")} ₽`}
+                  size="small"
+                  onDelete={() => onBudgetMinChange?.(null)}
+                  color="primary"
+                />
               )}
               {budgetMax !== undefined && (
-                <Tag
-                  closable
-                  onClose={() => onBudgetMaxChange?.(null)}
-                  color="blue"
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    padding: "3px 8px",
-                    borderRadius: token.borderRadiusSM,
-                    fontWeight: 500,
-                  }}
-                >
-                  До {budgetMax.toLocaleString("ru-RU")} ₽
-                </Tag>
+                <Chip
+                  label={`До ${budgetMax.toLocaleString("ru-RU")} ₽`}
+                  size="small"
+                  onDelete={() => onBudgetMaxChange?.(null)}
+                  color="primary"
+                />
               )}
               {sortBy !== "date" && (
-                <Tag
-                  color="default"
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    lineHeight: "18px",
-                    padding: "3px 8px",
-                    borderRadius: token.borderRadiusSM,
-                    fontWeight: 500,
-                  }}
-                >
-                  {getSortLabel(sortBy)} ({sortOrder === "asc" ? "↑" : "↓"})
-                </Tag>
+                <Chip
+                  label={`${getSortLabel(sortBy)} (${sortOrder === "asc" ? "↑" : "↓"})`}
+                  size="small"
+                  variant="outlined"
+                />
               )}
-            </Space>
-          </div>
+            </Box>
+          </Box>
         )}
-      </Space>
-    </div>
+      </Stack>
+    </Box>
   );
 }
 

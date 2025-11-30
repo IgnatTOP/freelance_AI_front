@@ -87,7 +87,7 @@ export default function ForgotPasswordPage() {
                 style={{
                   width: 64,
                   height: 64,
-                  borderRadius: theme.shape.borderRadius * 2,
+                  borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16,
                   background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
                   display: "inline-flex",
                   alignItems: "center",

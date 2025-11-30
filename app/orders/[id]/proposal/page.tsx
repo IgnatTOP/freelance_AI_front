@@ -290,7 +290,7 @@ export default function CreateProposalPage() {
                   </Box>
 
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="Предлагаемая сумма (₽)"

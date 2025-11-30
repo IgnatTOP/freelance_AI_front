@@ -1,56 +1,58 @@
 'use client';
 
-import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
+import { createTheme, ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { ruRU } from '@mui/material/locale';
 import type { ReactNode } from 'react';
+import { useMemo, useContext, createContext, useState, useEffect } from 'react';
 
-const darkGreenTheme = createTheme(
-  {
-    palette: {
-      mode: 'dark',
-      primary: {
-        main: '#14b8a6',
-        light: '#5eead4',
-        dark: '#0d9488',
-        contrastText: '#f0fdfa',
+const getTheme = (mode: 'light' | 'dark') =>
+  createTheme(
+    {
+      palette: {
+        mode,
+        primary: {
+          main: '#14b8a6',
+          light: '#5eead4',
+          dark: '#0d9488',
+          contrastText: mode === 'dark' ? '#f0fdfa' : '#ffffff',
+        },
+        secondary: {
+          main: '#99f6e4',
+          light: '#ccfbf1',
+          dark: '#5eead4',
+          contrastText: mode === 'dark' ? '#0a1110' : '#0f172a',
+        },
+        success: {
+          main: '#0d9488',
+          light: '#14b8a6',
+          dark: '#0f766e',
+        },
+        warning: {
+          main: '#fbbf24',
+          light: '#fcd34d',
+          dark: '#f59e0b',
+        },
+        error: {
+          main: '#ef4444',
+          light: '#f87171',
+          dark: '#dc2626',
+        },
+        info: {
+          main: '#3b82f6',
+          light: '#60a5fa',
+          dark: '#2563eb',
+        },
+        background: {
+          default: mode === 'dark' ? '#0a1110' : '#f8fafc',
+          paper: mode === 'dark' ? '#0d1615' : '#ffffff',
+        },
+        text: {
+          primary: mode === 'dark' ? '#f0fdfa' : '#0f172a',
+          secondary: mode === 'dark' ? '#ccfbf1' : '#475569',
+          disabled: mode === 'dark' ? '#5eead4' : '#94a3b8',
+        },
+        divider: mode === 'dark' ? '#1f2e2c' : '#e2e8f0',
       },
-      secondary: {
-        main: '#99f6e4',
-        light: '#ccfbf1',
-        dark: '#5eead4',
-        contrastText: '#0a1110',
-      },
-      success: {
-        main: '#0d9488',
-        light: '#14b8a6',
-        dark: '#0f766e',
-      },
-      warning: {
-        main: '#fbbf24',
-        light: '#fcd34d',
-        dark: '#f59e0b',
-      },
-      error: {
-        main: '#ef4444',
-        light: '#f87171',
-        dark: '#dc2626',
-      },
-      info: {
-        main: '#3b82f6',
-        light: '#60a5fa',
-        dark: '#2563eb',
-      },
-      background: {
-        default: '#0a1110',
-        paper: '#0d1615',
-      },
-      text: {
-        primary: '#f0fdfa',
-        secondary: '#ccfbf1',
-        disabled: '#5eead4',
-      },
-      divider: '#1f2e2c',
-    },
     typography: {
       fontFamily: 'var(--font-inter)',
       fontSize: 14,
@@ -103,26 +105,26 @@ const darkGreenTheme = createTheme(
     },
     components: {
       MuiCssBaseline: {
-        styleOverrides: {
+        styleOverrides: (theme) => ({
           body: {
-            scrollbarColor: '#1f2e2c #0a1110',
+            scrollbarColor: theme.palette.mode === 'dark' ? '#1f2e2c #0a1110' : '#cbd5e1 #f8fafc',
             '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
               width: 8,
               height: 8,
             },
             '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
               borderRadius: 8,
-              backgroundColor: '#1f2e2c',
+              backgroundColor: theme.palette.mode === 'dark' ? '#1f2e2c' : '#cbd5e1',
               minHeight: 24,
             },
             '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
-              backgroundColor: '#2d4340',
+              backgroundColor: theme.palette.mode === 'dark' ? '#2d4340' : '#94a3b8',
             },
             '&::-webkit-scrollbar-track, & *::-webkit-scrollbar-track': {
-              backgroundColor: '#0a1110',
+              backgroundColor: theme.palette.mode === 'dark' ? '#0a1110' : '#f8fafc',
             },
           },
-        },
+        }),
       },
       MuiButton: {
         styleOverrides: {
@@ -146,83 +148,76 @@ const darkGreenTheme = createTheme(
       },
       MuiCard: {
         styleOverrides: {
-          root: {
-            backgroundColor: '#0d1615',
+          root: ({ theme }) => ({
             backgroundImage: 'none',
             borderRadius: 12,
-            border: '1px solid #1f2e2c',
-          },
+            border: `1px solid ${theme.palette.divider}`,
+          }),
         },
       },
       MuiPaper: {
         styleOverrides: {
           root: {
             backgroundImage: 'none',
-            backgroundColor: '#0d1615',
             borderRadius: 12,
           },
           elevation1: {
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
           },
           elevation2: {
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
           },
           elevation3: {
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.16)',
           },
         },
       },
       MuiTextField: {
         styleOverrides: {
-          root: {
+          root: ({ theme }) => ({
             '& .MuiOutlinedInput-root': {
               borderRadius: 12,
-              backgroundColor: '#0d1615',
               '& fieldset': {
-                borderColor: '#1f2e2c',
+                borderColor: theme.palette.divider,
               },
               '&:hover fieldset': {
-                borderColor: '#2d4340',
+                borderColor: theme.palette.mode === 'dark' ? '#2d4340' : '#94a3b8',
               },
               '&.Mui-focused fieldset': {
-                borderColor: '#14b8a6',
+                borderColor: theme.palette.primary.main,
               },
             },
-          },
+          }),
         },
       },
       MuiSelect: {
         styleOverrides: {
           select: {
             borderRadius: 12,
-            backgroundColor: '#0d1615',
           },
         },
       },
       MuiDialog: {
         styleOverrides: {
           paper: {
-            backgroundColor: '#0d1615',
             backgroundImage: 'none',
           },
         },
       },
       MuiAppBar: {
         styleOverrides: {
-          root: {
-            backgroundColor: '#0d1615',
+          root: ({ theme }) => ({
             backgroundImage: 'none',
-            borderBottom: '1px solid #1f2e2c',
-          },
+            borderBottom: `1px solid ${theme.palette.divider}`,
+          }),
         },
       },
       MuiDrawer: {
         styleOverrides: {
-          paper: {
-            backgroundColor: '#0d1615',
+          paper: ({ theme }) => ({
             backgroundImage: 'none',
-            borderRight: '1px solid #1f2e2c',
-          },
+            borderRight: `1px solid ${theme.palette.divider}`,
+          }),
         },
       },
       MuiChip: {
@@ -241,12 +236,12 @@ const darkGreenTheme = createTheme(
       },
       MuiSnackbar: {
         styleOverrides: {
-          root: {
+          root: ({ theme }) => ({
             '& .MuiPaper-root': {
               borderRadius: 12,
-              backgroundColor: '#111a19',
+              backgroundColor: theme.palette.mode === 'dark' ? '#111a19' : '#ffffff',
             },
-          },
+          }),
         },
       },
     },
@@ -254,15 +249,63 @@ const darkGreenTheme = createTheme(
   ruRU
 );
 
+// Theme Context
+type ThemeMode = 'light' | 'dark';
+
+interface ThemeContextType {
+  mode: ThemeMode;
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a MuiProvider');
+  }
+  return context;
+}
+
 interface MuiProviderProps {
   children: ReactNode;
 }
 
 export function MuiProvider({ children }: MuiProviderProps) {
+  const [mode, setMode] = useState<ThemeMode>('dark');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const savedTheme = localStorage.getItem('theme') as ThemeMode;
+    if (savedTheme) {
+      setMode(savedTheme);
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setMode(prefersDark ? 'dark' : 'light');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('theme', mode);
+      document.documentElement.classList.toggle('dark', mode === 'dark');
+      document.documentElement.classList.toggle('light', mode === 'light');
+    }
+  }, [mode, mounted]);
+
+  const toggleTheme = () => {
+    setMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const theme = useMemo(() => getTheme(mode), [mode]);
+
   return (
-    <ThemeProvider theme={darkGreenTheme}>
-      <CssBaseline />
-      {children}
-    </ThemeProvider>
+    <ThemeContext.Provider value={{ mode, toggleTheme }}>
+      <MuiThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </MuiThemeProvider>
+    </ThemeContext.Provider>
   );
 }

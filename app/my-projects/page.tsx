@@ -139,7 +139,7 @@ export default function MyProjectsPage() {
           ) : (
             <Grid container spacing={2}>
               {orders.map((order) => (
-                <Grid item xs={12} key={order.id}>
+                <Grid size={{ xs: 12 }} key={order.id}>
                   <Card
                     sx={{
                       transition: "transform 0.2s, box-shadow 0.2s",

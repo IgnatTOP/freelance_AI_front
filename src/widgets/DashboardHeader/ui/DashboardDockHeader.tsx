@@ -8,7 +8,7 @@ import { useState } from "react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import { useAuth, useMobileMenu } from "@/src/shared/lib/hooks";
 import { useAsyncOperation } from "@/src/shared/lib/hooks/useAsyncOperation";
-import { DesktopDock, UserAvatar, DashboardMobileMenu } from "@/src/shared/ui";
+import { DesktopDock, UserAvatar, DashboardMobileMenu, ThemeToggle } from "@/src/shared/ui";
 import { NotificationBell } from "@/src/widgets/Notifications";
 import { RoleSwitcher } from "@/src/features/user/role-switcher";
 import {
@@ -86,6 +86,7 @@ export function DashboardDockHeader() {
         actions={
           <>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <NotificationBell />
               <RoleSwitcher />
             </div>
@@ -181,11 +182,22 @@ export function DashboardDockHeader() {
         navItems={mobileNavItems}
         pathname={pathname}
         additionalContent={
-          <div className="px-2">
-            <div className="text-sm font-semibold text-foreground-secondary mb-3">
-              Переключить роль
+          <div className="px-2 space-y-4">
+            <div>
+              <div className="text-sm font-semibold text-foreground-secondary mb-3">
+                Тема
+              </div>
+              <div className="flex items-center justify-between bg-surface p-2 rounded-lg">
+                <span className="text-sm">Переключить тему</span>
+                <ThemeToggle />
+              </div>
             </div>
-            <RoleSwitcher />
+            <div>
+              <div className="text-sm font-semibold text-foreground-secondary mb-3">
+                Переключить роль
+              </div>
+              <RoleSwitcher />
+            </div>
           </div>
         }
         actions={

@@ -217,20 +217,6 @@ export function AIInsights({ userRole, embedded = false }: AIInsightsProps) {
     }
   };
 
-  const getColor = (type: Insight["type"]) => {
-    switch (type) {
-      case "success":
-        return "text-green-400 bg-green-400/10 border-green-400/20";
-      case "warning":
-        return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
-      case "info":
-        return "text-blue-400 bg-blue-400/10 border-blue-400/20";
-      case "tip":
-        return "text-purple-400 bg-purple-400/10 border-purple-400/20";
-      default:
-        return "text-primary bg-primary/10 border-primary/20";
-    }
-  };
 
   const getAlertSeverity = (type: Insight["type"]): "success" | "warning" | "info" | "error" => {
     switch (type) {

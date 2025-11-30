@@ -107,16 +107,11 @@ export function AIGuide({ userRole }: AIGuideProps) {
     // Генерируем персональное сообщение от AI
     const generateAIMessage = async () => {
       try {
-        // user уже доступен из useAuth
-        const roleText = userRole === "client" ? "заказчика" : "фрилансера";
         let fullMessage = "";
 
-        await aiService.chatAssistantStream(
+        await aiService.generateWelcomeMessageStream(
           {
-            message: `Привет! Я AI-помощник. Помоги новому ${roleText} начать работу на платформе. Дай краткое приветствие (2-3 предложения) и объясни, как я могу помочь.`,
-            context_data: {
-              user_role: userRole,
-            },
+            user_role: userRole || "freelancer",
           },
           (chunk) => {
             fullMessage += chunk;

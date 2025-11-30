@@ -1,27 +1,37 @@
 "use client";
 
-import { Form, Input, Select, Button, Divider, InputNumber, Typography, theme, Space } from "antd";
+import { useState } from "react";
+import {
+  TextField,
+  Select,
+  MenuItem,
+  Button,
+  Divider,
+  Typography,
+  Stack,
+  Box,
+  Chip,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  Autocomplete,
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import {
   User,
   MapPin,
   DollarSign,
   Briefcase,
-  FileText,
   Code,
   Save,
 } from "lucide-react";
-import type { FormInstance } from "antd";
 import { AIAssistantInline } from "@/src/shared/ui/AIAssistantInline";
 import { aiService } from "@/src/shared/lib/ai/ai.service";
 import { formatNumber, parseFormattedNumber } from "@/src/shared/lib/utils/number-utils";
 
-const { TextArea } = Input;
-const { Text, Title } = Typography;
-const { useToken } = theme;
-
 interface EditProfileFormProps {
-  form: FormInstance;
+  form: any;
   skills: string[];
   onSkillsChange: (skills: string[]) => void;
   onSubmit: (values: any) => void;
@@ -35,309 +45,264 @@ export function EditProfileForm({
   onSubmit,
   loading,
 }: EditProfileFormProps) {
-  const { token } = useToken();
-  
-  // Отслеживаем изменения bio и experience_level для реактивного обновления кнопки AI
-  const bio = Form.useWatch("bio", form);
-  const experienceLevel = Form.useWatch("experience_level", form);
-  
-  // Кнопка AI должна быть активна, если есть bio ИЛИ есть навыки ИЛИ есть уровень опыта
-  const isAIDisabled = !bio && skills.length === 0 && !experienceLevel;
+  // Initialize formData from form values
+  const [formData, setFormData] = useState(() => ({
+    display_name: form?.getFieldValue?.('display_name') || '',
+    bio: form?.getFieldValue?.('bio') || '',
+    location: form?.getFieldValue?.('location') || '',
+    experience_level: form?.getFieldValue?.('experience_level') || '',
+    hourly_rate: form?.getFieldValue?.('hourly_rate') || 0,
+  }));
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleChange = (field: string, value: any) => {
+    const newData = { ...formData, [field]: value };
+    setFormData(newData);
+    // Update parent form state
+    if (form?.setFieldValue) {
+      form.setFieldValue(field, value);
+    }
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.display_name) {
+      newErrors.display_name = 'Введите имя';
+    } else if (formData.display_name.length < 2) {
+      newErrors.display_name = 'Минимум 2 символа';
+    } else if (formData.display_name.length > 100) {
+      newErrors.display_name = 'Максимум 100 символов';
+    }
+
+    if (formData.bio && formData.bio.length > 1000) {
+      newErrors.bio = 'Максимум 1000 символов';
+    }
+
+    if (!formData.experience_level) {
+      newErrors.experience_level = 'Выберите уровень опыта';
+    }
+
+    if (formData.hourly_rate && formData.hourly_rate < 0) {
+      newErrors.hourly_rate = 'Ставка должна быть положительным числом';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validate()) {
+      onSubmit(formData);
+    }
+  };
+
+  const isAIDisabled = !formData.bio && skills.length === 0 && !formData.experience_level;
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={onSubmit}
-      size="large"
-      requiredMark={false}
-      style={{ width: "100%" }}
-    >
+    <form onSubmit={handleSubmit} style={{ width: "100%" }}>
       {/* Секция 1: Основная информация */}
-      <div style={{ marginBottom: 32 }}>
-        <Space align="center" size={12} style={{ marginBottom: 16 }}>
-          <User size={20} style={{ color: token.colorPrimary }} />
-          <Title
-            level={4}
-            style={{
-              margin: 0,
-              fontSize: 16,
-              lineHeight: "24px",
-              fontWeight: 600,
-            }}
-          >
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+          <User size={20} color="primary" />
+          <Typography variant="h6" fontWeight={600}>
             Основная информация
-          </Title>
-        </Space>
+          </Typography>
+        </Stack>
 
-        <Form.Item
-          name="display_name"
-          label={
-            <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-              Отображаемое имя
-            </Text>
-          }
-          rules={[
-            { required: true, message: "Введите имя" },
-            { min: 2, message: "Минимум 2 символа" },
-            { max: 100, message: "Максимум 100 символов" },
-          ]}
-          style={{ marginBottom: 24 }}
-        >
-          <Input
-            prefix={<User size={16} style={{ color: token.colorTextTertiary }} />}
-            placeholder="Как вас должны называть"
-            maxLength={50}
-            showCount
-            style={{
-              fontSize: 14,
-              lineHeight: "22px",
-              height: 40,
-            }}
-          />
-        </Form.Item>
+        <TextField
+          fullWidth
+          required
+          label="Отображаемое имя"
+          value={formData.display_name}
+          onChange={(e) => handleChange('display_name', e.target.value)}
+          error={!!errors.display_name}
+          helperText={errors.display_name}
+          placeholder="Как вас должны называть"
+          inputProps={{ maxLength: 50 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <User size={16} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
 
-        <Form.Item
-          name="bio"
-          label={
-            <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-              О себе
-            </Text>
-          }
-          rules={[{ max: 1000, message: "Максимум 1000 символов" }]}
-          extra={
-            <div style={{ marginTop: 8 }}>
-              <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px", display: "block", marginBottom: 8 }}>
-                Расскажите о себе, опыте и специализации
-              </Text>
-              <AIAssistantInline
-                onImprove={async (onChunk) => {
-                  const currentBio = bio || "";
-                  const currentExperienceLevel = experienceLevel || "";
-                  if (!currentBio && skills.length === 0 && !currentExperienceLevel) {
-                    toastService.warning("Сначала заполните описание, добавьте навыки или выберите уровень опыта");
-                    return;
-                  }
-                  await aiService.improveProfileStream(
-                    {
-                      current_bio: currentBio || "Фрилансер с опытом работы",
-                      skills: skills,
-                      experience_level: currentExperienceLevel,
-                    },
-                    onChunk
-                  );
-                }}
-                onApply={(text) => {
-                  form.setFieldValue("bio", text);
-                }}
-                disabled={isAIDisabled}
-              />
-            </div>
-          }
-          style={{ marginBottom: 24 }}
-        >
-          <TextArea
-            rows={6}
-            placeholder="Опишите ваш опыт, навыки, специализацию..."
-            showCount
-            maxLength={1000}
-            style={{
-              fontSize: 14,
-              lineHeight: "22px",
-              resize: "none",
-            }}
-          />
-        </Form.Item>
+        <TextField
+          fullWidth
+          multiline
+          rows={6}
+          label="О себе"
+          value={formData.bio}
+          onChange={(e) => handleChange('bio', e.target.value)}
+          error={!!errors.bio}
+          helperText={errors.bio || `${formData.bio?.length || 0}/1000`}
+          placeholder="Опишите ваш опыт, навыки, специализацию..."
+          inputProps={{ maxLength: 1000 }}
+          sx={{ mb: 1 }}
+        />
 
-        <Form.Item
-          name="location"
-          label={
-            <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-              Местоположение
-            </Text>
-          }
-          extra={
-            <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-              Город, страна (опционально)
-            </Text>
-          }
-          style={{ marginBottom: 24 }}
-        >
-          <Input
-            prefix={<MapPin size={16} style={{ color: token.colorTextTertiary }} />}
-            placeholder="Например: Москва, Россия"
-            maxLength={100}
-            style={{
-              fontSize: 14,
-              lineHeight: "22px",
-              height: 40,
-            }}
-          />
-        </Form.Item>
-      </div>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          Расскажите о себе, опыте и специализации
+        </Typography>
 
-      <Divider style={{ margin: "32px 0" }} />
+        <AIAssistantInline
+          onImprove={async (onChunk) => {
+            const currentBio = formData.bio || "";
+            const currentExperienceLevel = formData.experience_level || "";
+            if (!currentBio && skills.length === 0 && !currentExperienceLevel) {
+              toastService.warning("Сначала заполните описание, добавьте навыки или выберите уровень опыта");
+              return;
+            }
+            await aiService.improveProfileStream(
+              {
+                current_bio: currentBio || "Фрилансер с опытом работы",
+                skills: skills,
+                experience_level: currentExperienceLevel,
+              },
+              onChunk
+            );
+          }}
+          onApply={(text) => {
+            handleChange('bio', text);
+          }}
+          disabled={isAIDisabled}
+        />
+
+        <TextField
+          fullWidth
+          label="Местоположение"
+          value={formData.location}
+          onChange={(e) => handleChange('location', e.target.value)}
+          placeholder="Например: Москва, Россия"
+          helperText="Город, страна (опционально)"
+          inputProps={{ maxLength: 100 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <MapPin size={16} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3, mt: 2 }}
+        />
+      </Box>
+
+      <Divider sx={{ my: 4 }} />
 
       {/* Секция 2: Профессиональная информация */}
-      <div style={{ marginBottom: 32 }}>
-        <Space align="center" size={12} style={{ marginBottom: 16 }}>
-          <Briefcase size={20} style={{ color: token.colorSuccess }} />
-          <Title
-            level={4}
-            style={{
-              margin: 0,
-              fontSize: 16,
-              lineHeight: "24px",
-              fontWeight: 600,
-            }}
-          >
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+          <Briefcase size={20} />
+          <Typography variant="h6" fontWeight={600}>
             Профессиональная информация
-          </Title>
-        </Space>
+          </Typography>
+        </Stack>
 
-        <Form.Item
-          name="experience_level"
-          label={
-            <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-              Уровень опыта
-            </Text>
-          }
-          rules={[{ required: true, message: "Выберите уровень опыта" }]}
-          style={{ marginBottom: 24 }}
-        >
+        <FormControl fullWidth required error={!!errors.experience_level} sx={{ mb: 3 }}>
+          <InputLabel>Уровень опыта</InputLabel>
           <Select
-            placeholder="Выберите уровень опыта"
-            suffixIcon={<Briefcase size={16} style={{ color: token.colorTextTertiary }} />}
-            style={{
-              fontSize: 14,
-              lineHeight: "22px",
-            }}
-            options={[
-              { label: "Начинающий (Junior)", value: "junior" },
-              { label: "Средний (Middle)", value: "middle" },
-              { label: "Опытный (Senior)", value: "senior" },
-            ]}
-          />
-        </Form.Item>
+            value={formData.experience_level}
+            onChange={(e) => handleChange('experience_level', e.target.value)}
+            label="Уровень опыта"
+            startAdornment={
+              <InputAdornment position="start">
+                <Briefcase size={16} />
+              </InputAdornment>
+            }
+          >
+            <MenuItem value="junior">Начинающий (Junior)</MenuItem>
+            <MenuItem value="middle">Средний (Middle)</MenuItem>
+            <MenuItem value="senior">Опытный (Senior)</MenuItem>
+          </Select>
+          {errors.experience_level && (
+            <FormHelperText>{errors.experience_level}</FormHelperText>
+          )}
+        </FormControl>
 
-        <Form.Item
-          name="hourly_rate"
-          label={
-            <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-              Ставка в час (₽)
-            </Text>
-          }
-          rules={[
-            { type: "number", min: 0, message: "Ставка должна быть положительным числом" },
-          ]}
-          extra={
-            <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-              Укажите желаемую почасовую ставку (опционально)
-            </Text>
-          }
-          style={{ marginBottom: 24 }}
-        >
-          <InputNumber
-            prefix={<DollarSign size={16} style={{ color: token.colorTextTertiary }} />}
-            placeholder="1000"
-            min={0}
-            max={100000}
-            step={100}
-            style={{
-              width: "100%",
-              fontSize: 14,
-              height: 40,
-            }}
-            formatter={(value) => formatNumber(value)}
-            parser={(value) => {
-              const parsed = value ? Number(parseFormattedNumber(value)) : 0;
-              return Math.max(0, Math.min(100000, parsed)) as 0 | 100000;
-            }}
-          />
-        </Form.Item>
-      </div>
+        <TextField
+          fullWidth
+          type="number"
+          label="Ставка в час (₽)"
+          value={formData.hourly_rate}
+          onChange={(e) => handleChange('hourly_rate', parseFloat(e.target.value) || 0)}
+          error={!!errors.hourly_rate}
+          helperText={errors.hourly_rate || "Укажите желаемую почасовую ставку (опционально)"}
+          placeholder="1000"
+          inputProps={{ min: 0, max: 100000, step: 100 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <DollarSign size={16} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+      </Box>
 
-      <Divider style={{ margin: "32px 0" }} />
+      <Divider sx={{ my: 4 }} />
 
       {/* Секция 3: Навыки */}
-      <div style={{ marginBottom: 32 }}>
-        <Space align="center" size={12} style={{ marginBottom: 16 }}>
-          <Code size={20} style={{ color: token.colorInfo }} />
-          <Title
-            level={4}
-            style={{
-              margin: 0,
-              fontSize: 16,
-              lineHeight: "24px",
-              fontWeight: 600,
-            }}
-          >
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+          <Code size={20} />
+          <Typography variant="h6" fontWeight={600}>
             Навыки и технологии
-          </Title>
-        </Space>
+          </Typography>
+        </Stack>
 
-        <Form.Item
-          label={
-            <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-              Навыки
-            </Text>
+        <Autocomplete
+          multiple
+          freeSolo
+          options={[]}
+          value={skills}
+          onChange={(_, newValue) => onSkillsChange(newValue)}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip
+                label={option}
+                {...getTagProps({ index })}
+                key={option}
+              />
+            ))
           }
-          extra={
-            <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-              Добавьте навыки и технологии, которыми владеете. Нажмите Enter после каждого
-            </Text>
-          }
-          style={{ marginBottom: 24 }}
-        >
-          <Select
-            mode="tags"
-            placeholder="Введите навык и нажмите Enter"
-            value={skills}
-            onChange={onSkillsChange}
-            tokenSeparators={[","]}
-            maxTagCount="responsive"
-            style={{
-              fontSize: 14,
-              lineHeight: "22px",
-            }}
-          />
-        </Form.Item>
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Навыки"
+              placeholder="Введите навык и нажмите Enter"
+              helperText="Добавьте навыки и технологии, которыми владеете. Нажмите Enter после каждого"
+            />
+          )}
+          sx={{ mb: 2 }}
+        />
 
         {skills.length > 0 && (
-          <Text
-            type="secondary"
-            style={{
-              fontSize: 12,
-              lineHeight: "20px",
-              display: "block",
-            }}
-          >
+          <Typography variant="caption" color="text.secondary">
             Добавлено навыков: {skills.length}
-          </Text>
+          </Typography>
         )}
-      </div>
+      </Box>
 
-      <Divider style={{ margin: "32px 0 24px 0" }} />
+      <Divider sx={{ my: 3 }} />
 
       {/* Submit Button */}
-      <Form.Item style={{ marginBottom: 0 }}>
-        <Button
-          type="primary"
-          htmlType="submit"
-          icon={<Save size={20} strokeWidth={2} />}
-          loading={loading}
-          block
-          size="large"
-          style={{
-            height: 48,
-            fontSize: 16,
-            lineHeight: "24px",
-            fontWeight: 500,
-          }}
-        >
-          {loading ? "Сохраняю изменения..." : "Сохранить изменения"}
-        </Button>
-      </Form.Item>
-    </Form>
+      <Button
+        type="submit"
+        variant="contained"
+        size="large"
+        fullWidth
+        startIcon={<Save size={20} />}
+        disabled={loading}
+        sx={{ height: 48, fontSize: 16, fontWeight: 500 }}
+      >
+        {loading ? "Сохраняю изменения..." : "Сохранить изменения"}
+      </Button>
+    </form>
   );
 }

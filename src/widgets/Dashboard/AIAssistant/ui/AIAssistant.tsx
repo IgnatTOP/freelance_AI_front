@@ -128,17 +128,42 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        className="fixed bottom-6 right-6 z-[60]"
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 60,
+        }}
       >
-        <motion.button
+        <motion.div
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-purple-500 shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, #8b5cf6 100%)`,
+            boxShadow: theme.shadows[8],
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            position: 'relative',
+          }}
         >
-          <Bot size={24} className="text-white" />
+          <Bot size={24} style={{ color: '#fff' }} />
           <motion.div
-            className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-background"
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#4ade80',
+              border: `2px solid ${theme.palette.background.paper}`,
+            }}
             animate={{
               scale: [1, 1.2, 1],
               opacity: [1, 0.7, 1],
@@ -149,7 +174,7 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
               ease: "easeInOut",
             }}
           />
-        </motion.button>
+        </motion.div>
       </motion.div>
     );
   }
@@ -159,8 +184,17 @@ export function AIAssistant({ embedded = false }: AIAssistantProps) {
       initial={embedded ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
-      className={embedded ? "w-full" : "fixed bottom-6 right-6 z-[60] w-[380px] max-w-[calc(100vw-3rem)]"}
-      style={{ pointerEvents: 'auto' }}
+      style={{
+        pointerEvents: 'auto',
+        width: embedded ? '100%' : 380,
+        maxWidth: embedded ? '100%' : 'calc(100vw - 3rem)',
+        ...(embedded ? {} : {
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 60,
+        }),
+      }}
     >
       <Card
         sx={{

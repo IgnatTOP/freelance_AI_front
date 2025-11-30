@@ -299,7 +299,7 @@ export default function DashboardPage() {
             >
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                 <Grid container spacing={{ xs: 2, md: 4 }} alignItems="center">
-                  <Grid item xs={12} md={8}>
+                  <Grid size={{ xs: 12, md: 8 }}>
                     <Stack spacing={1}>
                       <Typography variant="body1" color="text.secondary">
                         {getGreeting()}, {profile?.display_name || user?.username}!
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                       </Typography>
                     </Stack>
                   </Grid>
-                  <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                  <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
                     <Link href={userRole === "client" ? "/orders/create" : "/orders?ai=true"} style={{ textDecoration: 'none' }}>
                       <Button
                         variant="contained"
@@ -374,7 +374,7 @@ export default function DashboardPage() {
               const Icon = metric.icon;
               const TrendIcon = metric.trend >= 0 ? ArrowUpRight : ArrowDownRight;
               return (
-                <Grid item xs={6} sm={6} md={3} key={index}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }} key={index}>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -441,7 +441,7 @@ export default function DashboardPage() {
           {/* MAIN LAYOUT */}
           <Grid container spacing={4}>
             {/* MAIN CONTENT */}
-            <Grid item xs={12} lg={8} xl={8}>
+            <Grid size={{ xs: 12, lg: 8, xl: 8 }}>
               <Stack spacing={3}>
                 {/* ACTION CENTER */}
                 <motion.div
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                         {quickActions.map((action, index) => {
                           const Icon = action.icon;
                           return (
-                            <Grid item xs={6} sm={4} md={4} key={index}>
+                            <Grid size={{ xs: 6, sm: 4, md: 4 }} key={index}>
                               <Link href={action.href} style={{ textDecoration: 'none' }}>
                                 <motion.div
                                   whileHover={{ scale: 1.03 }}
@@ -543,7 +543,7 @@ export default function DashboardPage() {
             </Grid>
 
             {/* SIDEBAR */}
-            <Grid item xs={12} lg={4} xl={4}>
+            <Grid size={{ xs: 12, lg: 4, xl: 4 }}>
               <Stack spacing={3}>
                 {/* AI HUB */}
                 <motion.div
@@ -572,7 +572,7 @@ export default function DashboardPage() {
                         <Typography variant="h6">Быстрая статистика</Typography>
                       </Stack>
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Card
                             sx={{
                               background: `${theme.palette.primary.main}08`,
@@ -591,7 +591,7 @@ export default function DashboardPage() {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Card
                             sx={{
                               background: `${theme.palette.success.main}08`,
@@ -610,7 +610,7 @@ export default function DashboardPage() {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Card
                             sx={{
                               background: `${theme.palette.info.main}08`,
@@ -633,7 +633,7 @@ export default function DashboardPage() {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Card
                             sx={{
                               background: `${theme.palette.warning.main}08`,

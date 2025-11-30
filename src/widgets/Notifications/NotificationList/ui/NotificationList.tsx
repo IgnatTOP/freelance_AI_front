@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { List, Empty, Button, Typography, Space } from "antd";
+import { List, ListItem, ListItemAvatar, ListItemText, IconButton, Box, Typography, Avatar } from "@mui/material";
 import { Notification } from "@/src/shared/lib/notifications";
 import { notificationService } from "@/src/shared/lib/notifications";
 import { formatDistanceToNow } from "date-fns";
@@ -16,8 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { motion } from "framer-motion";
-
-const { Text, Paragraph } = Typography;
+import { useTheme } from "@mui/material/styles";
 
 interface NotificationListProps {
   notifications: Notification[];
@@ -39,20 +38,19 @@ export function NotificationList({
   onDelete,
 }: NotificationListProps) {
   const router = useRouter();
+  const theme = useTheme();
 
-  // Защита от null/undefined
   if (!notifications || notifications.length === 0) {
     return (
-      <Empty
-        description="Нет уведомлений"
-        className="py-8"
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-      />
+      <Box sx={{ py: 8, textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          Нет уведомлений
+        </Typography>
+      </Box>
     );
   }
 
   const handleNotificationClick = (item: Notification, e: React.MouseEvent) => {
-    // Если клик был на кнопку действия, не обрабатываем
     if ((e.target as HTMLElement).closest('button')) {
       return;
     }
@@ -60,17 +58,33 @@ export function NotificationList({
     const url = notificationService.getNotificationUrl(item);
     if (url) {
       router.push(url);
-      // Отмечаем как прочитанное при переходе
       if (!item.is_read) {
         onMarkAsRead(item.id);
       }
     }
   };
 
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "success": return theme.palette.success.main;
+      case "error": return theme.palette.error.main;
+      case "warning": return theme.palette.warning.main;
+      default: return theme.palette.primary.main;
+    }
+  };
+
+  const getTypeBgColor = (type: string) => {
+    switch (type) {
+      case "success": return `${theme.palette.success.main}15`;
+      case "error": return `${theme.palette.error.main}15`;
+      case "warning": return `${theme.palette.warning.main}15`;
+      default: return `${theme.palette.primary.main}15`;
+    }
+  };
+
   return (
-    <List
-      dataSource={notifications || []}
-      renderItem={(item) => {
+    <List sx={{ p: 0 }}>
+      {notifications.map((item) => {
         const message = notificationService.getNotificationMessage(item);
         const type = notificationService.getNotificationType(item);
         const Icon = getNotificationIcon(item.payload?.event || 'notification');
@@ -79,81 +93,92 @@ export function NotificationList({
 
         return (
           <motion.div
+            key={item.id}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <List.Item
+            <ListItem
               onClick={url ? (e) => handleNotificationClick(item, e) : undefined}
-              className={`px-4 py-3 border-b border-border/30 hover:bg-primary/5 transition-colors ${
-                isUnread ? "bg-primary/5" : ""
-              } ${url ? "cursor-pointer" : ""}`}
-              actions={[
-                <Space key="actions" size="small">
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                bgcolor: isUnread ? `${theme.palette.primary.main}08` : 'transparent',
+                cursor: url ? 'pointer' : 'default',
+                '&:hover': url ? {
+                  bgcolor: `${theme.palette.primary.main}12`,
+                } : {},
+                transition: 'background-color 0.2s',
+              }}
+              secondaryAction={
+                <Box display="flex" gap={0.5}>
                   {isUnread && (
-                    <Button
-                      type="text"
+                    <IconButton
                       size="small"
-                      icon={<Check size={14} />}
                       onClick={() => onMarkAsRead(item.id)}
-                      className="text-primary"
                       title="Отметить как прочитанное"
-                    />
+                    >
+                      <Check size={16} />
+                    </IconButton>
                   )}
-                  <Button
-                    type="text"
+                  <IconButton
                     size="small"
-                    icon={<Trash2 size={14} />}
                     onClick={() => onDelete(item.id)}
-                    className="text-red-400 hover:text-red-500"
+                    color="error"
                     title="Удалить"
-                  />
-                </Space>,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      type === "success"
-                        ? "bg-green-500/10 text-green-400"
-                        : type === "error"
-                        ? "bg-red-500/10 text-red-400"
-                        : type === "warning"
-                        ? "bg-yellow-500/10 text-yellow-400"
-                        : "bg-primary/10 text-primary"
-                    }`}
                   >
-                    <Icon size={18} />
-                  </div>
-                }
-                title={
-                  <div className="flex items-center gap-2">
-                    <Text
-                      strong={isUnread}
-                      className={isUnread ? "text-foreground" : "text-foreground-secondary"}
+                    <Trash2 size={16} />
+                  </IconButton>
+                </Box>
+              }
+            >
+              <ListItemAvatar>
+                <Avatar
+                  sx={{
+                    bgcolor: getTypeBgColor(type),
+                    color: getTypeColor(type),
+                    width: 40,
+                    height: 40,
+                  }}
+                >
+                  <Icon size={18} />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={isUnread ? 600 : 400}
+                      color={isUnread ? 'text.primary' : 'text.secondary'}
                     >
                       {message}
-                    </Text>
+                    </Typography>
                     {isUnread && (
-                      <div className="w-2 h-2 bg-primary rounded-full" />
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          bgcolor: 'primary.main',
+                          borderRadius: '50%',
+                        }}
+                      />
                     )}
-                  </div>
+                  </Box>
                 }
-                description={
-                  <Text type="secondary" className="text-xs">
+                secondary={
+                  <Typography variant="caption" color="text.secondary">
                     {formatDistanceToNow(new Date(item.created_at), {
                       addSuffix: true,
                       locale: ru,
                     })}
-                  </Text>
+                  </Typography>
                 }
               />
-            </List.Item>
+            </ListItem>
           </motion.div>
         );
-      }}
-    />
+      })}
+    </List>
   );
 }
-

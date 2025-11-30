@@ -7,17 +7,15 @@ import {
   Typography,
   Card,
   Skeleton,
-  Empty,
-  Pagination,
-  Button,
-  Space,
-  theme,
-  Row,
-  Col,
-  Affix,
-} from "antd";
+  Box,
+  Pagination as MuiPagination,
+  Button as MuiButton,
+  Stack,
+  Grid,
+} from "@mui/material";
 import { Plus, Sparkles, Inbox, X, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "@mui/material/styles";
 import { OrderFilters } from "./OrderFilters";
 import { OrderCard } from "./OrderCard";
 import { AISearchStatus } from "./AISearchStatus";
@@ -29,16 +27,13 @@ import { handleApiError } from "@/src/shared/lib/utils";
 import { cleanExplanationText } from "@/src/shared/lib/ai/ai-utils";
 import type { Order, OrderStatus } from "@/src/entities/order/model/types";
 
-const { Title, Text } = Typography;
-const { useToken } = theme;
-
 interface OrderListFeatureProps {
   userRole?: "client" | "freelancer" | null;
 }
 
 export function OrderListFeature({ userRole }: OrderListFeatureProps) {
   const router = useRouter();
-  const { token } = useToken();
+  const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState("");
@@ -57,12 +52,9 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
   const [aiExplanation, setAiExplanation] = useState<string>("");
 
   const PAGE_SIZE = 20;
-
-  // Константы для кеширования
   const CACHE_KEY = "ai_recommended_orders_cache";
-  const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
+  const CACHE_DURATION = 24 * 60 * 60 * 1000;
 
-  // Функции для работы с кешем
   const saveToCache = (
     orderIds: string[],
     ordersMap: Map<string, { matchScore: number; explanation: string }>,
@@ -70,7 +62,6 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
     status: "success" | "no-results"
   ) => {
     if (typeof window === "undefined") return;
-    
     const cacheData = {
       timestamp: Date.now(),
       orderIds,
@@ -78,7 +69,6 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
       explanation,
       status,
     };
-    
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
     } catch (error) {
@@ -93,29 +83,22 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
     status: "success" | "no-results";
   } | null => {
     if (typeof window === "undefined") return null;
-    
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (!cached) return null;
-      
       const cacheData = JSON.parse(cached);
       const now = Date.now();
       const cacheAge = now - cacheData.timestamp;
-      
-      // Проверяем, что кеш не старше 24 часов
       if (cacheAge > CACHE_DURATION) {
         localStorage.removeItem(CACHE_KEY);
         return null;
       }
-      
-      // Восстанавливаем Map из объекта
       const ordersMap = new Map<string, { matchScore: number; explanation: string }>();
       if (cacheData.ordersMap) {
         Object.entries(cacheData.ordersMap).forEach(([key, value]) => {
           ordersMap.set(key, value as { matchScore: number; explanation: string });
         });
       }
-      
       return {
         orderIds: cacheData.orderIds || [],
         ordersMap,
@@ -134,7 +117,6 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
     localStorage.removeItem(CACHE_KEY);
   };
 
-  // Загружаем кеш при монтировании компонента
   useEffect(() => {
     if (userRole === "freelancer") {
       const cached = loadFromCache();
@@ -146,21 +128,18 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
         setAiSearchStatus(cached.status);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userRole]);
 
   const loadOrders = async () => {
     setLoading(true);
     try {
-      // Для клиентов загружаем только их заказы
       if (userRole === "client") {
         const response = await getMyOrders();
         let myOrders = response.as_client || [];
-        
-        // Применяем фильтры к своим заказам
+
         if (search) {
           const searchLower = search.toLowerCase();
-          myOrders = myOrders.filter(order => 
+          myOrders = myOrders.filter(order =>
             order.title.toLowerCase().includes(searchLower) ||
             (order.description && order.description.toLowerCase().includes(searchLower))
           );
@@ -172,27 +151,25 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
           myOrders = myOrders.filter(order => {
             if (!order.requirements || order.requirements.length === 0) return false;
             const orderSkills = order.requirements.map(r => r.skill.toLowerCase());
-            return skillsFilter.some(skill => 
+            return skillsFilter.some(skill =>
               orderSkills.includes(skill.toLowerCase())
             );
           });
         }
         if (budgetMin !== undefined) {
-          myOrders = myOrders.filter(order => 
+          myOrders = myOrders.filter(order =>
             order.budget_max !== undefined && order.budget_max >= budgetMin
           );
         }
         if (budgetMax !== undefined) {
-          myOrders = myOrders.filter(order => 
+          myOrders = myOrders.filter(order =>
             order.budget_min !== undefined && order.budget_min <= budgetMax
           );
         }
-        
-        // Сортировка
+
         myOrders.sort((a, b) => {
           let aValue: any;
           let bValue: any;
-          
           switch (sortBy) {
             case "date":
               aValue = new Date(a.created_at).getTime();
@@ -206,45 +183,35 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
               aValue = new Date(a.created_at).getTime();
               bValue = new Date(b.created_at).getTime();
           }
-          
           if (sortOrder === "asc") {
             return aValue > bValue ? 1 : -1;
           } else {
             return aValue < bValue ? 1 : -1;
           }
         });
-        
+
         const totalFiltered = myOrders.length;
-        
-        // Применяем пагинацию
         const startIndex = (currentPage - 1) * PAGE_SIZE;
         const endIndex = startIndex + PAGE_SIZE;
         const paginatedOrders = myOrders.slice(startIndex, endIndex);
-        
+
         setTotal(totalFiltered);
         setOrders(paginatedOrders);
         return;
       }
-      
-      // Для фрилансеров загружаем все заказы (существующая логика)
+
       let params: any = {
         sort_by: sortBy,
         sort_order: sortOrder,
       };
 
-      // Если активен умный поиск, загружаем рекомендованные заказы
-      // Максимум 10 рекомендованных заказов
       if (isSmartSearchActive && recommendedOrderIds.length > 0) {
-        // Загружаем достаточно заказов, чтобы найти рекомендованные (но не более 50 для производительности)
-        // Рекомендованные заказы будут отфильтрованы ниже
         params.limit = 50;
         params.offset = 0;
-        // При умном поиске показываем только опубликованные заказы
         params.status = "published" as OrderStatus;
       } else {
         params.limit = PAGE_SIZE;
         params.offset = (currentPage - 1) * PAGE_SIZE;
-        
         if (search) params.search = search;
         if (statusFilter !== "all") params.status = statusFilter as OrderStatus;
         if (skillsFilter && skillsFilter.length > 0) params.skills = skillsFilter;
@@ -252,28 +219,24 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
         if (budgetMax !== undefined) params.budget_max = budgetMax;
       }
 
-      // Если активен умный поиск, загружаем заказы по их ID
       let filteredOrders: Order[] = [];
       let response: { data?: Order[]; pagination?: { total: number } } | null = null;
-      
+
       if (isSmartSearchActive && recommendedOrderIds.length > 0) {
-        // Загружаем каждый рекомендованный заказ по его ID
         try {
           const orderPromises = recommendedOrderIds.map(id => getOrder(id));
           const loadedOrders = await Promise.all(orderPromises);
           filteredOrders = loadedOrders.filter(order => order !== null) as Order[];
         } catch (error) {
           console.error("Error loading recommended orders by ID:", error);
-          // Fallback: загружаем через обычный список и фильтруем
           response = await getOrders(params);
           const recommendedSet = new Set(recommendedOrderIds);
           filteredOrders = (response.data || []).filter(order => recommendedSet.has(order.id));
         }
-        
-        // Применяем дополнительные фильтры к рекомендованным заказам (если есть)
+
         if (search) {
           const searchLower = search.toLowerCase();
-          filteredOrders = filteredOrders.filter(order => 
+          filteredOrders = filteredOrders.filter(order =>
             order.title.toLowerCase().includes(searchLower) ||
             (order.description && order.description.toLowerCase().includes(searchLower))
           );
@@ -282,42 +245,37 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
           filteredOrders = filteredOrders.filter(order => {
             if (!order.requirements || order.requirements.length === 0) return false;
             const orderSkills = order.requirements.map(r => r.skill.toLowerCase());
-            return skillsFilter.some(skill => 
+            return skillsFilter.some(skill =>
               orderSkills.includes(skill.toLowerCase())
             );
           });
         }
         if (budgetMin !== undefined) {
-          filteredOrders = filteredOrders.filter(order => 
+          filteredOrders = filteredOrders.filter(order =>
             order.budget_max !== undefined && order.budget_max >= budgetMin
           );
         }
         if (budgetMax !== undefined) {
-          filteredOrders = filteredOrders.filter(order => 
+          filteredOrders = filteredOrders.filter(order =>
             order.budget_min !== undefined && order.budget_min <= budgetMax
           );
         }
-        
-        // Сортируем заказы по match_score (самые подходящие первые)
+
         filteredOrders.sort((a, b) => {
           const aScore = recommendedOrdersMap.get(a.id)?.matchScore || 0;
           const bScore = recommendedOrdersMap.get(b.id)?.matchScore || 0;
-          return bScore - aScore; // По убыванию
+          return bScore - aScore;
         });
-        
-        // Сохраняем общее количество рекомендованных заказов (максимум 10)
+
         const totalFiltered = filteredOrders.length;
         setTotal(totalFiltered);
       } else {
-        // Обычная загрузка заказов
         response = await getOrders(params);
         filteredOrders = response.data || [];
-        
-        // Устанавливаем total из пагинации бэкенда (с учетом фильтров)
         const backendTotal = response.pagination?.total ?? 0;
         setTotal(backendTotal);
       }
-      
+
       setOrders(filteredOrders);
     } catch (error) {
       handleApiError(error, "Ошибка загрузки заказов");
@@ -330,7 +288,6 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
 
   useEffect(() => {
     loadOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, statusFilter, skillsFilter, budgetMin, budgetMax, sortBy, sortOrder, currentPage, isSmartSearchActive, recommendedOrderIds]);
 
   const handleSearchChange = (value: string) => {
@@ -382,7 +339,7 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
     setAiSearchStatus("idle");
     setAiExplanation("");
     setRecommendedOrdersMap(new Map());
-    clearCache(); // Очищаем кеш при сбросе
+    clearCache();
   };
 
   const handleSmartSearch = async (forceRefresh: boolean = false) => {
@@ -391,30 +348,23 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
     try {
       setAiSearchStatus("analyzing");
       setAiExplanation("");
-      
-      // Используем обычный запрос - получаем полный ответ сразу
+
       const response = await aiService.getRecommendedOrders(10);
-      
       const orderIds = response.recommended_order_ids || [];
       let explanation = response.explanation || "";
-      
-      // Очищаем explanation от UUID и технических деталей
       explanation = explanation ? cleanExplanationText(explanation) : "";
-      
-      // Сохраняем match_score и explanation для каждого заказа
-      // Бэкенд возвращает match_score 0-10, OrderCard умножает на 10 для отображения процентов (0-100%)
+
       const ordersMap = new Map<string, { matchScore: number; explanation: string }>();
       if (response.recommended_orders && response.recommended_orders.length > 0) {
         response.recommended_orders.forEach(ro => {
           ordersMap.set(ro.order_id, {
-            matchScore: ro.match_score, // Сохраняем как есть 0-10, OrderCard сам умножит на 10
+            matchScore: ro.match_score,
             explanation: ro.explanation || "",
           });
         });
       }
       setRecommendedOrdersMap(ordersMap);
-      
-      // Если AI не нашел заказов, показываем сообщение об отсутствии результатов
+
       if (!orderIds || orderIds.length === 0) {
         setAiSearchStatus("no-results");
         setIsSmartSearchActive(false);
@@ -422,202 +372,106 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
         setRecommendedOrdersMap(new Map());
         const noResultsExplanation = "Не найдено подходящих заказов. Попробуйте обновить профиль или расширить фильтры поиска.";
         setAiExplanation(noResultsExplanation);
-        // Сохраняем в кеш даже при отсутствии результатов
         saveToCache([], new Map(), noResultsExplanation, "no-results");
       } else {
-        // AI нашел заказы - берем только первые 10 (самые подходящие)
         const limitedOrderIds = orderIds.slice(0, 10);
         setRecommendedOrderIds(limitedOrderIds);
         setIsSmartSearchActive(true);
         setCurrentPage(1);
         setAiSearchStatus("success");
         setAiExplanation(explanation || "");
-        // Сохраняем в кеш
         saveToCache(limitedOrderIds, ordersMap, explanation || "", "success");
       }
     } catch (error: any) {
       console.error("Smart search error:", error);
-      
-      // Извлекаем детали ошибки для показа пользователю
       let errorMessage = "Неизвестная ошибка";
       if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error?.message) {
         errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
       }
-      
-      // Формируем понятное сообщение об ошибке
+
       let userFriendlyMessage = errorMessage;
       if (errorMessage.includes("AI сервис недоступен") || errorMessage.includes("Service Unavailable")) {
         userFriendlyMessage = "AI сервис временно недоступен. Пожалуйста, используйте обычные фильтры для поиска заказов.";
-      } else if (errorMessage.includes("timeout") || errorMessage.includes("Timeout") || error?.code === "ECONNABORTED") {
-        userFriendlyMessage = "AI запрос занимает слишком много времени. Попробуйте еще раз через несколько секунд или используйте обычные фильтры поиска.";
-      } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
-        userFriendlyMessage = "Ошибка авторизации. Пожалуйста, войдите в систему заново.";
-      } else if (errorMessage.includes("500") || errorMessage.includes("Internal Server Error")) {
-        userFriendlyMessage = "Внутренняя ошибка сервера. Пожалуйста, попробуйте позже или используйте обычные фильтры.";
-      } else if (errorMessage.includes("Failed to fetch") || errorMessage.includes("Network")) {
-        userFriendlyMessage = "Ошибка подключения к серверу. Проверьте интернет-соединение и попробуйте еще раз.";
       }
-      
-      console.error("Smart search error details:", {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-        errorMessage: userFriendlyMessage
-      });
-      
-      // Показываем ошибку пользователю
+
       setAiSearchStatus("error");
       setAiExplanation(userFriendlyMessage);
       setIsSmartSearchActive(false);
       setRecommendedOrderIds([]);
-      
-      // При ошибке также пытаемся показать все заказы как fallback (опционально)
-      // Но сначала показываем ошибку пользователю
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        padding: "32px 24px",
-        maxWidth: 1600,
-        margin: "0 auto",
-        width: "100%",
-      }}
-    >
+    <Box sx={{ minHeight: '100vh', p: 4, maxWidth: 1600, mx: 'auto', width: '100%' }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <Space direction="vertical" size={32} style={{ width: "100%" }}>
+        <Stack spacing={4}>
           {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 24,
-              paddingBottom: 8,
-              borderBottom: `1px solid ${token.colorBorderSecondary}`,
-            }}
-          >
-            <div style={{ flex: 1 }}>
-              <Title
-                level={1}
-                style={{
-                  margin: 0,
-                  fontSize: 28,
-                  lineHeight: "36px",
-                  fontWeight: 600,
-                  color: token.colorTextHeading,
-                  letterSpacing: "-0.02em",
-                }}
-              >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 3, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
+            <Box flex={1}>
+              <Typography variant="h4" fontWeight={600} gutterBottom>
                 {userRole === "client" ? "Мои заказы" : "Все заказы"}
-              </Title>
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: 14,
-                  lineHeight: "22px",
-                  display: "block",
-                  marginTop: 8,
-                  color: token.colorTextSecondary,
-                }}
-              >
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
                 {userRole === "client"
                   ? "Управляйте своими проектами и отслеживайте прогресс"
                   : "Найдите подходящие проекты и начните работу"}
-              </Text>
-            </div>
+              </Typography>
+            </Box>
 
             {userRole === "client" && (
-              <Space size={10}>
+              <Stack direction="row" spacing={1}>
                 <Link href="/orders/create?ai=true">
-                  <Button
-                    type="default"
-                    icon={<Sparkles size={16} />}
-                    size="large"
-                    style={{
-                      fontSize: 14,
-                      lineHeight: "22px",
-                      height: 40,
-                      fontWeight: 500,
-                      borderRadius: token.borderRadius,
-                    }}
-                  >
+                  <MuiButton variant="outlined" startIcon={<Sparkles size={16} />}>
                     Быстрое создание
-                  </Button>
+                  </MuiButton>
                 </Link>
                 <Link href="/orders/create">
-                  <Button
-                    type="primary"
-                    icon={<Plus size={16} />}
-                    size="large"
-                    style={{
-                      fontSize: 14,
-                      lineHeight: "22px",
-                      height: 40,
-                      fontWeight: 500,
-                      borderRadius: token.borderRadius,
-                    }}
-                  >
+                  <MuiButton variant="contained" startIcon={<Plus size={16} />}>
                     Создать заказ
-                  </Button>
+                  </MuiButton>
                 </Link>
-              </Space>
+              </Stack>
             )}
-          </div>
+          </Box>
 
-          {/* Main Content: Filters + Orders */}
-          <Row gutter={[32, 32]} align="top">
-            {/* Left Sidebar: Filters - скрыто на мобильных */}
-            <Col xs={0} lg={6} xl={5}>
-              <Affix offsetTop={32}>
-                <Card
-                  style={{
-                    borderRadius: token.borderRadius,
-                    borderColor: token.colorBorder,
-                    position: "sticky",
-                    top: 32,
-                    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03)",
-                  }}
-                  styles={{
-                    body: { padding: 24 },
-                  }}
-                >
-                  <OrderFilters
-                    search={search}
-                    statusFilter={statusFilter}
-                    skillsFilter={skillsFilter}
-                    budgetMin={budgetMin}
-                    budgetMax={budgetMax}
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSearchChange={handleSearchChange}
-                    onStatusFilterChange={handleStatusFilterChange}
-                    onSkillsFilterChange={handleSkillsFilterChange}
-                    onBudgetMinChange={handleBudgetMinChange}
-                    onBudgetMaxChange={handleBudgetMaxChange}
-                    onSortByChange={handleSortByChange}
-                    onSortOrderChange={handleSortOrderChange}
-                    onReset={handleReset}
-                    userRole={userRole}
-                    onSmartSearch={handleSmartSearch}
-                  />
+          <Grid container spacing={4}>
+            {/* Left Sidebar: Filters */}
+            <Grid size={{ xs: 12, lg: 3 }}>
+              <Box sx={{ position: 'sticky', top: 32 }}>
+                <Card>
+                  <Box sx={{ p: 3 }}>
+                    <OrderFilters
+                      search={search}
+                      statusFilter={statusFilter}
+                      skillsFilter={skillsFilter}
+                      budgetMin={budgetMin}
+                      budgetMax={budgetMax}
+                      sortBy={sortBy}
+                      sortOrder={sortOrder}
+                      onSearchChange={handleSearchChange}
+                      onStatusFilterChange={handleStatusFilterChange}
+                      onSkillsFilterChange={handleSkillsFilterChange}
+                      onBudgetMinChange={handleBudgetMinChange}
+                      onBudgetMaxChange={handleBudgetMaxChange}
+                      onSortByChange={handleSortByChange}
+                      onSortOrderChange={handleSortOrderChange}
+                      onReset={handleReset}
+                      userRole={userRole}
+                      onSmartSearch={handleSmartSearch}
+                    />
+                  </Box>
                 </Card>
-              </Affix>
-            </Col>
+              </Box>
+            </Grid>
 
             {/* Right Content: Orders List */}
-            <Col xs={24} lg={18} xl={19}>
-              {/* AI Search Status */}
+            <Grid size={{ xs: 12, lg: 9 }}>
               <AISearchStatus
                 status={aiSearchStatus}
                 orderCount={recommendedOrderIds.length}
@@ -630,194 +484,88 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
               />
 
               {loading ? (
-                <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                <Stack spacing={2}>
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Card
-                      key={i}
-                      style={{
-                        borderRadius: token.borderRadius,
-                        borderColor: token.colorBorder,
-                      }}
-                      styles={{
-                        body: { padding: "20px 24px" },
-                      }}
-                    >
-                      <Skeleton active paragraph={{ rows: 3 }} />
+                    <Card key={i}>
+                      <Box sx={{ p: 3 }}>
+                        <Skeleton variant="text" width="60%" height={32} />
+                        <Skeleton variant="text" width="100%" />
+                        <Skeleton variant="text" width="100%" />
+                        <Skeleton variant="text" width="80%" />
+                      </Box>
                     </Card>
                   ))}
-                </Space>
+                </Stack>
               ) : orders.length === 0 ? (
-                <Card
-                  style={{
-                    borderRadius: token.borderRadius,
-                    borderColor: token.colorBorder,
-                    textAlign: "center",
-                    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03)",
-                  }}
-                  styles={{
-                    body: { padding: "80px 24px" },
-                  }}
-                >
-                  <Empty
-                    image={
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "center",
-                          marginBottom: 20,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: token.borderRadius,
-                            background: `${token.colorPrimary}08`,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Inbox
-                            size={40}
-                            strokeWidth={1.5}
-                            style={{ color: token.colorPrimary }}
-                          />
-                        </div>
-                      </div>
-                    }
-                    description={
-                      <Space direction="vertical" size={8}>
-                        <Text
-                          strong
-                          style={{
-                            fontSize: 16,
-                            lineHeight: "24px",
-                            display: "block",
-                            color: token.colorTextHeading,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {search || statusFilter !== "all" || (skillsFilter && skillsFilter.length > 0) || budgetMin !== undefined || budgetMax !== undefined
-                            ? "Заказы не найдены"
-                            : userRole === "client"
-                            ? "У вас пока нет заказов"
-                            : "Нет доступных заказов"}
-                        </Text>
-                        <Text
-                          type="secondary"
-                          style={{
-                            fontSize: 14,
-                            lineHeight: "22px",
-                            display: "block",
-                            color: token.colorTextSecondary,
-                          }}
-                        >
-                          {search || statusFilter !== "all" || (skillsFilter && skillsFilter.length > 0) || budgetMin !== undefined || budgetMax !== undefined
-                            ? "Попробуйте изменить критерии поиска или сбросить фильтры"
-                            : userRole === "client"
-                            ? "Создайте первый заказ и найдите исполнителя"
-                            : "Новые заказы появятся здесь"}
-                        </Text>
-                      </Space>
-                    }
-                  >
-                    {userRole === "client" && !(search || statusFilter !== "all" || (skillsFilter && skillsFilter.length > 0) || budgetMin !== undefined || budgetMax !== undefined) && (
-                      <Space size={10} style={{ marginTop: 24 }}>
+                <Card>
+                  <Box sx={{ p: 10, textAlign: 'center' }}>
+                    <Box sx={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 2,
+                      bgcolor: `${theme.palette.primary.main}15`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mx: 'auto',
+                      mb: 2
+                    }}>
+                      <Inbox size={40} style={{ color: theme.palette.primary.main }} />
+                    </Box>
+                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                      {search || statusFilter !== "all" || (skillsFilter && skillsFilter.length > 0)
+                        ? "Заказы не найдены"
+                        : userRole === "client"
+                        ? "У вас пока нет заказов"
+                        : "Нет доступных заказов"}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" mb={3}>
+                      {search || statusFilter !== "all"
+                        ? "Попробуйте изменить критерии поиска или сбросить фильтры"
+                        : userRole === "client"
+                        ? "Создайте первый заказ и найдите исполнителя"
+                        : "Новые заказы появятся здесь"}
+                    </Typography>
+                    {userRole === "client" && !(search || statusFilter !== "all") && (
+                      <Stack direction="row" spacing={1} justifyContent="center">
                         <Link href="/orders/create?ai=true">
-                          <Button
-                            type="default"
-                            icon={<Sparkles size={16} />}
-                            size="large"
-                            style={{
-                              fontSize: 14,
-                              lineHeight: "22px",
-                              height: 40,
-                              borderRadius: token.borderRadius,
-                              fontWeight: 500,
-                            }}
-                          >
+                          <MuiButton variant="outlined" startIcon={<Sparkles size={16} />}>
                             Быстрое создание
-                          </Button>
+                          </MuiButton>
                         </Link>
                         <Link href="/orders/create">
-                          <Button
-                            type="primary"
-                            icon={<Plus size={16} />}
-                            size="large"
-                            style={{
-                              fontSize: 14,
-                              lineHeight: "22px",
-                              height: 40,
-                              borderRadius: token.borderRadius,
-                              fontWeight: 500,
-                            }}
-                          >
+                          <MuiButton variant="contained" startIcon={<Plus size={16} />}>
                             Создать заказ
-                          </Button>
+                          </MuiButton>
                         </Link>
-                      </Space>
+                      </Stack>
                     )}
-                  </Empty>
+                  </Box>
                 </Card>
               ) : (
-                <Space direction="vertical" size={20} style={{ width: "100%" }}>
+                <Stack spacing={2.5}>
                   {/* Results Count */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 12,
-                      paddingBottom: 8,
-                      borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: 13,
-                          lineHeight: "20px",
-                          color: token.colorTextSecondary,
-                          fontWeight: 500,
-                        }}
-                      >
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, borderBottom: 1, borderColor: 'divider' }}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography variant="body2" color="text.secondary">
                         {isSmartSearchActive ? "Рекомендовано AI: " : "Найдено заказов: "}
-                        <Text
-                          strong
-                          style={{
-                            color: token.colorTextHeading,
-                            fontWeight: 600,
-                          }}
-                        >
+                        <Typography component="span" fontWeight={600} color="text.primary">
                           {total}
-                        </Text>
-                      </Text>
+                        </Typography>
+                      </Typography>
                       {isSmartSearchActive && (
-                        <Space size={4}>
-                          <Button
-                            type="text"
+                        <Stack direction="row" spacing={0.5}>
+                          <MuiButton
                             size="small"
-                            icon={<RefreshCw size={12} />}
+                            startIcon={<RefreshCw size={12} />}
                             onClick={() => handleSmartSearch(true)}
-                            loading={aiSearchStatus === "analyzing"}
                             disabled={aiSearchStatus === "analyzing"}
-                            style={{
-                              fontSize: 11,
-                              height: 20,
-                              padding: "0 6px",
-                              color: token.colorTextSecondary,
-                            }}
-                            title="Обновить рекомендации"
                           >
                             Обновить
-                          </Button>
-                          <Button
-                            type="text"
+                          </MuiButton>
+                          <MuiButton
                             size="small"
-                            icon={<X size={12} />}
+                            startIcon={<X size={12} />}
                             onClick={() => {
                               setIsSmartSearchActive(false);
                               setRecommendedOrderIds([]);
@@ -827,20 +575,13 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
                               setAiExplanation("");
                               clearCache();
                             }}
-                            style={{
-                              fontSize: 11,
-                              height: 20,
-                              padding: "0 6px",
-                              color: token.colorTextSecondary,
-                            }}
-                            title="Сбросить поиск"
                           >
                             Сбросить
-                          </Button>
-                        </Space>
+                          </MuiButton>
+                        </Stack>
                       )}
-                    </div>
-                  </div>
+                    </Box>
+                  </Box>
 
                   {/* Orders */}
                   {orders.map((order, index) => {
@@ -863,41 +604,23 @@ export function OrderListFeature({ userRole }: OrderListFeatureProps) {
 
                   {/* Pagination */}
                   {total > PAGE_SIZE && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        paddingTop: 24,
-                        borderTop: `1px solid ${token.colorBorderSecondary}`,
-                      }}
-                    >
-                      <Pagination
-                        current={currentPage}
-                        total={total}
-                        pageSize={PAGE_SIZE}
-                        onChange={(page) => setCurrentPage(page)}
-                        showSizeChanger={false}
-                        showTotal={(total, range) => (
-                          <Text
-                            type="secondary"
-                            style={{
-                              fontSize: 13,
-                              lineHeight: "20px",
-                              color: token.colorTextSecondary,
-                            }}
-                          >
-                            {range[0]}-{range[1]} из {total}
-                          </Text>
-                        )}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', pt: 3, borderTop: 1, borderColor: 'divider' }}>
+                      <MuiPagination
+                        count={Math.ceil(total / PAGE_SIZE)}
+                        page={currentPage}
+                        onChange={(_, page) => setCurrentPage(page)}
+                        color="primary"
+                        showFirstButton
+                        showLastButton
                       />
-                    </div>
+                    </Box>
                   )}
-                </Space>
+                </Stack>
               )}
-            </Col>
-          </Row>
-        </Space>
+            </Grid>
+          </Grid>
+        </Stack>
       </motion.div>
-    </div>
+    </Box>
   );
 }

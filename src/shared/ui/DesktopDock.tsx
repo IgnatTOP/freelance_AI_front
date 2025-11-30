@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { DockLogo, DockDivider, DockNavItem } from "@/src/shared/ui";
 import { useScroll, calculateDockScale } from "@/src/shared/lib/hooks";
@@ -38,14 +38,20 @@ export function DesktopDock({
   onNavItemClick,
 }: DesktopDockProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { scrolled } = useScroll({ threshold: 50 });
+
+  // Избегаем проблем с гидратацией, устанавливая mounted только на клиенте
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <motion.header
       {...headerAnimations}
       className="hidden lg:block fixed left-0 right-0 z-[100] pointer-events-none"
       style={{
-        top: showScrollEffect && scrolled ? "1rem" : topOffset,
+        top: showScrollEffect && mounted && scrolled ? "1rem" : topOffset,
       }}
     >
       <div className="flex justify-center pointer-events-auto">

@@ -24,7 +24,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { getOrder, updateOrder } from "@/src/shared/api/orders";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
-import type { OrderRequirement, SkillLevel } from "@/src/entities/order/model/types";
+import type { OrderRequirement, SkillLevel, OrderStatus } from "@/src/entities/order/model/types";
 
 const COMMON_SKILLS = [
   "JavaScript", "TypeScript", "React", "Vue.js", "Angular", "Node.js",
@@ -52,7 +52,7 @@ export default function EditOrderPage() {
   const [budgetMin, setBudgetMin] = useState<number | "">("");
   const [budgetMax, setBudgetMax] = useState<number | "">("");
   const [deadline, setDeadline] = useState("");
-  const [status, setStatus] = useState("published");
+  const [status, setStatus] = useState<OrderStatus>("published");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -90,7 +90,7 @@ export default function EditOrderPage() {
         const formatted = date.toISOString().slice(0, 16);
         setDeadline(formatted);
       }
-      setStatus(order.status || "published");
+      setStatus((order.status || "published") as OrderStatus);
     } catch (error: any) {
       console.error("Error loading order:", error);
       toastService.error(error.response?.data?.error || "Ошибка загрузки заказа");
@@ -251,7 +251,7 @@ export default function EditOrderPage() {
                       Бюджет (₽)
                     </Typography>
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                           fullWidth
                           label="От"
@@ -262,7 +262,7 @@ export default function EditOrderPage() {
                           inputProps={{ min: 0 }}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                           fullWidth
                           label="До"

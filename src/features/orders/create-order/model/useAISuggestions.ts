@@ -25,62 +25,41 @@ export function useAISuggestions() {
       // Генерируем описание через стриминг если его нет
       let fullDescription = description;
       if (!description || description.trim() === "") {
-        await aiService.generateOrderDescriptionStream(
-          {
-            title,
-            description: "Создайте подробное описание проекта",
-            skills: [],
-          },
-          (chunk) => {
-            fullDescription += chunk;
-            onDescriptionUpdate?.(fullDescription);
-          }
-        );
+        try {
+          await aiService.generateOrderDescriptionStream(
+            {
+              title,
+              description: "Создайте подробное описание проекта",
+              skills: [],
+            },
+            (chunk) => {
+              fullDescription += chunk;
+              onDescriptionUpdate?.(fullDescription);
+            }
+          );
+        } catch (error) {
+          console.error("Error generating description:", error);
+          toastService.error("Не удалось сгенерировать описание. Продолжаем с остальными полями...");
+          // Продолжаем работу даже если описание не сгенерировалось
+        }
       }
 
       // Генерируем предложения по остальным полям через AI
-      const prompt = `Ты - AI помощник для создания заказов на фриланс-платформе. 
-
-На основе заказа:
-Название: "${title}"
-Описание: "${fullDescription}"
-
-Проанализируй заказ и предложи оптимальные значения для:
-1. Навыки (skills) - список технологий/инструментов, которые нужны для выполнения заказа (массив строк, минимум 2-3 навыка)
-2. Бюджет (budget_min и budget_max) - минимальная и максимальная стоимость в рублях (числа)
-3. Срок (deadline_days) - количество дней на выполнение от сегодня (число)
-4. Файлы (needs_attachments) - нужны ли прикрепленные файлы (boolean)
-5. Описание файлов (attachment_description) - зачем нужны файлы (строка, если needs_attachments = true)
-
-КРИТИЧЕСКИ ВАЖНО: 
-- Ответь ТОЛЬКО валидным JSON объектом
-- НЕ добавляй никакого текста до или после JSON
-- НЕ используй markdown код блоки
-- JSON должен начинаться с { и заканчиваться }
-- Все поля обязательны, используй пустые значения если не уверен
-
-Пример правильного ответа:
-{
-  "skills": ["Vue.js", "TypeScript", "Node.js"],
-  "budget_min": 50000,
-  "budget_max": 100000,
-  "deadline_days": 30,
-  "needs_attachments": true,
-  "attachment_description": "Рекомендуется прикрепить примеры дизайна или техническое задание"
-}`;
-
       let aiResponse = "";
-      await aiService.chatAssistantStream(
-        {
-          message: prompt,
-          context_data: {
-            user_role: "client",
+      try {
+        await aiService.generateOrderSuggestionsStream(
+          {
+            title,
+            description: fullDescription,
           },
-        },
-        (chunk) => {
-          aiResponse += chunk;
-        }
-      );
+          (chunk) => {
+            aiResponse += chunk;
+          }
+        );
+      } catch (error) {
+        console.error("Error in generateOrderSuggestionsStream:", error);
+        throw new Error("Не удалось получить ответ от AI. Проверьте подключение к интернету.");
+      }
 
       // Парсим JSON из ответа
       console.log("AI Response for suggestions:", aiResponse);

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Popover, Button, Spin } from "antd";
-import { Bell, Check, Trash2 } from "lucide-react";
+import { Badge, Popover, IconButton, Box, Typography, Button, CircularProgress, Divider } from "@mui/material";
+import { Bell, Check } from "lucide-react";
 import { notificationService, Notification } from "@/src/shared/lib/notifications";
 import { websocketService } from "@/src/shared/lib/notifications/websocket.service";
 import { authService } from "@/src/shared/lib/auth/auth.service";
@@ -16,12 +16,13 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
-  const [wsError, setWsError] = useState(false); // Флаг ошибки подключения
-  const [wsAttempted, setWsAttempted] = useState(false); // Флаг того, что была попытка подключения
+  const [wsError, setWsError] = useState(false);
+  const [wsAttempted, setWsAttempted] = useState(false);
 
-  // Загрузить уведомления
+  const open = Boolean(anchorEl);
+
   const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
@@ -38,7 +39,6 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Обновить количество непрочитанных
   const updateUnreadCount = useCallback(async () => {
     try {
       const count = await notificationService.getUnreadCount();
@@ -48,47 +48,36 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Инициализация
   useEffect(() => {
     loadNotifications();
 
-    // Подключиться к WebSocket
     const connectWebSocket = async () => {
-      setWsAttempted(true); // Отмечаем, что была попытка подключения
+      setWsAttempted(true);
       try {
         await websocketService.connect();
         setWsConnected(true);
-        setWsError(false); // Сбрасываем ошибку при успешном подключении
+        setWsError(false);
       } catch (error) {
-        // Silently handle connection errors - they're expected if backend is down
         setWsConnected(false);
-        // Устанавливаем ошибку только если это не просто недоступность сервера
-        // (код 1006 может означать, что сервер не запущен - это не критично)
         setWsError(true);
-        // Не прерываем выполнение, WebSocket попытается переподключиться автоматически
       }
     };
 
-    // Подключаемся только если пользователь авторизован
     if (authService.isAuthenticated()) {
       connectWebSocket();
     }
 
-    // Подписаться на уведомления через WebSocket
     const unsubscribe = websocketService.onNotification((newNotification) => {
-      // Добавить новое уведомление в начало списка
       setNotifications((prev) => [newNotification, ...prev]);
-      
-      // Обновить счетчик
+
       if (!newNotification.is_read) {
         setUnreadCount((prev) => prev + 1);
       }
 
-      // Показать toast уведомление с возможностью перехода
       const message = notificationService.getNotificationMessage(newNotification);
       const type = notificationService.getNotificationType(newNotification);
       const url = notificationService.getNotificationUrl(newNotification);
-      
+
       toastService.show({
         type,
         title: "Новое уведомление",
@@ -103,11 +92,9 @@ export function NotificationBell() {
       });
     });
 
-    // Подписаться на события chat.message для показа уведомлений о новых сообщениях
     const unsubscribeChat = websocketService.on("chat.message", (wsMessage) => {
       const chatData = wsMessage.data;
-      
-      // Создаем уведомление из события чата
+
       const chatNotification: Notification = {
         id: `chat-${Date.now()}-${Math.random()}`,
         user_id: "",
@@ -119,16 +106,12 @@ export function NotificationBell() {
         created_at: new Date().toISOString(),
       };
 
-      // Добавить новое уведомление в начало списка
       setNotifications((prev) => [chatNotification, ...prev]);
-      
-      // Обновить счетчик
       setUnreadCount((prev) => prev + 1);
 
-      // Показать toast уведомление
       const message = chatData.message?.content || "Новое сообщение в чате";
       const url = notificationService.getNotificationUrl(chatNotification);
-      
+
       toastService.show({
         type: "info",
         title: "Новое сообщение",
@@ -143,18 +126,14 @@ export function NotificationBell() {
       });
     });
 
-    // Подписаться на изменения подключения
     const unsubscribeConnection = websocketService.onConnectionChange((connected) => {
       setWsConnected((prevConnected) => {
         if (connected) {
-          setWsError(false); // Сбрасываем ошибку при успешном подключении
-          // Перезагрузить уведомления при переподключении
+          setWsError(false);
           if (!prevConnected) {
-            // Перезагружаем только если было переподключение
             loadNotifications();
           }
         } else {
-          // Устанавливаем ошибку только если было подключение и оно разорвалось
           if (prevConnected) {
             setWsError(true);
           }
@@ -171,7 +150,6 @@ export function NotificationBell() {
     };
   }, [loadNotifications, router]);
 
-  // Отметить как прочитанное
   const handleMarkAsRead = async (id: string) => {
     try {
       await notificationService.markAsRead(id);
@@ -184,7 +162,6 @@ export function NotificationBell() {
     }
   };
 
-  // Отметить все как прочитанные
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
@@ -195,7 +172,6 @@ export function NotificationBell() {
     }
   };
 
-  // Удалить уведомление
   const handleDelete = async (id: string) => {
     try {
       await notificationService.deleteNotification(id);
@@ -206,75 +182,92 @@ export function NotificationBell() {
     }
   };
 
-  // Обновить список при открытии popover
-  const handlePopoverOpenChange = (open: boolean) => {
-    setPopoverOpen(open);
-    if (open) {
-      loadNotifications();
-    }
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+    loadNotifications();
   };
 
-  const content = (
-    <div className="w-80 max-h-96 overflow-y-auto">
-      <div className="flex items-center justify-between p-3 border-b border-border/50">
-        <h3 className="font-semibold text-foreground">Уведомления</h3>
-        {unreadCount > 0 && (
-          <Button
-            type="link"
-            size="small"
-            onClick={handleMarkAllAsRead}
-            className="text-primary"
-          >
-            <Check size={14} className="mr-1" />
-            Прочитать все
-          </Button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center py-8">
-          <Spin />
-        </div>
-      ) : (
-        <NotificationList
-          notifications={notifications || []}
-          onMarkAsRead={handleMarkAsRead}
-          onDelete={handleDelete}
-        />
-      )}
-    </div>
-  );
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
-    <Popover
-      content={content}
-      trigger="click"
-      placement="bottomRight"
-      open={popoverOpen}
-      onOpenChange={handlePopoverOpenChange}
-      overlayClassName="notification-popover"
-    >
+    <>
       <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="relative"
+        style={{ position: 'relative' }}
       >
-        <Badge count={unreadCount} overflowCount={99} showZero={false}>
-          <Button
-            type="text"
-            icon={<Bell size={18} />}
-            className="flex items-center justify-center text-foreground-secondary hover:text-primary"
-          />
-        </Badge>
-        {/* Показываем красный индикатор только если была попытка подключения и она не удалась */}
+        <IconButton onClick={handleClick} color="inherit">
+          <Badge badgeContent={unreadCount} color="error" max={99}>
+            <Bell size={20} />
+          </Badge>
+        </IconButton>
         {wsAttempted && wsError && !wsConnected && (
-          <div 
-            className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              width: 8,
+              height: 8,
+              bgcolor: 'error.main',
+              borderRadius: '50%',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              '@keyframes pulse': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.5 },
+              }
+            }}
             title="Проблема с подключением к серверу уведомлений"
           />
         )}
       </motion.div>
-    </Popover>
+
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <Box sx={{ width: 320, maxHeight: 400, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              Уведомления
+            </Typography>
+            {unreadCount > 0 && (
+              <Button
+                size="small"
+                startIcon={<Check size={14} />}
+                onClick={handleMarkAllAsRead}
+              >
+                Прочитать все
+              </Button>
+            )}
+          </Box>
+
+          <Box sx={{ overflowY: 'auto', flex: 1 }}>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                <CircularProgress size={32} />
+              </Box>
+            ) : (
+              <NotificationList
+                notifications={notifications || []}
+                onMarkAsRead={handleMarkAsRead}
+                onDelete={handleDelete}
+              />
+            )}
+          </Box>
+        </Box>
+      </Popover>
+    </>
   );
 }
-

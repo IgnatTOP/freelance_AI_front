@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Typography, Card, Skeleton } from "antd";
+import { Typography, Card, Skeleton } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { useRouter, useParams } from "next/navigation";
 import { CreatePortfolioItemForm } from "../../create-portfolio-item/ui/CreatePortfolioItemForm";
 import { getPortfolioItem, updatePortfolioItem } from "@/src/shared/api/portfolio";
 import type { CreatePortfolioItemRequest } from "@/src/entities/portfolio/model/types";
-
-const { Title } = Typography;
 
 export function EditPortfolioItemFeature() {
   const router = useRouter();
@@ -62,17 +60,18 @@ export function EditPortfolioItemFeature() {
 
   if (initialLoading) {
     return (
-      <Card>
-        <Skeleton active paragraph={{ rows: 8 }} />
+      <Card sx={{ p: 3 }}>
+        <Skeleton variant="text" width="60%" height={40} />
+        <Skeleton variant="rectangular" height={300} sx={{ mt: 2 }} />
       </Card>
     );
   }
 
   return (
-    <Card>
-      <Title level={2} style={{ marginBottom: 24 }}>
+    <Card sx={{ p: 3 }}>
+      <Typography variant="h4" sx={{ mb: 3 }}>
         Редактировать работу
-      </Title>
+      </Typography>
       <CreatePortfolioItemForm
         onSubmit={handleSubmit}
         onCancel={handleCancel}

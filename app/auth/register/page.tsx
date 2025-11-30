@@ -207,7 +207,7 @@ export default function RegisterPage() {
                 style={{
                   width: 64,
                   height: 64,
-                  borderRadius: theme.shape.borderRadius * 2,
+                  borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16,
                   background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
                   display: "inline-flex",
                   alignItems: "center",
@@ -237,7 +237,7 @@ export default function RegisterPage() {
                 {roles.map((role, index) => {
                   const Icon = role.icon;
                   return (
-                    <Grid item xs={12} md={6} key={role.id}>
+                    <Grid size={{ xs: 12, md: 6 }} key={role.id}>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

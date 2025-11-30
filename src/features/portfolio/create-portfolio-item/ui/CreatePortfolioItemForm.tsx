@@ -1,10 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Form, Input, Button, Space, Upload, Typography, Tag, Card } from "antd";
+import {
+  TextField,
+  Button,
+  Stack,
+  Chip,
+  Card,
+  Box,
+  Typography,
+  IconButton,
+  InputAdornment,
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { UploadOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { CheckCircle2, X } from "lucide-react";
+import { Upload, Trash2, Plus, CheckCircle2, X, Link as LinkIcon } from "lucide-react";
 import { uploadPhoto } from "@/src/shared/api/media";
 import { getMediaUrl } from "@/src/shared/lib/api/axios";
 import type { CreatePortfolioItemRequest, PortfolioItemWithMedia } from "@/src/entities/portfolio/model/types";
@@ -12,15 +21,12 @@ import { getPortfolioItem } from "@/src/shared/api/portfolio";
 import { AIAssistantInline } from "@/src/shared/ui/AIAssistantInline";
 import { aiService } from "@/src/shared/lib/ai/ai.service";
 
-const { TextArea } = Input;
-const { Text, Title } = Typography;
-
 interface CreatePortfolioItemFormProps {
   onSubmit: (data: CreatePortfolioItemRequest) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
   initialValues?: Partial<CreatePortfolioItemRequest>;
-  portfolioItemId?: string; // ID для загрузки существующих медиа
+  portfolioItemId?: string;
 }
 
 interface UploadedMedia {
@@ -37,7 +43,12 @@ export function CreatePortfolioItemForm({
   initialValues,
   portfolioItemId,
 }: CreatePortfolioItemFormProps) {
-  const [form] = Form.useForm();
+  const [formData, setFormData] = useState({
+    title: initialValues?.title || '',
+    description: initialValues?.description || '',
+    external_link: initialValues?.external_link || '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [mediaList, setMediaList] = useState<UploadedMedia[]>([]);
   const [coverMediaId, setCoverMediaId] = useState<string | undefined>(
@@ -46,10 +57,6 @@ export function CreatePortfolioItemForm({
   const [tags, setTags] = useState<string[]>(initialValues?.ai_tags || []);
   const [tagInput, setTagInput] = useState("");
 
-  // Отслеживаем изменения title для реактивного обновления кнопки AI
-  const title = Form.useWatch("title", form);
-
-  // Загружаем существующие медиа файлы при редактировании
   useEffect(() => {
     if (portfolioItemId && initialValues?.media_ids && initialValues.media_ids.length > 0) {
       loadExistingMedia();
@@ -77,9 +84,13 @@ export function CreatePortfolioItemForm({
     }
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
     setUploading(true);
     try {
+      const file = files[0];
       const response = await uploadPhoto(file);
       const newMedia: UploadedMedia = {
         id: response.id,
@@ -92,12 +103,12 @@ export function CreatePortfolioItemForm({
         setCoverMediaId(response.id);
       }
       toastService.success("Файл успешно загружен");
-      return false;
     } catch (error: any) {
       toastService.error(error.response?.data?.error || "Ошибка загрузки файла");
-      return false;
     } finally {
       setUploading(false);
+      // Reset input
+      event.target.value = '';
     }
   };
 
@@ -119,14 +130,35 @@ export function CreatePortfolioItemForm({
     setTags(tags.filter((t) => t !== tag));
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title) {
+      newErrors.title = 'Введите название работы';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
     try {
       await onSubmit({
-        title: values.title,
-        description: values.description || undefined,
+        title: formData.title,
+        description: formData.description || undefined,
         cover_media_id: coverMediaId || undefined,
         ai_tags: tags,
-        external_link: values.external_link || undefined,
+        external_link: formData.external_link || undefined,
         media_ids: mediaList.map((m) => m.id),
       });
     } catch (error) {
@@ -135,24 +167,36 @@ export function CreatePortfolioItemForm({
   };
 
   return (
-    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={initialValues}>
-      <Form.Item
-        name="title"
-        label="Название работы"
-        rules={[{ required: true, message: "Введите название работы" }]}
-      >
-        <Input placeholder="Например: Веб-сайт для компании X" size="large" />
-      </Form.Item>
+    <Box component="form" onSubmit={handleSubmit}>
+      <Stack spacing={3}>
+        <TextField
+          fullWidth
+          required
+          label="Название работы"
+          value={formData.title}
+          onChange={(e) => handleChange('title', e.target.value)}
+          error={!!errors.title}
+          helperText={errors.title}
+          placeholder="Например: Веб-сайт для компании X"
+        />
 
-      <Form.Item
-        name="description"
-        label="Описание"
-        extra={
-          <div style={{ marginTop: 8 }}>
+        <Box>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Описание"
+            value={formData.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            placeholder="Опишите проект, используемые технологии, результаты..."
+            inputProps={{ maxLength: 2000 }}
+            helperText={`${formData.description.length}/2000`}
+          />
+          <Box sx={{ mt: 1 }}>
             <AIAssistantInline
               onImprove={async (onChunk) => {
-                const currentTitle = title || "";
-                const description = form.getFieldValue("description") || "";
+                const currentTitle = formData.title || "";
+                const description = formData.description || "";
                 if (!currentTitle || currentTitle.trim().length === 0) {
                   toastService.warning("Сначала введите название работы");
                   return;
@@ -167,167 +211,183 @@ export function CreatePortfolioItemForm({
                 );
               }}
               onApply={(text) => {
-                form.setFieldValue("description", text);
+                handleChange('description', text);
               }}
-              disabled={!title || title.trim().length === 0}
+              disabled={!formData.title || formData.title.trim().length === 0}
             />
-          </div>
-        }
-      >
-        <TextArea
-          rows={4}
-          placeholder="Опишите проект, используемые технологии, результаты..."
-          showCount
-          maxLength={2000}
-        />
-      </Form.Item>
+          </Box>
+        </Box>
 
-      <Form.Item label="Медиа файлы">
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <Upload
-            beforeUpload={handleFileUpload}
-            fileList={[]}
-            accept="image/*"
-            multiple
-            showUploadList={false}
+        <Box>
+          <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+            Медиа файлы
+          </Typography>
+          <Button
+            variant="outlined"
+            component="label"
+            startIcon={<Upload size={16} />}
+            disabled={uploading}
           >
-            <Button icon={<UploadOutlined />} disabled={uploading} loading={uploading}>
-              {uploading ? "Загрузка..." : "Загрузить изображения"}
-            </Button>
-          </Upload>
+            {uploading ? "Загрузка..." : "Загрузить изображения"}
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+            />
+          </Button>
 
           {mediaList.length > 0 && (
-            <div>
-              <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                 Выберите обложку (клик по изображению)
-              </Text>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {mediaList.map((media) => {
                   const isCover = coverMediaId === media.id;
                   return (
-                    <div
+                    <Box
                       key={media.id}
-                      style={{
-                        position: "relative",
+                      onClick={() => setCoverMediaId(media.id)}
+                      sx={{
+                        position: 'relative',
                         width: 120,
                         height: 120,
-                        border: isCover ? "3px solid var(--primary)" : "1px solid #d9d9d9",
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        cursor: "pointer",
+                        border: isCover ? '3px solid' : '1px solid',
+                        borderColor: isCover ? 'primary.main' : 'divider',
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          borderColor: 'primary.main',
+                        },
                       }}
-                      onClick={() => setCoverMediaId(media.id)}
                     >
                       {media.preview && (
                         <img
                           src={media.preview}
                           alt="Preview"
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       )}
                       {isCover && (
-                        <div
-                          style={{
-                            position: "absolute",
+                        <Box
+                          sx={{
+                            position: 'absolute',
                             top: 4,
                             right: 4,
-                            background: "var(--primary)",
-                            borderRadius: "50%",
+                            bgcolor: 'primary.main',
+                            borderRadius: '50%',
                             width: 24,
                             height: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }}
                         >
                           <CheckCircle2 size={16} color="white" />
-                        </div>
+                        </Box>
                       )}
-                      <Button
-                        type="text"
-                        danger
+                      <IconButton
                         size="small"
-                        icon={<DeleteOutlined />}
-                        style={{
-                          position: "absolute",
-                          bottom: 4,
-                          right: 4,
-                          background: "rgba(255, 255, 255, 0.9)",
-                        }}
+                        color="error"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRemoveMedia(media.id);
                         }}
-                      />
-                    </div>
+                        sx={{
+                          position: 'absolute',
+                          bottom: 4,
+                          right: 4,
+                          bgcolor: 'rgba(255, 255, 255, 0.9)',
+                          '&:hover': {
+                            bgcolor: 'rgba(255, 255, 255, 1)',
+                          },
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </IconButton>
+                    </Box>
                   );
                 })}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
-        </Space>
-      </Form.Item>
+        </Box>
 
-      <Form.Item label="Теги">
-        <Space direction="vertical" size="small" style={{ width: "100%" }}>
-          <Space.Compact style={{ width: "100%" }}>
-            <Input
+        <Box>
+          <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+            Теги
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <TextField
+              fullWidth
+              size="small"
               placeholder="Добавить тег"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
-              onPressEnter={handleAddTag}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddTag();
+                }
+              }}
             />
-            <Button icon={<PlusOutlined />} onClick={handleAddTag}>
+            <Button
+              variant="outlined"
+              startIcon={<Plus size={16} />}
+              onClick={handleAddTag}
+            >
               Добавить
             </Button>
-          </Space.Compact>
+          </Stack>
           {tags.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <Space wrap>
-                {tags.map((tag) => (
-                  <Tag
-                    key={tag}
-                    closable
-                    onClose={() => handleRemoveTag(tag)}
-                    color="blue"
-                  >
-                    {tag}
-                  </Tag>
-                ))}
-              </Space>
-            </div>
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+              {tags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  onDelete={() => handleRemoveTag(tag)}
+                  color="primary"
+                  variant="outlined"
+                />
+              ))}
+            </Stack>
           )}
-        </Space>
-      </Form.Item>
+        </Box>
 
-      <Form.Item name="external_link" label="Внешняя ссылка">
-        <Space.Compact style={{ width: "100%" }}>
-          <span style={{ display: "flex", alignItems: "center", padding: "0 11px", background: "rgba(0, 0, 0, 0.02)", border: "1px solid #d9d9d9", borderRight: "none", borderRadius: "6px 0 0 6px" }}>URL</span>
-          <Input
-            placeholder="https://example.com"
-            style={{ flex: 1 }}
-          />
-        </Space.Compact>
-      </Form.Item>
+        <TextField
+          fullWidth
+          label="Внешняя ссылка"
+          value={formData.external_link}
+          onChange={(e) => handleChange('external_link', e.target.value)}
+          placeholder="https://example.com"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <LinkIcon size={16} />
+              </InputAdornment>
+            ),
+          }}
+        />
 
-      <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-        <Space size={12} style={{ width: "100%", justifyContent: "flex-end" }}>
-          <Button onClick={onCancel} size="large" style={{ minWidth: 120 }}>
+        <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>
+          <Button onClick={onCancel} size="large" sx={{ minWidth: 120 }}>
             Отмена
           </Button>
           <Button
-            type="primary"
-            htmlType="submit"
-            loading={loading}
+            type="submit"
+            variant="contained"
             size="large"
-            icon={<CheckCircle2 size={16} />}
-            style={{ minWidth: 200 }}
+            disabled={loading}
+            startIcon={<CheckCircle2 size={16} />}
+            sx={{ minWidth: 200 }}
           >
             Сохранить
           </Button>
-        </Space>
-      </Form.Item>
-    </Form>
+        </Stack>
+      </Stack>
+    </Box>
   );
 }
-

@@ -163,7 +163,7 @@ function FreelancersPageContent() {
           {loading ? (
             <Grid container spacing={2}>
               {[1, 2, 3, 4].map((i) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
+                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
                   <Card>
                     <CardContent>
                       <Stack spacing={1} alignItems="center">
@@ -186,7 +186,7 @@ function FreelancersPageContent() {
           ) : (
             <Grid container spacing={2}>
               {filteredFreelancers.map((freelancer) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={freelancer.id}>
+                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={freelancer.id}>
                   <Link href={`/users/${freelancer.id}`} style={{ textDecoration: "none" }}>
                     <Card
                       sx={{
@@ -337,7 +337,7 @@ export default function FreelancersPage() {
         >
           <Grid container spacing={2}>
             {[1, 2, 3, 4].map((i) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
                 <Card>
                   <CardContent>
                     <Stack spacing={1} alignItems="center">
