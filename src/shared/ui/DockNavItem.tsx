@@ -8,6 +8,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { LucideIcon } from "lucide-react";
+import { useTheme } from "@mui/material/styles";
 import {
   useFloating,
   autoUpdate,
@@ -39,6 +40,7 @@ export function DockNavItem({
   scale = 1,
   onClick,
 }: DockNavItemProps) {
+  const theme = useTheme();
   const arrowRef = useRef<HTMLDivElement>(null);
 
   const { refs, floatingStyles, middlewareData } = useFloating({
@@ -89,12 +91,18 @@ export function DockNavItem({
         >
           {/* Icon Container */}
           <div
-            className="relative w-full h-full rounded-xl flex items-center justify-center"
             style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               background: isActive
-                ? "var(--primary-20)"
+                ? (theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.15)')
                 : isHovered
-                ? "var(--primary-15)"
+                ? (theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.15)' : 'rgba(24, 144, 255, 0.1)')
                 : "transparent",
               transition: "all 0.2s ease",
             }}
@@ -103,10 +111,10 @@ export function DockNavItem({
               size={20}
               style={{
                 color: isActive
-                  ? "var(--primary)"
+                  ? theme.palette.primary.main
                   : isHovered
-                  ? "var(--primary-light)"
-                  : "rgba(240, 253, 244, 0.7)",
+                  ? theme.palette.primary.light
+                  : theme.palette.mode === 'dark' ? "rgba(240, 253, 244, 0.7)" : "rgba(0, 0, 0, 0.6)",
                 transition: "color 0.2s ease",
               }}
             />
@@ -119,22 +127,26 @@ export function DockNavItem({
         <FloatingPortal>
           <div
             ref={refs.setFloating}
-            style={floatingStyles}
-            className="z-[100] pointer-events-none"
+            style={{ ...floatingStyles, zIndex: 100, pointerEvents: 'none' }}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className="relative whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-medium"
               style={{
-                background: "rgba(17, 26, 21, 0.95)",
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                padding: '6px 12px',
+                borderRadius: 6,
+                fontSize: '12px',
+                fontWeight: 500,
+                background: theme.palette.mode === 'dark' ? "rgba(17, 26, 21, 0.95)" : "rgba(255, 255, 255, 0.95)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
-                border: "1px solid var(--primary-20)",
-                color: "#f0fdf4",
-                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.15)'}`,
+                color: theme.palette.mode === 'dark' ? "#f0fdf4" : "#000",
+                boxShadow: theme.shadows[4],
               }}
             >
               {label}
@@ -142,14 +154,17 @@ export function DockNavItem({
               {middlewareData.arrow && (
                 <div
                   ref={arrowRef}
-                  className="absolute w-2 h-2 rotate-45"
                   style={{
-                    background: "rgba(17, 26, 21, 0.95)",
-                    borderLeft: "1px solid var(--primary-20)",
-                    borderTop: "1px solid var(--primary-20)",
+                    position: 'absolute',
+                    width: 8,
+                    height: 8,
+                    transform: 'rotate(45deg)',
+                    background: theme.palette.mode === 'dark' ? "rgba(17, 26, 21, 0.95)" : "rgba(255, 255, 255, 0.95)",
+                    borderLeft: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.15)'}`,
+                    borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.15)'}`,
                     left: middlewareData.arrow.x != null ? `${middlewareData.arrow.x}px` : "50%",
                     top: middlewareData.arrow.y != null ? `${middlewareData.arrow.y}px` : undefined,
-                    transform: middlewareData.arrow.x != null ? undefined : "translateX(-50%)",
+                    ...(middlewareData.arrow.x == null ? { transform: 'translateX(-50%) rotate(45deg)' } : {}),
                     bottom: "-4px",
                   }}
                 />

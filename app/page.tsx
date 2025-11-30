@@ -54,7 +54,7 @@ export default function Home() {
   return (
     <>
       <StructuredData data={[organizationSchema, websiteSchema]} />
-      <main className="min-h-screen">
+      <main style={{ minHeight: '100vh' }}>
         <Hero />
         <Features />
         <HowItWorks />
