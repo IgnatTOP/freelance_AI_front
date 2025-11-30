@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTheme } from "@mui/material/styles";
 import {
   useFloating,
   autoUpdate,
@@ -19,6 +20,7 @@ interface TooltipProps {
 }
 
 export function Tooltip({ label, children, placement = "bottom" }: TooltipProps) {
+  const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef<HTMLDivElement>(null);
 
@@ -50,22 +52,26 @@ export function Tooltip({ label, children, placement = "bottom" }: TooltipProps)
         {isOpen && (
           <motion.div
             ref={refs.setFloating}
-            style={floatingStyles}
+            style={{ ...floatingStyles, zIndex: 50, pointerEvents: 'none' }}
             initial={{ opacity: 0, scale: 0.8, y: isBottom ? -8 : 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: isBottom ? -8 : 8 }}
             transition={{ duration: 0.2 }}
-            className="z-50 pointer-events-none"
           >
             <div
-              className="relative whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-medium"
               style={{
-                background: "rgba(17, 26, 21, 0.95)",
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                padding: '6px 12px',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                background: theme.palette.mode === 'dark' ? "rgba(17, 26, 21, 0.95)" : "rgba(255, 255, 255, 0.95)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
-                border: "1px solid var(--primary-20)",
-                color: "#f0fdf4",
-                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.15)'}`,
+                color: theme.palette.mode === 'dark' ? "#f0fdf4" : "#000",
+                boxShadow: theme.shadows[4],
               }}
             >
               {label}
@@ -73,11 +79,14 @@ export function Tooltip({ label, children, placement = "bottom" }: TooltipProps)
               {middlewareData.arrow && (
                 <div
                   ref={arrowRef}
-                  className="absolute w-2 h-2 rotate-45"
                   style={{
-                    background: "rgba(17, 26, 21, 0.95)",
-                    borderLeft: "1px solid var(--primary-20)",
-                    borderTop: "1px solid var(--primary-20)",
+                    position: 'absolute',
+                    width: 8,
+                    height: 8,
+                    transform: 'rotate(45deg)',
+                    background: theme.palette.mode === 'dark' ? "rgba(17, 26, 21, 0.95)" : "rgba(255, 255, 255, 0.95)",
+                    borderLeft: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.15)'}`,
+                    borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.15)'}`,
                     left: middlewareData.arrow.x != null ? `${middlewareData.arrow.x}px` : undefined,
                     top: middlewareData.arrow.y != null ? `${middlewareData.arrow.y}px` : undefined,
                     [isBottom ? "top" : "bottom"]: "-4px",
