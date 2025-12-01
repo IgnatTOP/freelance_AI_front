@@ -10,7 +10,6 @@ import {
   TextField,
   Avatar,
   CircularProgress,
-  Grid,
   Badge,
   Tooltip,
   IconButton,
@@ -18,6 +17,7 @@ import {
   Stack,
   useTheme,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, User, Briefcase, CheckCheck, ChevronDown, Wifi, WifiOff } from "lucide-react";
 import { OrderInfoSidebar } from "./OrderInfoSidebar";
@@ -291,7 +291,7 @@ export default function ChatPage() {
       <Box sx={{ height: "80vh", maxHeight: "80vh", overflow: "hidden", padding: 0 }}>
         <Grid container spacing={2.5} sx={{ height: "80vh", maxHeight: "80vh", maxWidth: 1400, margin: "0 auto", padding: "8px", overflow: "hidden" }}>
           {/* Чат */}
-          <Grid item xs={12} lg={5} xl={5} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
+          <Grid size={{ xs: 12, lg: 5, xl: 5 }} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -302,7 +302,7 @@ export default function ChatPage() {
                 height: "100%",
                 maxHeight: "100%",
                 overflow: "hidden",
-                borderRadius: theme.shape.borderRadius * 2,
+                borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16,
                 background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
                 border: `1px solid ${theme.palette.divider}`,
                 boxShadow: theme.shadows[8],
@@ -315,7 +315,7 @@ export default function ChatPage() {
                   padding: "12px 16px",
                   borderBottom: `1px solid ${theme.palette.divider}`,
                   background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-                  borderRadius: `${theme.shape.borderRadius * 2}px ${theme.shape.borderRadius * 2}px 0 0`,
+                  borderRadius: `${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16}px ${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16}px 0 0`,
                   position: "relative",
                   overflow: "hidden",
                 }}
@@ -538,7 +538,7 @@ export default function ChatPage() {
                                   fontSize: 11,
                                   padding: "6px 14px",
                                   background: `linear-gradient(135deg, ${theme.palette.background.paper}, ${theme.palette.background.default})`,
-                                  borderRadius: theme.shape.borderRadius * 2,
+                                  borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16,
                                   display: "inline-block",
                                   border: `1px solid ${theme.palette.divider}`,
                                   fontWeight: 600,
@@ -756,7 +756,7 @@ export default function ChatPage() {
                   padding: "12px 16px",
                   borderTop: `1px solid ${theme.palette.divider}`,
                   background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-                  borderRadius: `0 0 ${theme.shape.borderRadius * 3}px ${theme.shape.borderRadius * 3}px`,
+                  borderRadius: `0 0 ${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 3 : 24}px ${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 3 : 24}px`,
                   position: "relative",
                 }}
               >
@@ -798,11 +798,11 @@ export default function ChatPage() {
                       minRows={1}
                       maxRows={4}
                       sx={{
-                        borderRadius: theme.shape.borderRadius * 1.5,
+                        borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 1.5 : 12,
                         fontSize: 14,
                         lineHeight: 1.5,
                         '& .MuiOutlinedInput-root': {
-                          borderRadius: theme.shape.borderRadius * 1.5,
+                          borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 1.5 : 12,
                           backgroundColor: theme.palette.background.default,
                           transition: "all 0.2s",
                           '& fieldset': {
@@ -839,7 +839,7 @@ export default function ChatPage() {
                         width: 44,
                         minWidth: 44,
                         padding: 0,
-                        borderRadius: theme.shape.borderRadius * 1.5,
+                        borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 1.5 : 12,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -857,7 +857,7 @@ export default function ChatPage() {
           </Grid>
           
           {/* Сайдбар с информацией о заказе */}
-          <Grid item xs={12} lg={7} xl={7} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
+          <Grid size={{ xs: 12, lg: 7, xl: 7 }} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}

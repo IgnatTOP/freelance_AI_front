@@ -12,10 +12,10 @@ import {
   Chip,
   Button,
   Skeleton,
-  Grid,
   useTheme,
   alpha,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { motion } from "framer-motion";
 import { FileText, Clock, CheckCircle, XCircle, Hourglass, ArrowRight } from "lucide-react";
 import { getMyProposals } from "@/src/shared/api/proposals";
@@ -175,7 +175,7 @@ export default function ProposalsPage() {
 
               {/* Stats */}
               <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <Card
                     sx={{
                       textAlign: "center",
@@ -190,7 +190,7 @@ export default function ProposalsPage() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <Card
                     sx={{
                       textAlign: "center",
@@ -205,7 +205,7 @@ export default function ProposalsPage() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <Card
                     sx={{
                       textAlign: "center",
@@ -220,7 +220,7 @@ export default function ProposalsPage() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <Card
                     sx={{
                       textAlign: "center",

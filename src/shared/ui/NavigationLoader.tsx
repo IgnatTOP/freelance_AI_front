@@ -11,6 +11,7 @@ export function NavigationLoader() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isNavigatingRef = useRef(false);
+  const clickedHrefRef = useRef<string | null>(null);
 
   // Отслеживаем клики по ссылкам для раннего показа loader
   useEffect(() => {
@@ -28,6 +29,17 @@ export function NavigationLoader() {
           !href.startsWith("mailto:") &&
           !href.startsWith("tel:")
         ) {
+          clickedHrefRef.current = href;
+          
+          // Проверяем, не ведет ли ссылка на текущую страницу
+          const currentPath = window.location.pathname;
+          const normalizedHref = href.startsWith('/') ? href : `/${href}`;
+          
+          if (normalizedHref === currentPath) {
+            // Если кликнули на ту же страницу, не показываем loader
+            return;
+          }
+          
           isNavigatingRef.current = true;
           setIsNavigating(true);
           setProgress(0);
@@ -84,6 +96,7 @@ export function NavigationLoader() {
           document.body.style.overflow = "";
           setProgress(0);
           prevPathnameRef.current = pathname;
+          clickedHrefRef.current = null;
         }, 300);
       } else {
         // Путь изменился без предварительного клика (программная навигация)
@@ -104,6 +117,34 @@ export function NavigationLoader() {
           setProgress(0);
           prevPathnameRef.current = pathname;
         }, 400);
+      }
+    } else {
+      // Путь не изменился, но был клик - возможно кликнули на ту же ссылку
+      // Скрываем loader через небольшую задержку, если он был показан
+      if (isNavigatingRef.current && clickedHrefRef.current) {
+        const clickedPath = clickedHrefRef.current.startsWith('/') 
+          ? clickedHrefRef.current 
+          : `/${clickedHrefRef.current}`;
+        
+        if (clickedPath === pathname) {
+          // Кликнули на ту же страницу - скрываем loader
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+          
+          timeoutRef.current = setTimeout(() => {
+            setIsNavigating(false);
+            isNavigatingRef.current = false;
+            document.body.style.overflow = "";
+            setProgress(0);
+            clickedHrefRef.current = null;
+          }, 200);
+        }
       }
     }
 
