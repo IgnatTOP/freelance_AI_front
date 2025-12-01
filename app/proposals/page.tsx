@@ -4,20 +4,18 @@ import { toastService } from "@/src/shared/lib/toast";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Layout,
+  Box,
+  Container,
   Card,
   Typography,
-  Space,
-  Tag,
+  Stack,
+  Chip,
   Button,
-  Empty,
   Skeleton,
-  theme,
-  message,
-  List,
-  Row,
-  Col,
-} from "antd";
+  Grid,
+  useTheme,
+  alpha,
+} from "@mui/material";
 import { motion } from "framer-motion";
 import { FileText, Clock, CheckCircle, XCircle, Hourglass, ArrowRight } from "lucide-react";
 import { getMyProposals } from "@/src/shared/api/proposals";
@@ -27,19 +25,15 @@ import Link from "next/link";
 import { formatPriceRange } from "@/src/shared/lib/utils";
 import type { Proposal } from "@/src/shared/api/proposals";
 
-const { Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
-const { useToken } = theme;
-
 const statusConfig = {
-  pending: { label: "Ожидает", color: "processing", icon: Hourglass },
-  shortlisted: { label: "В шорт-листе", color: "warning", icon: Clock },
-  accepted: { label: "Принято", color: "success", icon: CheckCircle },
-  rejected: { label: "Отклонено", color: "error", icon: XCircle },
+  pending: { label: "Ожидает", color: "info" as const, icon: Hourglass },
+  shortlisted: { label: "В шорт-листе", color: "warning" as const, icon: Clock },
+  accepted: { label: "Принято", color: "success" as const, icon: CheckCircle },
+  rejected: { label: "Отклонено", color: "error" as const, icon: XCircle },
 };
 
 export default function ProposalsPage() {
-  const { token } = useToken();
+  const theme = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -150,164 +144,141 @@ export default function ProposalsPage() {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content>
-        <div
-          style={{
-            minHeight: "100vh",
-            padding: "40px 24px",
-            maxWidth: 1200,
-            margin: "0 auto",
-            width: "100%",
-          }}
-        >
+    <Box sx={{ minHeight: "100vh", background: "transparent" }}>
+      <Container maxWidth="lg">
+        <Box sx={{ minHeight: "100vh", py: 5 }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Space direction="vertical" size={32} style={{ width: "100%" }}>
+            <Stack spacing={4}>
               {/* Header */}
-              <div>
-                <Title
-                  level={1}
-                  style={{
-                    margin: 0,
-                    fontSize: 32,
-                    lineHeight: "40px",
+              <Box>
+                <Typography
+                  variant="h3"
+                  component="h1"
+                  sx={{
                     fontWeight: 600,
+                    mb: 1,
                   }}
                 >
                   Мои отклики
-                </Title>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: 14,
-                    lineHeight: "22px",
-                    display: "block",
-                    marginTop: 8,
-                  }}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
                 >
                   Управляйте своими предложениями и отслеживайте их статус
-                </Text>
-              </div>
+                </Typography>
+              </Box>
 
               {/* Stats */}
-              <Row gutter={[16, 16]}>
-                <Col xs={12} sm={6}>
+              <Grid container spacing={2}>
+                <Grid item xs={6} sm={3}>
                   <Card
-                    style={{
-                      borderRadius: token.borderRadiusLG,
-                      borderColor: token.colorBorder,
+                    sx={{
                       textAlign: "center",
+                      p: 2,
                     }}
                   >
-                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" mb={1}>
                       Всего
-                    </Text>
-                    <Title level={2} style={{ margin: 0 }}>
+                    </Typography>
+                    <Typography variant="h4" component="div">
                       {proposals.length}
-                    </Title>
+                    </Typography>
                   </Card>
-                </Col>
-                <Col xs={12} sm={6}>
+                </Grid>
+                <Grid item xs={6} sm={3}>
                   <Card
-                    style={{
-                      borderRadius: token.borderRadiusLG,
-                      borderColor: token.colorBorder,
+                    sx={{
                       textAlign: "center",
+                      p: 2,
                     }}
                   >
-                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" mb={1}>
                       Ожидают
-                    </Text>
-                    <Title level={2} style={{ margin: 0, color: token.colorInfo }}>
+                    </Typography>
+                    <Typography variant="h4" component="div" color="info.main">
                       {groupedProposals.pending.length}
-                    </Title>
+                    </Typography>
                   </Card>
-                </Col>
-                <Col xs={12} sm={6}>
+                </Grid>
+                <Grid item xs={6} sm={3}>
                   <Card
-                    style={{
-                      borderRadius: token.borderRadiusLG,
-                      borderColor: token.colorBorder,
+                    sx={{
                       textAlign: "center",
+                      p: 2,
                     }}
                   >
-                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" mb={1}>
                       Принято
-                    </Text>
-                    <Title level={2} style={{ margin: 0, color: token.colorSuccess }}>
+                    </Typography>
+                    <Typography variant="h4" component="div" color="success.main">
                       {groupedProposals.accepted.length}
-                    </Title>
+                    </Typography>
                   </Card>
-                </Col>
-                <Col xs={12} sm={6}>
+                </Grid>
+                <Grid item xs={6} sm={3}>
                   <Card
-                    style={{
-                      borderRadius: token.borderRadiusLG,
-                      borderColor: token.colorBorder,
+                    sx={{
                       textAlign: "center",
+                      p: 2,
                     }}
                   >
-                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" mb={1}>
                       Отклонено
-                    </Text>
-                    <Title level={2} style={{ margin: 0, color: token.colorError }}>
+                    </Typography>
+                    <Typography variant="h4" component="div" color="error.main">
                       {groupedProposals.rejected.length}
-                    </Title>
+                    </Typography>
                   </Card>
-                </Col>
-              </Row>
+                </Grid>
+              </Grid>
 
               {/* Proposals List */}
               {loading ? (
-                <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                <Stack spacing={2}>
                   {[1, 2, 3].map((i) => (
-                    <Card
-                      key={i}
-                      style={{
-                        borderRadius: token.borderRadiusLG,
-                        borderColor: token.colorBorder,
-                      }}
-                    >
-                      <Skeleton active paragraph={{ rows: 3 }} />
+                    <Card key={i} sx={{ p: 2 }}>
+                      <Skeleton variant="text" width="60%" height={32} />
+                      <Skeleton variant="text" width="100%" />
+                      <Skeleton variant="text" width="100%" />
+                      <Skeleton variant="text" width="80%" />
                     </Card>
                   ))}
-                </Space>
+                </Stack>
               ) : proposals.length === 0 ? (
                 <Card
-                  style={{
-                    borderRadius: token.borderRadiusLG,
-                    borderColor: token.colorBorder,
+                  sx={{
                     textAlign: "center",
-                  }}
-                  styles={{
-                    body: { padding: "80px 24px" },
+                    py: 10,
+                    px: 3,
                   }}
                 >
-                  <Empty
-                    description={
-                      <Space direction="vertical" size={8}>
-                        <Text strong style={{ fontSize: 16, display: "block" }}>
-                          У вас пока нет откликов
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: 14, display: "block" }}>
-                          Найдите подходящие заказы и отправьте свой первый отклик
-                        </Text>
-                      </Space>
-                    }
-                  >
-                    <Link href="/orders">
-                      <Button type="primary" size="large" icon={<ArrowRight size={16} />}>
+                  <Stack spacing={2} alignItems="center">
+                    <Box>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>
+                        У вас пока нет откликов
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Найдите подходящие заказы и отправьте свой первый отклик
+                      </Typography>
+                    </Box>
+                    <Link href="/orders" style={{ textDecoration: "none" }}>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        endIcon={<ArrowRight size={16} />}
+                      >
                         Найти заказы
                       </Button>
                     </Link>
-                  </Empty>
+                  </Stack>
                 </Card>
               ) : (
-                <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                <Stack spacing={2}>
                   {proposals.map((proposal) => {
                     const statusInfo = statusConfig[proposal.status];
                     const StatusIcon = statusInfo.icon;
@@ -320,124 +291,138 @@ export default function ProposalsPage() {
                         transition={{ duration: 0.3 }}
                       >
                         <Card
-                          hoverable
-                          style={{
-                            borderRadius: token.borderRadiusLG,
-                            borderColor: token.colorBorder,
+                          sx={{
+                            transition: "all 0.2s",
+                            "&:hover": {
+                              boxShadow: 4,
+                            },
                           }}
                         >
-                          <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                          <Stack spacing={2} p={2}>
                             {/* Header */}
-                            <div
-                              style={{
+                            <Box
+                              sx={{
                                 display: "flex",
                                 alignItems: "flex-start",
                                 justifyContent: "space-between",
-                                gap: 16,
+                                gap: 2,
                               }}
                             >
-                              <Space direction="vertical" size={8} style={{ flex: 1 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                  <FileText size={20} style={{ color: token.colorPrimary }} />
-                                  <Link href={`/orders/${proposal.order_id}`}>
-                                    <Text
-                                      strong
-                                      style={{
-                                        fontSize: 16,
+                              <Stack spacing={1} sx={{ flex: 1 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                                  <FileText size={20} style={{ color: theme.palette.primary.main }} />
+                                  <Link
+                                    href={`/orders/${proposal.order_id}`}
+                                    style={{ textDecoration: "none" }}
+                                  >
+                                    <Typography
+                                      variant="body1"
+                                      fontWeight={600}
+                                      sx={{
                                         cursor: "pointer",
-                                        color: token.colorPrimary,
+                                        color: "primary.main",
+                                        "&:hover": {
+                                          textDecoration: "underline",
+                                        },
                                       }}
                                     >
                                       Заказ #{proposal.order_id.slice(0, 8)}
-                                    </Text>
+                                    </Typography>
                                   </Link>
-                                </div>
-                                <Tag
+                                </Box>
+                                <Chip
+                                  label={statusInfo.label}
                                   color={statusInfo.color}
                                   icon={<StatusIcon size={14} />}
-                                  style={{
-                                    alignSelf: "flex-start",
-                                  }}
-                                >
-                                  {statusInfo.label}
-                                </Tag>
-                              </Space>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                  size="small"
+                                  sx={{ alignSelf: "flex-start" }}
+                                />
+                              </Stack>
+                              <Typography variant="caption" color="text.secondary">
                                 {formatTimeAgo(proposal.created_at)}
-                              </Text>
-                            </div>
+                              </Typography>
+                            </Box>
 
                             {/* Cover Letter */}
-                            <Paragraph
-                              ellipsis={{ rows: 3, expandable: true, symbol: "показать больше" }}
-                              style={{
-                                margin: 0,
-                                fontSize: 14,
-                                lineHeight: "22px",
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                display: "-webkit-box",
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
                               }}
                             >
                               {proposal.cover_letter}
-                            </Paragraph>
+                            </Typography>
 
                             {/* Footer */}
-                            <div
-                              style={{
+                            <Box
+                              sx={{
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                paddingTop: 12,
-                                borderTop: `1px solid ${token.colorBorder}`,
+                                pt: 1.5,
+                                borderTop: 1,
+                                borderColor: "divider",
+                                flexWrap: "wrap",
+                                gap: 1,
                               }}
                             >
-                              <Space>
+                              <Stack direction="row" spacing={1} alignItems="center">
                                 {proposal.proposed_amount && (
-                                  <Text strong style={{ fontSize: 14 }}>
+                                  <Typography variant="body2" fontWeight={600}>
                                     {formatPriceRange(proposal.proposed_amount, proposal.proposed_amount)}
-                                  </Text>
+                                  </Typography>
                                 )}
-                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                <Typography variant="caption" color="text.secondary">
                                   {formatDate(proposal.created_at)}
-                                </Text>
-                              </Space>
-                              <Link href={`/orders/${proposal.order_id}`}>
-                                <Button type="link" icon={<ArrowRight size={14} />}>
+                                </Typography>
+                              </Stack>
+                              <Link
+                                href={`/orders/${proposal.order_id}`}
+                                style={{ textDecoration: "none" }}
+                              >
+                                <Button
+                                  variant="text"
+                                  endIcon={<ArrowRight size={14} />}
+                                  size="small"
+                                >
                                   Перейти к заказу
                                 </Button>
                               </Link>
-                            </div>
+                            </Box>
 
                             {/* AI Feedback */}
                             {proposal.ai_feedback && (
                               <Card
-                                size="small"
-                                style={{
-                                  background: `${token.colorPrimary}08`,
-                                  borderColor: `${token.colorPrimary}20`,
+                                sx={{
+                                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                  borderColor: alpha(theme.palette.primary.main, 0.2),
+                                  p: 1.5,
                                 }}
                               >
-                                <Text
-                                  type="secondary"
-                                  style={{
-                                    fontSize: 12,
-                                    fontStyle: "italic",
-                                  }}
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontStyle: "italic" }}
                                 >
                                   <strong>AI рекомендация:</strong> {proposal.ai_feedback}
-                                </Text>
+                                </Typography>
                               </Card>
                             )}
-                          </Space>
+                          </Stack>
                         </Card>
                       </motion.div>
                     );
                   })}
-                </Space>
+                </Stack>
               )}
-            </Space>
+            </Stack>
           </motion.div>
-        </div>
-      </Content>
-    </Layout>
+        </Box>
+      </Container>
+    </Box>
   );
 }
 

@@ -4,22 +4,20 @@ import { toastService } from "@/src/shared/lib/toast";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Layout,
+  Box,
   Card,
   Typography,
-  Space,
-  Button,
-  Input,
+  TextField,
   Avatar,
-  Spin,
-  Empty,
-  theme,
-  message,
-  Row,
-  Col,
+  CircularProgress,
+  Grid,
   Badge,
   Tooltip,
-} from "antd";
+  IconButton,
+  Button,
+  Stack,
+  useTheme,
+} from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, User, Briefcase, CheckCheck, ChevronDown, Wifi, WifiOff } from "lucide-react";
 import { OrderInfoSidebar } from "./OrderInfoSidebar";
@@ -36,13 +34,8 @@ import "dayjs/locale/ru";
 dayjs.extend(relativeTime);
 dayjs.locale("ru");
 
-const { Content } = Layout;
-const { Title, Text } = Typography;
-const { TextArea } = Input;
-const { useToken } = theme;
-
 export default function ChatPage() {
-  const { token } = useToken();
+  const theme = useTheme();
   const params = useParams();
   const router = useRouter();
   const conversationId = params.id as string;
@@ -227,10 +220,10 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <Layout style={{ height: "100vh", background: "transparent", overflow: "hidden" }}>
-        <Content style={{ height: "100vh", overflow: "hidden", padding: 0 }}>
-          <div
-            style={{
+      <Box sx={{ height: "100vh", background: "transparent", overflow: "hidden" }}>
+        <Box sx={{ height: "100vh", overflow: "hidden", padding: 0 }}>
+          <Box
+            sx={{
               height: "100vh",
               display: "flex",
               alignItems: "center",
@@ -239,26 +232,26 @@ export default function ChatPage() {
             }}
           >
             <Card
-              style={{
-                borderRadius: token.borderRadiusLG,
-                borderColor: token.colorBorder,
-                background: token.colorBgContainer,
+              sx={{
+                borderRadius: 2,
+                background: theme.palette.background.paper,
+                p: 5,
               }}
             >
-              <Spin size="large" style={{ display: "block", textAlign: "center", padding: 40 }} />
+              <CircularProgress size={60} />
             </Card>
-          </div>
-        </Content>
-      </Layout>
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
   if (!conversation) {
     return (
-      <Layout style={{ height: "100vh", background: "transparent", overflow: "hidden" }}>
-        <Content style={{ height: "100vh", overflow: "hidden", padding: 0 }}>
-          <div
-            style={{
+      <Box sx={{ height: "100vh", background: "transparent", overflow: "hidden" }}>
+        <Box sx={{ height: "100vh", overflow: "hidden", padding: 0 }}>
+          <Box
+            sx={{
               height: "100vh",
               display: "flex",
               alignItems: "center",
@@ -267,17 +260,21 @@ export default function ChatPage() {
             }}
           >
             <Card
-              style={{
-                borderRadius: token.borderRadiusLG,
-                borderColor: token.colorBorder,
-                background: token.colorBgContainer,
+              sx={{
+                borderRadius: 2,
+                background: theme.palette.background.paper,
+                p: 5,
               }}
             >
-              <Empty description="Чат не найден" />
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="body2" color="text.secondary">
+                  Чат не найден
+                </Typography>
+              </Box>
             </Card>
-          </div>
-        </Content>
-      </Layout>
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
@@ -290,11 +287,11 @@ export default function ChatPage() {
     : null;
 
   return (
-    <Layout style={{ height: "80vh", maxHeight: "80vh", background: "transparent", overflow: "hidden" }}>
-      <Content style={{ height: "80vh", maxHeight: "80vh", overflow: "hidden", padding: 0 }}>
-        <Row gutter={[20, 0]} style={{ height: "80vh", maxHeight: "80vh", maxWidth: 1400, margin: "0 auto", padding: "8px", overflow: "hidden" }}>
+    <Box sx={{ height: "80vh", maxHeight: "80vh", background: "transparent", overflow: "hidden" }}>
+      <Box sx={{ height: "80vh", maxHeight: "80vh", overflow: "hidden", padding: 0 }}>
+        <Grid container spacing={2.5} sx={{ height: "80vh", maxHeight: "80vh", maxWidth: 1400, margin: "0 auto", padding: "8px", overflow: "hidden" }}>
           {/* Чат */}
-          <Col xs={24} lg={10} xl={10} style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
+          <Grid item xs={12} lg={5} xl={5} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -305,170 +302,162 @@ export default function ChatPage() {
                 height: "100%",
                 maxHeight: "100%",
                 overflow: "hidden",
-                borderRadius: token.borderRadiusLG * 1.5,
-                background: `linear-gradient(135deg, ${token.colorBgContainer} 0%, ${token.colorBgElevated} 100%)`,
-                border: `1px solid ${token.colorBorder}`,
-                boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)`,
+                borderRadius: theme.shape.borderRadius * 2,
+                background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: theme.shadows[8],
                 backdropFilter: "blur(10px)",
               }}
             >
               {/* Заголовок чата */}
-              <div
-                style={{
+              <Box
+                sx={{
                   padding: "12px 16px",
-                  borderBottom: `1px solid ${token.colorBorder}`,
-                  background: `linear-gradient(135deg, ${token.colorBgContainer} 0%, ${token.colorBgElevated} 100%)`,
-                  borderRadius: `${token.borderRadiusLG * 1.5}px ${token.borderRadiusLG * 1.5}px 0 0`,
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
+                  borderRadius: `${theme.shape.borderRadius * 2}px ${theme.shape.borderRadius * 2}px 0 0`,
                   position: "relative",
                   overflow: "hidden",
                 }}
               >
                 {/* Декоративный градиент */}
-                <div
-                  style={{
+                <Box
+                  sx={{
                     position: "absolute",
                     top: 0,
                     left: 0,
                     right: 0,
                     height: "2px",
-                    background: `linear-gradient(90deg, transparent, ${token.colorPrimary}40, transparent)`,
+                    background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}40, transparent)`,
                   }}
                 />
-                
-                <Row align="middle" gutter={[12, 0]} wrap={false}>
-                  <Col flex="none">
+
+                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ flexWrap: "nowrap" }}>
+                  <Box sx={{ flexShrink: 0 }}>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        type="text"
-                        icon={<ArrowLeft size={18} />}
+                      <IconButton
                         onClick={() => router.push("/messages")}
-                        style={{ 
-                          padding: "6px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderRadius: token.borderRadius,
-                          transition: "all 0.2s",
+                        sx={{
                           width: 36,
                           height: 36,
-                          color: token.colorText,
+                          transition: "all 0.2s",
+                          "&:hover": {
+                            backgroundColor: theme.palette.action.hover,
+                            color: theme.palette.primary.main,
+                          },
                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = token.colorFillTertiary;
-                          e.currentTarget.style.color = token.colorPrimary;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "transparent";
-                          e.currentTarget.style.color = token.colorText;
-                        }}
-                      />
+                      >
+                        <ArrowLeft size={18} />
+                      </IconButton>
                     </motion.div>
-                  </Col>
-                  <Col flex="auto" style={{ minWidth: 0 }}>
-                    <Space style={{ width: "100%" }} size={12}>
+                  </Box>
+                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                    <Stack direction="row" spacing={1.5} sx={{ width: "100%" }}>
                       <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
                         <Avatar
-                          size={44}
                           src={avatarUrl || undefined}
-                          style={{
-                            backgroundColor: `${token.colorPrimary}20`,
-                            color: token.colorPrimary,
-                            border: `2px solid ${token.colorPrimary}30`,
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            bgcolor: `${theme.palette.primary.main}20`,
+                            color: theme.palette.primary.main,
+                            border: `2px solid ${theme.palette.primary.main}30`,
                             flexShrink: 0,
-                            boxShadow: `0 2px 8px ${token.colorPrimary}15`,
+                            boxShadow: `0 2px 8px ${theme.palette.primary.main}15`,
                           }}
                         >
                           {otherUser?.display_name?.charAt(0).toUpperCase() || <User size={20} />}
                         </Avatar>
                       </motion.div>
-                      <Space direction="vertical" size={4} style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <Text 
-                            strong 
-                            style={{ 
-                              fontSize: 16, 
-                              lineHeight: 1.3, 
+                      <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              fontSize: 16,
+                              lineHeight: 1.3,
                               fontWeight: 600,
-                              color: token.colorText,
+                              color: theme.palette.text.primary,
                             }}
                           >
                             {otherUser?.display_name || "Пользователь"}
-                          </Text>
+                          </Typography>
                           <Tooltip title={isConnected ? "Подключено" : "Переподключение..."}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                               {isConnected ? (
-                                <Wifi size={14} style={{ color: token.colorSuccess || token.colorPrimary }} />
+                                <Wifi size={14} style={{ color: theme.palette.success.main }} />
                               ) : (
-                                <WifiOff size={14} style={{ color: token.colorError || "#ff4d4f" }} />
+                                <WifiOff size={14} style={{ color: theme.palette.error.main }} />
                               )}
-                              <Badge 
-                                status={isConnected ? "success" : "error"}
-                                style={{ marginLeft: 0 }}
+                              <Badge
+                                color={isConnected ? "success" : "error"}
+                                variant="dot"
+                                sx={{ ml: 0 }}
                               />
-                            </div>
+                            </Box>
                           </Tooltip>
-                        </div>
+                        </Box>
                         {order && (
                           <motion.div
                             whileHover={{ x: 2 }}
                             transition={{ duration: 0.2 }}
                           >
-                            <Space 
-                              size={6} 
-                              style={{ 
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              sx={{
                                 flexWrap: "wrap",
                                 cursor: "pointer",
+                                alignItems: "center",
                               }}
                               onClick={() => router.push(`/orders/${order.id}`)}
                             >
-                              <Briefcase 
-                                size={12} 
-                                style={{ 
-                                  color: token.colorTextTertiary, 
+                              <Briefcase
+                                size={12}
+                                style={{
+                                  color: theme.palette.text.secondary,
                                   flexShrink: 0,
                                   transition: "color 0.2s",
-                                }} 
+                                }}
                               />
-                              <Text 
-                                type="secondary" 
-                                ellipsis
-                                style={{ 
-                                  fontSize: 12, 
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                noWrap
+                                sx={{
+                                  fontSize: 12,
                                   transition: "color 0.2s",
                                   maxWidth: "100%",
                                   lineHeight: 1.4,
                                   fontWeight: 500,
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.color = token.colorPrimary;
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = token.colorTextSecondary;
+                                  "&:hover": {
+                                    color: theme.palette.primary.main,
+                                  },
                                 }}
                               >
                                 {order.title}
-                              </Text>
-                            </Space>
+                              </Typography>
+                            </Stack>
                           </motion.div>
                         )}
-                      </Space>
-                    </Space>
-                  </Col>
-                </Row>
-              </div>
+                      </Stack>
+                    </Stack>
+                  </Box>
+                </Stack>
+              </Box>
 
               {/* Область сообщений */}
-              <div
+              <Box
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
                 className="chat-messages-container"
-                style={{
+                sx={{
                   flex: 1,
                   overflowY: "auto",
                   overflowX: "hidden",
                   padding: "16px 16px 12px 16px",
                   scrollBehavior: "smooth",
-                  background: `linear-gradient(180deg, ${token.colorBgElevated} 0%, ${token.colorBgContainer} 100%)`,
+                  background: `linear-gradient(180deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
                   position: "relative",
                 }}
               >
@@ -478,33 +467,34 @@ export default function ChatPage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3 }}
-                    style={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      justifyContent: "center", 
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       height: "100%",
                       minHeight: "300px",
                       flexDirection: "column",
                       gap: 16,
                     }}
                   >
-                    <div
-                      style={{
+                    <Box
+                      sx={{
                         width: 80,
                         height: 80,
                         borderRadius: "50%",
-                        background: `linear-gradient(135deg, ${token.colorPrimary}20, ${token.colorPrimary}10)`,
+                        background: `linear-gradient(135deg, ${theme.palette.primary.main}20, ${theme.palette.primary.main}10)`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        border: `2px solid ${token.colorPrimary}30`,
+                        border: `2px solid ${theme.palette.primary.main}30`,
                       }}
                     >
-                      <User size={36} style={{ color: token.colorPrimary, opacity: 0.6 }} />
-                    </div>
-                    <Text
-                      type="secondary"
-                      style={{
+                      <User size={36} style={{ color: theme.palette.primary.main, opacity: 0.6 }} />
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
                         fontSize: 14,
                         textAlign: "center",
                         maxWidth: 280,
@@ -512,7 +502,7 @@ export default function ChatPage() {
                       }}
                     >
                       Начните общение с <strong>{otherUser?.display_name || "пользователем"}</strong>
-                    </Text>
+                    </Typography>
                   </motion.div>
                 ) : (
                   <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 4 }}>
@@ -531,34 +521,35 @@ export default function ChatPage() {
                                 position: "relative",
                               }}
                             >
-                              <div
-                                style={{
+                              <Box
+                                sx={{
                                   position: "absolute",
                                   top: "50%",
                                   left: 0,
                                   right: 0,
                                   height: "1px",
-                                  background: `linear-gradient(90deg, transparent, ${token.colorBorder}, transparent)`,
+                                  background: `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`,
                                 }}
                               />
-                              <Text
-                                type="secondary"
-                                style={{
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
                                   fontSize: 11,
                                   padding: "6px 14px",
-                                  background: `linear-gradient(135deg, ${token.colorBgContainer}, ${token.colorBgElevated})`,
-                                  borderRadius: token.borderRadius * 2,
+                                  background: `linear-gradient(135deg, ${theme.palette.background.paper}, ${theme.palette.background.default})`,
+                                  borderRadius: theme.shape.borderRadius * 2,
                                   display: "inline-block",
-                                  border: `1px solid ${token.colorBorder}`,
+                                  border: `1px solid ${theme.palette.divider}`,
                                   fontWeight: 600,
                                   letterSpacing: 0.5,
                                   textTransform: "uppercase",
                                   position: "relative",
-                                  boxShadow: `0 2px 8px rgba(0,0,0,0.08)`,
+                                  boxShadow: theme.shadows[2],
                                 }}
                               >
                                 {formatDate(item.date!)}
-                              </Text>
+                              </Typography>
                             </motion.div>
                           );
                         }
@@ -605,14 +596,15 @@ export default function ChatPage() {
                                   transition={{ duration: 0.2 }}
                                 >
                                   <Avatar
-                                    size={32}
                                     src={avatarUrl || undefined}
-                                    style={{
-                                      backgroundColor: `${token.colorPrimary}20`,
-                                      color: token.colorPrimary,
+                                    sx={{
+                                      width: 32,
+                                      height: 32,
+                                      bgcolor: `${theme.palette.primary.main}20`,
+                                      color: theme.palette.primary.main,
                                       flexShrink: 0,
-                                      border: `2px solid ${token.colorPrimary}30`,
-                                      boxShadow: `0 2px 6px ${token.colorPrimary}15`,
+                                      border: `2px solid ${theme.palette.primary.main}30`,
+                                      boxShadow: `0 2px 6px ${theme.palette.primary.main}15`,
                                     }}
                                   >
                                     {otherUser?.display_name?.charAt(0).toUpperCase() || <User size={14} />}
@@ -628,49 +620,38 @@ export default function ChatPage() {
                                   position: "relative",
                                 }}
                               >
-                                <div
-                                  style={{
-                                    borderRadius: isMine 
-                                      ? `18px 18px 6px 18px`
-                                      : `18px 18px 18px 6px`,
+                                <Box
+                                  sx={{
+                                    borderRadius: isMine
+                                      ? "18px 18px 6px 18px"
+                                      : "18px 18px 18px 6px",
                                     background: isMine
-                                      ? `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimary}dd)`
-                                      : `linear-gradient(135deg, ${token.colorBgContainer}, ${token.colorBgElevated})`,
-                                    border: isMine 
-                                      ? "none" 
-                                      : `1px solid ${token.colorBorder}`,
+                                      ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`
+                                      : `linear-gradient(135deg, ${theme.palette.background.paper}, ${theme.palette.background.default})`,
+                                    border: isMine
+                                      ? "none"
+                                      : `1px solid ${theme.palette.divider}`,
                                     padding: "12px 16px",
                                     boxShadow: isMine
-                                      ? `0 4px 12px ${token.colorPrimary}30, 0 2px 4px ${token.colorPrimary}15`
-                                      : `0 2px 8px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)`,
+                                      ? `0 4px 12px ${theme.palette.primary.main}30, 0 2px 4px ${theme.palette.primary.main}15`
+                                      : theme.shadows[2],
                                     transition: "all 0.2s",
                                     position: "relative",
                                     backdropFilter: "blur(10px)",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    if (isMine) {
-                                      e.currentTarget.style.boxShadow = `0 6px 16px ${token.colorPrimary}40, 0 3px 6px ${token.colorPrimary}20`;
-                                      e.currentTarget.style.transform = "translateY(-1px)";
-                                    } else {
-                                      e.currentTarget.style.boxShadow = `0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)`;
-                                      e.currentTarget.style.transform = "translateY(-1px)";
-                                    }
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    if (isMine) {
-                                      e.currentTarget.style.boxShadow = `0 4px 12px ${token.colorPrimary}30, 0 2px 4px ${token.colorPrimary}15`;
-                                    } else {
-                                      e.currentTarget.style.boxShadow = `0 2px 8px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)`;
-                                    }
-                                    e.currentTarget.style.transform = "translateY(0)";
+                                    "&:hover": {
+                                      boxShadow: isMine
+                                        ? `0 6px 16px ${theme.palette.primary.main}40, 0 3px 6px ${theme.palette.primary.main}20`
+                                        : theme.shadows[4],
+                                      transform: "translateY(-1px)",
+                                    },
                                   }}
                                 >
                                   <div style={{ width: "100%" }}>
-                                    <Text
-                                      style={{
+                                    <Typography
+                                      sx={{
                                         fontSize: 14,
                                         lineHeight: 1.6,
-                                        color: isMine ? "#ffffff" : token.colorText,
+                                        color: isMine ? "#ffffff" : theme.palette.text.primary,
                                         whiteSpace: "pre-wrap",
                                         wordBreak: "break-word",
                                         display: "block",
@@ -679,7 +660,7 @@ export default function ChatPage() {
                                       }}
                                     >
                                       {msg.content}
-                                    </Text>
+                                    </Typography>
                                     <div
                                       style={{
                                         display: "flex",
@@ -689,17 +670,17 @@ export default function ChatPage() {
                                         marginTop: 6,
                                       }}
                                     >
-                                      <Text
-                                        style={{
+                                      <Typography
+                                        sx={{
                                           fontSize: 10,
-                                          color: isMine ? "rgba(255,255,255,0.7)" : token.colorTextTertiary,
+                                          color: isMine ? "rgba(255,255,255,0.7)" : theme.palette.text.secondary,
                                           lineHeight: 1,
                                           fontWeight: 500,
                                           letterSpacing: "0.02em",
                                         }}
                                       >
                                         {formatTime(msg.created_at)}
-                                      </Text>
+                                      </Typography>
                                       {isMine && (
                                         <CheckCheck 
                                           size={11} 
@@ -711,7 +692,7 @@ export default function ChatPage() {
                                       )}
                                     </div>
                                   </div>
-                                </div>
+                                </Box>
                               </motion.div>
                             </div>
                           </motion.div>
@@ -744,36 +725,38 @@ export default function ChatPage() {
                       whileTap={{ scale: 0.95 }}
                     >
                       <Button
-                        type="primary"
-                        shape="circle"
+                        variant="contained"
                         size="small"
-                        icon={<ChevronDown size={16} />}
+                        startIcon={<ChevronDown size={16} />}
                         onClick={() => {
                           scrollToBottom();
                           setIsAtBottom(true);
                         }}
-                        style={{
+                        sx={{
                           pointerEvents: "auto",
-                          boxShadow: `0 4px 12px ${token.colorPrimary}40, 0 2px 4px ${token.colorPrimary}20`,
+                          boxShadow: `0 4px 12px ${theme.palette.primary.main}40, 0 2px 4px ${theme.palette.primary.main}20`,
                           width: 40,
                           height: 40,
+                          minWidth: 40,
+                          borderRadius: "50%",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
+                          padding: 0,
                         }}
                       />
                     </motion.div>
                   </motion.div>
                 )}
-              </div>
+              </Box>
 
               {/* Область ввода */}
               <div
                 style={{
                   padding: "12px 16px",
-                  borderTop: `1px solid ${token.colorBorder}`,
-                  background: `linear-gradient(135deg, ${token.colorBgContainer} 0%, ${token.colorBgElevated} 100%)`,
-                  borderRadius: `0 0 ${token.borderRadiusLG * 1.5}px ${token.borderRadiusLG * 1.5}px`,
+                  borderTop: `1px solid ${theme.palette.divider}`,
+                  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
+                  borderRadius: `0 0 ${theme.shape.borderRadius * 3}px ${theme.shape.borderRadius * 3}px`,
                   position: "relative",
                 }}
               >
@@ -784,54 +767,62 @@ export default function ChatPage() {
                     style={{
                       marginBottom: 8,
                       padding: "8px 12px",
-                      background: `${token.colorWarning || "#faad14"}15`,
-                      border: `1px solid ${token.colorWarning || "#faad14"}30`,
-                      borderRadius: token.borderRadius,
+                      background: `${theme.palette.warning.main}15`,
+                      border: `1px solid ${theme.palette.warning.main}30`,
+                      borderRadius: theme.shape.borderRadius,
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
                     }}
                   >
-                    <WifiOff size={14} style={{ color: token.colorWarning || "#faad14" }} />
-                    <Text style={{ fontSize: 11, color: token.colorWarning || "#faad14" }}>
+                    <WifiOff size={14} style={{ color: theme.palette.warning.main }} />
+                    <Typography sx={{ fontSize: 11, color: theme.palette.warning.main }}>
                       Ожидание подключения...
-                    </Text>
+                    </Typography>
                   </motion.div>
                 )}
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
                   <div style={{ flex: 1, position: "relative" }}>
-                    <TextArea
+                    <TextField
                       placeholder="Напишите сообщение..."
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
-                      onPressEnter={(e) => {
-                        if (!e.shiftKey) {
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
                           handleSend();
                         }
                       }}
                       disabled={sending || !isConnected}
-                      autoSize={{ minRows: 1, maxRows: 4 }}
-                      style={{
-                        borderRadius: token.borderRadius * 1.5,
+                      multiline
+                      minRows={1}
+                      maxRows={4}
+                      sx={{
+                        borderRadius: theme.shape.borderRadius * 1.5,
                         fontSize: 14,
                         lineHeight: 1.5,
-                        resize: "none",
-                        border: `1px solid ${token.colorBorder}`,
-                        background: token.colorBgElevated,
-                        padding: "12px 16px",
-                        transition: "all 0.2s",
-                        boxShadow: `0 2px 4px rgba(0,0,0,0.05)`,
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: theme.shape.borderRadius * 1.5,
+                          backgroundColor: theme.palette.background.default,
+                          transition: "all 0.2s",
+                          '& fieldset': {
+                            borderColor: theme.palette.divider,
+                          },
+                          '&:hover fieldset': {
+                            borderColor: theme.palette.divider,
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: theme.palette.primary.main,
+                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}20`,
+                          },
+                        },
+                        '& .MuiInputBase-input': {
+                          padding: "12px 16px",
+                          fontSize: 14,
+                          lineHeight: 1.5,
+                          resize: "none",
+                        },
                       }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = token.colorPrimary;
-                        e.target.style.boxShadow = `0 0 0 2px ${token.colorPrimary}20`;
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = token.colorBorder;
-                        e.target.style.boxShadow = `0 2px 4px rgba(0,0,0,0.05)`;
-                      }}
-                      rows={1}
                     />
                   </div>
                   <motion.div
@@ -839,35 +830,34 @@ export default function ChatPage() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button
-                      type="primary"
-                      icon={<Send size={16} />}
-                      loading={sending}
+                      variant="contained"
+                      startIcon={sending ? <CircularProgress size={16} color="inherit" /> : <Send size={16} />}
                       disabled={!messageText.trim() || sending || !isConnected}
                       onClick={() => handleSend()}
-                      style={{
+                      sx={{
                         height: 44,
                         width: 44,
+                        minWidth: 44,
                         padding: 0,
-                        borderRadius: token.borderRadius * 1.5,
+                        borderRadius: theme.shape.borderRadius * 1.5,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         boxShadow: messageText.trim() && !sending && isConnected 
-                          ? `0 4px 12px ${token.colorPrimary}40, 0 2px 4px ${token.colorPrimary}20`
+                          ? `0 4px 12px ${theme.palette.primary.main}40, 0 2px 4px ${theme.palette.primary.main}20`
                           : undefined,
                         fontSize: 14,
                         fontWeight: 600,
-                        border: "none",
                       }}
                     />
                   </motion.div>
                 </div>
               </div>
             </motion.div>
-          </Col>
+          </Grid>
           
           {/* Сайдбар с информацией о заказе */}
-          <Col xs={24} lg={14} xl={14} style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
+          <Grid item xs={12} lg={7} xl={7} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -881,9 +871,9 @@ export default function ChatPage() {
                 onOrderUpdate={loadMessages}
               />
             </motion.div>
-          </Col>
-        </Row>
-      </Content>
-    </Layout>
+          </Grid>
+        </Grid>
+      </Box>
+    </Box>
   );
 }
