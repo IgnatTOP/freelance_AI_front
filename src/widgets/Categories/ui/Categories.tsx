@@ -35,7 +35,7 @@ export function Categories() {
           </div>
         </ScrollReveal>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }} className="max-lg:grid-cols-2 max-sm:grid-cols-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {categories.map((cat, idx) => {
             const Icon = cat.icon;
             return (

@@ -47,7 +47,7 @@ export function CTA() {
               Присоединяйтесь к тысячам заказчиков и фрилансеров, которые уже используют возможности искусственного интеллекта для эффективной работы.
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }} className="sm:flex-row sm:justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
               <Button
                 size="lg"
                 onClick={() => router.push("/auth/register?role=client")}

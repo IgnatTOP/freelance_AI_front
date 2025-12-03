@@ -61,7 +61,7 @@ export function HowItWorks() {
               <h3 style={{ fontSize: 24, fontWeight: 700, color: "var(--primary)" }}>Для заказчиков</h3>
             </div>
           </ScrollReveal>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }} className="max-lg:grid-cols-2 max-sm:grid-cols-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {clientSteps.map((step, idx) => <StepCard key={idx} step={step} idx={idx} />)}
           </div>
         </div>
@@ -75,7 +75,7 @@ export function HowItWorks() {
               <h3 style={{ fontSize: 24, fontWeight: 700, color: "var(--primary)" }}>Для фрилансеров</h3>
             </div>
           </ScrollReveal>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }} className="max-lg:grid-cols-2 max-sm:grid-cols-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {freelancerSteps.map((step, idx) => <StepCard key={idx} step={step} idx={idx} />)}
           </div>
         </div>

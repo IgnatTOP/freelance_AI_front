@@ -265,7 +265,13 @@ export function CreateOrderForm({
               borderRadius: 2,
             }}
           >
-            <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box 
+              display="flex" 
+              flexDirection={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between" 
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              gap={2}
+            >
               <Box>
                 <Typography variant="subtitle2" fontWeight={600} display="flex" alignItems="center" gap={1}>
                   <Sparkles size={14} />
@@ -281,6 +287,7 @@ export function CreateOrderForm({
                 startIcon={<Sparkles size={16} />}
                 onClick={onGenerateAll}
                 sx={{ flexShrink: 0 }}
+                fullWidth
               >
                 AI заполнить всё
               </Button>
@@ -342,7 +349,14 @@ export function CreateOrderForm({
             )}
 
             <Box>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Box 
+                display="flex" 
+                flexDirection={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between" 
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                gap={1}
+                mb={1}
+              >
                 <Typography variant="body2" fontWeight={500}>
                   Описание проекта <span style={{ color: 'error.main' }}>*</span>
                 </Typography>
@@ -381,7 +395,14 @@ export function CreateOrderForm({
             Требования к исполнителю
           </Typography>
           <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+            <Box 
+              display="flex" 
+              flexDirection={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between" 
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              gap={1}
+              mb={1}
+            >
               <Typography variant="body2" fontWeight={500}>
                 Требуемые навыки
               </Typography>
@@ -426,7 +447,14 @@ export function CreateOrderForm({
 
         {/* Budget and Deadline Section */}
         <Box>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box 
+            display="flex" 
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between" 
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            gap={1}
+            mb={3}
+          >
             <Typography variant="h6" fontWeight={600}>
               Бюджет и сроки выполнения
             </Typography>

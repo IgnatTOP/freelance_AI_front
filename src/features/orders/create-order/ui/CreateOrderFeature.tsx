@@ -156,7 +156,7 @@ export function CreateOrderFeature({
   };
 
   return (
-    <Box sx={{ maxWidth: 900, margin: '0 auto', p: 3 }}>
+    <Box sx={{ maxWidth: 900, margin: '0 auto', p: { xs: 2, sm: 3 } }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -190,7 +190,7 @@ export function CreateOrderFeature({
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'divider',
-            p: 4,
+            p: { xs: 2, sm: 3, md: 4 },
           }}
         >
           <CreateOrderForm

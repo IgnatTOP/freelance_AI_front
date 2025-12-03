@@ -85,7 +85,7 @@ export function Pricing() {
           </div>
         </ScrollReveal>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, maxWidth: 1100, margin: "0 auto" }} className="max-lg:grid-cols-1">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto">
           {plans.map((plan, idx) => (
             <ScrollReveal key={idx} direction="up" delay={idx * 0.15}>
               <motion.div whileHover={{ y: -8 }} transition={{ type: "spring", stiffness: 300 }} className="h-full">
