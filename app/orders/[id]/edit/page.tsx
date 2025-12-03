@@ -172,7 +172,7 @@ export default function EditOrderPage() {
 
   if (loading) {
     return (
-      <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+      <Box sx={{ minHeight: 'auto', bgcolor: "transparent" }}>
         <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
           <Card sx={{ p: { xs: 3, md: 4 } }}>
             <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
@@ -185,7 +185,7 @@ export default function EditOrderPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+    <Box sx={{ minHeight: 'auto', bgcolor: "transparent" }}>
         <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 }, width: "100%" }}>
           <Stack spacing={{ xs: 3, md: 4 }}>
             <Box>

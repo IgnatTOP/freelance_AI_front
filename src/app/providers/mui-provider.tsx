@@ -38,23 +38,23 @@ const getTheme = (mode: 'light' | 'dark') =>
           dark: '#dc2626',
         },
         info: {
-          main: '#3b82f6',
-          light: '#60a5fa',
-          dark: '#2563eb',
+          main: '#14b8a6',
+          light: '#2dd4bf',
+          dark: '#0d9488',
         },
         background: {
           default: mode === 'dark' ? '#0a1110' : '#f8fafc',
           paper: mode === 'dark' ? '#0d1615' : '#ffffff',
         },
         text: {
-          primary: mode === 'dark' ? '#f0fdfa' : '#0f172a',
-          secondary: mode === 'dark' ? '#ccfbf1' : '#475569',
-          disabled: mode === 'dark' ? '#5eead4' : '#94a3b8',
+          primary: mode === 'dark' ? '#ffffff' : '#0f172a',
+          secondary: mode === 'dark' ? '#e2e8f0' : '#475569',
+          disabled: mode === 'dark' ? '#94a3b8' : '#94a3b8',
         },
         divider: mode === 'dark' ? '#1f2e2c' : '#e2e8f0',
       },
     typography: {
-      fontFamily: 'var(--font-inter)',
+      fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
       fontSize: 14,
       h1: {
         fontSize: '2.5rem',

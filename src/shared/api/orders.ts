@@ -89,3 +89,21 @@ export const markOrderAsCompletedByFreelancer = async (orderId: string): Promise
   return response.data.order;
 };
 
+/**
+ * Получить заказы по списку ID
+ */
+export const getOrdersByIds = async (ids: string[]): Promise<Order[]> => {
+  const orders: Order[] = [];
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const order = await getOrder(id);
+        orders.push(order);
+      } catch {
+        // Игнорируем ошибки для отдельных заказов
+      }
+    })
+  );
+  return orders;
+};
+

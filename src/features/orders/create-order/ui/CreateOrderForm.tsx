@@ -12,17 +12,23 @@ import {
   CircularProgress,
   Paper,
   InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Calendar, Wallet, Briefcase, Sparkles } from "lucide-react";
+import { Calendar, Wallet, Briefcase, Sparkles, FolderTree } from "lucide-react";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { aiService } from "@/src/shared/lib/ai";
 import { parseAIResponse } from "@/src/shared/lib/ai/ai-utils";
 import { formatNumber, parseFormattedNumber } from "@/src/shared/lib/utils/number-utils";
 import { toastService } from "@/src/shared/lib/toast";
+import { getCategories, getSkills } from "@/src/shared/api/catalog";
+import type { Category } from "@/src/entities/catalog/model/types";
 import 'dayjs/locale/ru';
 
 interface CreateOrderFormData {
@@ -32,6 +38,7 @@ interface CreateOrderFormData {
   budget_min?: number;
   budget_max?: number;
   deadline?: dayjs.Dayjs | null;
+  category_id?: string;
 }
 
 interface CreateOrderFormProps {
@@ -65,12 +72,31 @@ export function CreateOrderForm({
     budget_min: undefined,
     budget_max: undefined,
     deadline: null,
+    category_id: undefined,
   };
 
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [generatingSkills, setGeneratingSkills] = useState(false);
   const [generatingBudget, setGeneratingBudget] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [categoriesData, skillsData] = await Promise.all([
+          getCategories(),
+          getSkills(),
+        ]);
+        setCategories(categoriesData.categories || []);
+        setSkillOptions(skillsData.skills?.map(s => s.name) || []);
+      } catch (error) {
+        console.error("Failed to load catalog data:", error);
+      }
+    };
+    loadData();
+  }, []);
 
   const handleGenerateDescription = async () => {
     if (!safeFormData.title || safeFormData.title.trim().length < 3) {
@@ -292,6 +318,29 @@ export function CreateOrderForm({
               }}
             />
 
+            {categories.length > 0 && (
+              <FormControl fullWidth>
+                <InputLabel>Категория</InputLabel>
+                <Select
+                  value={safeFormData.category_id || ''}
+                  onChange={(e) => onFormDataChange({ category_id: e.target.value || undefined })}
+                  label="Категория"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <FolderTree size={20} />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="">Не выбрана</MenuItem>
+                  {categories.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
             <Box>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography variant="body2" fontWeight={500}>
@@ -349,7 +398,7 @@ export function CreateOrderForm({
             <Autocomplete
               multiple
               freeSolo
-              options={[]}
+              options={skillOptions}
               value={skills}
               onChange={(_, newValue) => onSkillsChange(newValue)}
               renderTags={(value, getTagProps) =>
@@ -367,8 +416,8 @@ export function CreateOrderForm({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  placeholder="Например: React, TypeScript, Node.js, PostgreSQL"
-                  helperText="Укажите необходимые технологии и навыки. Введите навык и нажмите Enter"
+                  placeholder="Выберите или введите навыки"
+                  helperText="Выберите из списка или введите свой навык и нажмите Enter"
                 />
               )}
             />

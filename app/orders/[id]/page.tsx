@@ -22,6 +22,8 @@ import {
   Container,
   useTheme,
   IconButton,
+  Rating,
+  TextField,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -37,21 +39,184 @@ import {
   CheckCircle,
   Sparkles,
   XCircle,
+  Star,
+  Heart,
+  Wallet,
 } from "lucide-react";
 import { getOrder, updateOrder } from "@/src/shared/api/orders";
 import { getMyProposal, getOrderProposals, updateProposalStatus } from "@/src/shared/api/proposals";
+import { getOrderReviews, createReview, canReview } from "@/src/shared/api/reviews";
+import { addFavorite, removeFavorite, isFavorite } from "@/src/shared/api/favorites";
+import { getBalance } from "@/src/shared/api/payments";
 import { getOrderStatusColor, getOrderStatusLabel } from "@/src/shared/lib/order-utils";
 import { formatPriceRange } from "@/src/shared/lib/utils";
 import { useAuth } from "@/src/shared/lib/hooks";
 import { websocketService } from "@/src/shared/lib/notifications/websocket.service";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import type { Order } from "@/src/entities/order/model/types";
+import type { Review } from "@/src/entities/review/model/types";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ru";
 
 dayjs.extend(relativeTime);
 dayjs.locale("ru");
+
+// Компонент карточки отклика с кнопкой "Показать всё"
+function ProposalCard({ 
+  proposal, 
+  isRecommended, 
+  statusInfo, 
+  bestRecommendation,
+  orderId, 
+  processingProposalId, 
+  onAcceptClick,
+  onReject,
+  router, 
+  theme 
+}: any) {
+  const [expanded, setExpanded] = useState(false);
+  const coverLetter = proposal.cover_letter || "";
+  const isLong = coverLetter.length > 100;
+
+  return (
+    <Card
+      sx={{
+        border: isRecommended
+          ? `2px solid ${theme.palette.primary.main}`
+          : `1px solid ${theme.palette.divider}`,
+        bgcolor: isRecommended
+          ? `${theme.palette.primary.main}08`
+          : "background.paper",
+        p: 2,
+      }}
+    >
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Stack spacing={1}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
+                {proposal.freelancer_id?.toString().charAt(0).toUpperCase()}
+              </Avatar>
+              <Box>
+                <Typography variant="body2" fontWeight={600}>
+                  Фрилансер #{proposal.freelancer_id?.toString().slice(0, 8)}
+                </Typography>
+                <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
+                  <Chip label={statusInfo.label} color={statusInfo.color} size="small" />
+                  {isRecommended && (
+                    <Chip
+                      icon={<Sparkles size={12} />}
+                      label="AI рекомендует"
+                      color="warning"
+                      size="small"
+                    />
+                  )}
+                </Box>
+              </Box>
+            </Box>
+            {isRecommended && bestRecommendation?.justification && (
+              <Alert severity="success" icon={<Sparkles size={14} />} sx={{ fontSize: 12, py: 0.5 }}>
+                <Typography variant="caption">{bestRecommendation.justification}</Typography>
+              </Alert>
+            )}
+            {!isRecommended && proposal.ai_feedback && (
+              <Alert severity="info" icon={<Sparkles size={14} />} sx={{ fontSize: 12, py: 0.5 }}>
+                <Typography variant="caption">{proposal.ai_feedback}</Typography>
+              </Alert>
+            )}
+            <Box>
+              <Typography
+                variant="body2"
+                sx={!expanded && isLong ? {
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                } : {}}
+              >
+                {coverLetter}
+              </Typography>
+              {isLong && (
+                <Button
+                  size="small"
+                  onClick={() => setExpanded(!expanded)}
+                  sx={{ p: 0, minWidth: 0, fontSize: 12, textTransform: "none" }}
+                >
+                  {expanded ? "Свернуть" : "Показать всё"}
+                </Button>
+              )}
+            </Box>
+            {proposal.proposed_amount && (
+              <Typography variant="caption" color="text.secondary">
+                Предложенная сумма: {formatPriceRange(proposal.proposed_amount, proposal.proposed_amount)}
+              </Typography>
+            )}
+          </Stack>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Stack spacing={1}>
+            {proposal.status === "pending" && (
+              <>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<CheckCircle size={14} />}
+                  fullWidth
+                  onClick={() => onAcceptClick(proposal)}
+                  disabled={processingProposalId === proposal.id}
+                >
+                  Принять
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={<XCircle size={14} />}
+                  fullWidth
+                  onClick={() => onReject(proposal.id)}
+                  disabled={processingProposalId === proposal.id}
+                >
+                  Отклонить
+                </Button>
+              </>
+            )}
+            {proposal.status === "accepted" && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<MessageSquare size={14} />}
+                fullWidth
+                onClick={async () => {
+                  try {
+                    const { getConversation } = await import("@/src/shared/api/conversations");
+                    const convData = await getConversation(orderId, proposal.freelancer_id);
+                    if (convData.conversation) {
+                      router.push(`/messages/${convData.conversation.id}`);
+                    }
+                  } catch (error: any) {
+                    toastService.error("Ошибка открытия чата");
+                  }
+                }}
+              >
+                Открыть чат
+              </Button>
+            )}
+            <Button
+              variant="text"
+              size="small"
+              fullWidth
+              onClick={() => router.push(`/orders/${orderId}/proposals`)}
+            >
+              Подробнее
+            </Button>
+          </Stack>
+        </Grid>
+      </Grid>
+    </Card>
+  );
+}
 
 export default function OrderDetailPage() {
   const theme = useTheme();
@@ -73,12 +238,89 @@ export default function OrderDetailPage() {
   const [loadingProposals, setLoadingProposals] = useState(false);
   const [processingProposalId, setProcessingProposalId] = useState<string | null>(null);
   const [completeOrderModalOpen, setCompleteOrderModalOpen] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [canLeaveReview, setCanLeaveReview] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState<number | null>(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [isFav, setIsFav] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+  
+  // Escrow confirmation
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<any>(null);
+  const [userBalance, setUserBalance] = useState<number>(0);
 
   useEffect(() => {
     if (orderId) {
       loadOrder();
     }
   }, [orderId]);
+
+  useEffect(() => {
+    if (user?.id && order?.client_id && String(order.client_id) === String(user.id)) {
+      loadBalance();
+    }
+  }, [user?.id, order?.client_id]);
+
+  const loadBalance = async () => {
+    try {
+      const balance = await getBalance();
+      setUserBalance(balance.available || 0);
+    } catch {
+      // ignore
+    }
+  };
+
+  const getProposalAmount = (proposal: any): number => {
+    return proposal?.proposed_amount || order?.budget_max || order?.budget_min || 0;
+  };
+
+  const handleAcceptClick = (proposal: any) => {
+    setSelectedProposal(proposal);
+    setConfirmModalOpen(true);
+  };
+
+  const handleAcceptConfirm = async () => {
+    if (!selectedProposal) return;
+    setProcessingProposalId(selectedProposal.id);
+    setConfirmModalOpen(false);
+    
+    try {
+      const result = await updateProposalStatus(orderId, selectedProposal.id, "accepted");
+      toastService.success("Отклик принят! Средства зарезервированы.");
+      await loadProposals();
+      await loadOrder();
+      loadBalance();
+      if (result.conversation) {
+        router.push(`/messages/${result.conversation.id}`);
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || "Ошибка";
+      if (errorMsg.includes("недостаточно средств")) {
+        toastService.error("Недостаточно средств на балансе.");
+      } else {
+        toastService.error(errorMsg);
+      }
+    } finally {
+      setProcessingProposalId(null);
+      setSelectedProposal(null);
+    }
+  };
+
+  const handleReject = async (proposalId: string) => {
+    setProcessingProposalId(proposalId);
+    try {
+      await updateProposalStatus(orderId, proposalId, "rejected");
+      toastService.success("Отклик отклонен");
+      await loadProposals();
+    } catch (error: any) {
+      toastService.error(error.response?.data?.error || "Ошибка");
+    } finally {
+      setProcessingProposalId(null);
+    }
+  };
 
   // Подписка на WebSocket события для обновления в реальном времени
   useEffect(() => {
@@ -95,26 +337,46 @@ export default function OrderDetailPage() {
 
     connectWebSocket();
 
+    // Подписываемся на новые предложения
+    const unsubscribeProposalsNew = websocketService.on("proposals.new", (wsMessage) => {
+      const data = wsMessage.data;
+      if (data.order?.id === orderId || data.order_id === orderId || data.proposal?.order_id === orderId) {
+        refreshProposals();
+      }
+    });
+
     // Подписываемся на обновления предложений
     const unsubscribeProposals = websocketService.on("proposals.updated", (wsMessage) => {
       const data = wsMessage.data;
       
       // Проверяем, относится ли это к текущему заказу
-      if (data.order?.id === orderId || data.proposal?.order_id === orderId) {
-        // Перезагружаем данные
-        loadOrder();
-        // Перезагружаем предложения если пользователь - владелец заказа
-        if (order && user?.id && String(order.client_id) === String(user.id)) {
-          loadProposals();
-        }
-        // Перезагружаем свой отклик если пользователь - фрилансер и не владелец
-        // СТРОГАЯ проверка: только для фрилансеров
+      if (data.order?.id === orderId || data.proposal?.order_id === orderId || data.order_id === orderId) {
+        refreshProposals();
+        loadOrder(); // Обновляем заказ (статус может измениться)
+        // Перезагружаем свой отклик если пользователь - фрилансер
         if (userRole === "freelancer" && user?.id && authService.isAuthenticated()) {
-          const isOwner = order && user?.id && String(order.client_id) === String(user.id);
-          if (!isOwner) {
-            checkMyProposal();
-          }
+          checkMyProposal();
         }
+      }
+    });
+
+    // Подписываемся на уведомления (proposal_accepted приходит как notification)
+    const unsubscribeNotifications = websocketService.onNotification((notification) => {
+      const payload = notification.payload;
+      if (payload?.order_id === orderId || payload?.data?.order_id === orderId) {
+        loadOrder();
+        if (userRole === "freelancer") {
+          checkMyProposal();
+        }
+      }
+    });
+
+    // Подписываемся на готовность AI анализа
+    const unsubscribeAIAnalysis = websocketService.on("proposals.ai_analysis_ready", (wsMessage) => {
+      const data = wsMessage.data;
+      if (data.order_id === orderId) {
+        refreshProposals();
+        toastService.success("AI анализ откликов готов");
       }
     });
 
@@ -126,23 +388,21 @@ export default function OrderDetailPage() {
       if (data.order?.id === orderId) {
         // Перезагружаем данные заказа
         loadOrder();
-        // Перезагружаем предложения если пользователь - владелец заказа
-        if (order && user?.id && String(order.client_id) === String(user.id)) {
-          loadProposals();
-        }
       }
     });
 
     // Подписываемся на изменения подключения
     const unsubscribeConnection = websocketService.onConnectionChange((connected) => {
       if (connected) {
-        // При переподключении перезагружаем данные
-        loadOrder();
+        refreshProposals();
       }
     });
 
     return () => {
+      unsubscribeProposalsNew();
       unsubscribeProposals();
+      unsubscribeNotifications();
+      unsubscribeAIAnalysis();
       unsubscribeOrders();
       unsubscribeConnection();
     };
@@ -161,6 +421,36 @@ export default function OrderDetailPage() {
         toastService.success("Ваш отклик успешно отправлен!");
         // Убираем параметр из URL
         router.replace(`/orders/${orderId}`, { scroll: false });
+      }
+
+      // Загружаем отзывы для завершённых заказов
+      if (data.status === "completed") {
+        try {
+          const reviewsData = await getOrderReviews(orderId);
+          setReviews(reviewsData.reviews || []);
+        } catch {
+          setReviews([]);
+        }
+
+        // Проверяем, можно ли оставить отзыв
+        if (authService.isAuthenticated()) {
+          try {
+            const canReviewData = await canReview(orderId);
+            setCanLeaveReview(canReviewData.can_review);
+          } catch {
+            setCanLeaveReview(false);
+          }
+        }
+      }
+
+      // Проверяем, в избранном ли заказ
+      if (authService.isAuthenticated()) {
+        try {
+          const favStatus = await isFavorite("order", orderId);
+          setIsFav(favStatus.is_favorite);
+        } catch {
+          // Игнорируем ошибку
+        }
       }
     } catch (error: any) {
       console.error("Error loading order:", error);
@@ -183,12 +473,32 @@ export default function OrderDetailPage() {
     try {
       const proposalsData = await getOrderProposals(orderId);
       setProposals(proposalsData.proposals || []);
-      setBestRecommendation(proposalsData.best_recommendation || null);
+      // Support both old and new API response format
+      const bestRec = proposalsData.best_recommendation || (proposalsData.best_recommendation_proposal_id ? {
+        proposal_id: proposalsData.best_recommendation_proposal_id,
+        justification: proposalsData.recommendation_justification || "",
+      } : null);
+      setBestRecommendation(bestRec);
     } catch (error: any) {
       console.error("Error loading proposals:", error);
       // Не показываем ошибку, так как это не критично
     } finally {
       setLoadingProposals(false);
+    }
+  };
+
+  // Фоновое обновление без перезагрузки
+  const refreshProposals = async () => {
+    try {
+      const proposalsData = await getOrderProposals(orderId);
+      setProposals(proposalsData.proposals || []);
+      const bestRec = proposalsData.best_recommendation || (proposalsData.best_recommendation_proposal_id ? {
+        proposal_id: proposalsData.best_recommendation_proposal_id,
+        justification: proposalsData.recommendation_justification || "",
+      } : null);
+      setBestRecommendation(bestRec);
+    } catch {
+      // ignore
     }
   };
   
@@ -344,6 +654,32 @@ export default function OrderDetailPage() {
       toastService.error(error.response?.data?.error || "Ошибка завершения заказа");
     }
   };
+
+  const handleSubmitReview = async () => {
+    if (!reviewRating) {
+      toastService.error("Укажите оценку");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await createReview(orderId, {
+        rating: reviewRating,
+        comment: reviewComment || undefined,
+      });
+      toastService.success("Отзыв успешно отправлен!");
+      setReviewDialogOpen(false);
+      setReviewRating(5);
+      setReviewComment("");
+      setCanLeaveReview(false);
+      // Перезагружаем отзывы
+      const reviewsData = await getOrderReviews(orderId);
+      setReviews(reviewsData.reviews || []);
+    } catch (error: any) {
+      toastService.error(error.response?.data?.error || "Ошибка отправки отзыва");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
   
   const handleOpenChat = async () => {
     if (!order || !user?.id) return;
@@ -396,9 +732,32 @@ export default function OrderDetailPage() {
     }
   };
 
+  const toggleFavorite = async () => {
+    if (!authService.isAuthenticated()) {
+      toastService.warning("Войдите, чтобы добавить в избранное");
+      return;
+    }
+    setFavLoading(true);
+    try {
+      if (isFav) {
+        await removeFavorite("order", orderId);
+        setIsFav(false);
+        toastService.success("Удалено из избранного");
+      } else {
+        await addFavorite({ target_type: "order", target_id: orderId });
+        setIsFav(true);
+        toastService.success("Добавлено в избранное");
+      }
+    } catch (error) {
+      toastService.error("Ошибка");
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
   if (loading) {
     return (
-      <Box sx={{ minHeight: "100vh", background: "transparent" }}>
+      <Box sx={{ minHeight: 'auto', background: "transparent" }}>
         <Container maxWidth="lg" sx={{ py: 5 }}>
           <Card
             sx={{
@@ -421,7 +780,7 @@ export default function OrderDetailPage() {
 
   if (!order) {
     return (
-      <Box sx={{ minHeight: "100vh", background: "transparent" }}>
+      <Box sx={{ minHeight: 'auto', background: "transparent" }}>
         <Container maxWidth="lg" sx={{ py: 5 }}>
           <Card
             sx={{
@@ -442,7 +801,7 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", background: "transparent" }}>
+    <Box sx={{ minHeight: 'auto', background: "transparent" }}>
       <Container maxWidth="lg" sx={{ py: 5 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -450,24 +809,36 @@ export default function OrderDetailPage() {
           transition={{ duration: 0.4 }}
         >
           <Stack spacing={4}>
-            {/* Back Button */}
-            <Button
-              startIcon={<ArrowLeft size={16} />}
-              onClick={() => router.back()}
-              sx={{
-                alignSelf: "flex-start",
-                color: "text.primary",
-                textTransform: "none",
-                fontSize: 14,
-                p: 0,
-                "&:hover": {
-                  background: "transparent",
-                  opacity: 0.7,
-                },
-              }}
-            >
-              Назад
-            </Button>
+            {/* Back Button and Favorite */}
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Button
+                startIcon={<ArrowLeft size={16} />}
+                onClick={() => router.back()}
+                sx={{
+                  color: "text.primary",
+                  textTransform: "none",
+                  fontSize: 14,
+                  p: 0,
+                  "&:hover": {
+                    background: "transparent",
+                    opacity: 0.7,
+                  },
+                }}
+              >
+                Назад
+              </Button>
+              {!isOwner && authService.isAuthenticated() && (
+                <IconButton
+                  onClick={toggleFavorite}
+                  disabled={favLoading}
+                  sx={{
+                    color: isFav ? "error.main" : "text.secondary",
+                  }}
+                >
+                  <Heart size={20} fill={isFav ? "currentColor" : "none"} />
+                </IconButton>
+              )}
+            </Stack>
 
             <Grid container spacing={3}>
               {/* Main Content */}
@@ -611,52 +982,6 @@ export default function OrderDetailPage() {
                           </Stack>
                         ) : (
                           <>
-                            {bestRecommendation && (
-                              <Alert
-                                severity="info"
-                                icon={<Sparkles size={20} />}
-                                sx={{ mb: 2 }}
-                                action={
-                                  <Button
-                                    variant="contained"
-                                    size="small"
-                                    onClick={async () => {
-                                      setProcessingProposalId(bestRecommendation.proposal_id);
-                                      try {
-                                        const result = await updateProposalStatus(
-                                          orderId,
-                                          bestRecommendation.proposal_id,
-                                          "accepted"
-                                        );
-                                        toastService.success("Отклик принят! Заказ переведен в работу.");
-                                        await loadProposals();
-                                        await loadOrder();
-                                        if (result.conversation) {
-                                          router.push(`/messages/${result.conversation.id}`);
-                                        }
-                                      } catch (error: any) {
-                                        toastService.error(error.response?.data?.error || "Ошибка принятия отклика");
-                                      } finally {
-                                        setProcessingProposalId(null);
-                                      }
-                                    }}
-                                    disabled={processingProposalId === bestRecommendation.proposal_id}
-                                  >
-                                    Принять
-                                  </Button>
-                                }
-                              >
-                                <Box>
-                                  <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
-                                    AI рекомендует этого исполнителя
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {bestRecommendation.justification}
-                                  </Typography>
-                                </Box>
-                              </Alert>
-                            )}
-
                             {proposals.length === 0 ? (
                               <Box sx={{ textAlign: "center", py: 4 }}>
                                 <Typography variant="body2" color="text.secondary">
@@ -665,185 +990,46 @@ export default function OrderDetailPage() {
                               </Box>
                             ) : (
                               <Stack spacing={2}>
-                                {proposals.map((proposal) => {
+                                {/* AI анализ индикатор */}
+                                {proposals.length >= 2 && !bestRecommendation && !loadingProposals && (
+                                  <Alert 
+                                    severity="info" 
+                                    icon={<Sparkles size={18} className="animate-pulse" />}
+                                    sx={{ py: 1 }}
+                                  >
+                                    <Typography variant="body2">
+                                      AI анализирует кандидатов...
+                                    </Typography>
+                                  </Alert>
+                                )}
+                                {[...proposals].sort((a, b) => {
+                                  if (a.id === bestRecommendation?.proposal_id) return -1;
+                                  if (b.id === bestRecommendation?.proposal_id) return 1;
+                                  return 0;
+                                }).map((proposal) => {
                                   const isRecommended = bestRecommendation?.proposal_id === proposal.id;
                                   const statusConfig: Record<string, { label: string; color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" }> = {
                                     pending: { label: "Ожидает", color: "primary" },
-                                    shortlisted: { label: "В шорт-листе", color: "warning" },
                                     accepted: { label: "Принято", color: "success" },
                                     rejected: { label: "Отклонено", color: "error" },
+                                    withdrawn: { label: "Отозвано", color: "default" },
                                   };
                                   const statusInfo = statusConfig[proposal.status] || statusConfig.pending;
 
                                   return (
-                                    <Card
+                                    <ProposalCard
                                       key={proposal.id}
-                                      sx={{
-                                        border: isRecommended
-                                          ? `2px solid ${theme.palette.primary.main}`
-                                          : `1px solid ${theme.palette.divider}`,
-                                        bgcolor: isRecommended
-                                          ? `${theme.palette.primary.main}08`
-                                          : "background.paper",
-                                        p: 2,
-                                      }}
-                                    >
-                                      <Grid container spacing={2}>
-                                        <Grid size={{ xs: 12, md: 8 }}>
-                                          <Stack spacing={1}>
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                                              <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
-                                                {proposal.freelancer_id?.toString().charAt(0).toUpperCase()}
-                                              </Avatar>
-                                              <Box>
-                                                <Typography variant="body2" fontWeight={600}>
-                                                  Фрилансер #{proposal.freelancer_id?.toString().slice(0, 8)}
-                                                </Typography>
-                                                <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
-                                                  <Chip label={statusInfo.label} color={statusInfo.color} size="small" />
-                                                  {isRecommended && (
-                                                    <Chip
-                                                      icon={<Sparkles size={12} />}
-                                                      label="AI рекомендует"
-                                                      color="warning"
-                                                      size="small"
-                                                    />
-                                                  )}
-                                                </Box>
-                                              </Box>
-                                            </Box>
-                                            <Typography
-                                              variant="body2"
-                                              sx={{
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                display: "-webkit-box",
-                                                WebkitLineClamp: 2,
-                                                WebkitBoxOrient: "vertical",
-                                              }}
-                                            >
-                                              {proposal.cover_letter}
-                                            </Typography>
-                                            {proposal.proposed_amount && (
-                                              <Typography variant="caption" color="text.secondary">
-                                                Предложенная сумма: {formatPriceRange(
-                                                  proposal.proposed_amount,
-                                                  proposal.proposed_amount
-                                                )}
-                                              </Typography>
-                                            )}
-                                          </Stack>
-                                        </Grid>
-                                        <Grid size={{ xs: 12, md: 4 }}>
-                                          <Stack spacing={1}>
-                                            {proposal.status === "pending" && (
-                                              <>
-                                                <Button
-                                                  variant="contained"
-                                                  size="small"
-                                                  startIcon={<CheckCircle size={14} />}
-                                                  fullWidth
-                                                  onClick={async () => {
-                                                    setProcessingProposalId(proposal.id);
-                                                    try {
-                                                      const result = await updateProposalStatus(
-                                                        orderId,
-                                                        proposal.id,
-                                                        "accepted"
-                                                      );
-                                                      toastService.success("Отклик принят!");
-                                                      await loadProposals();
-                                                      await loadOrder();
-                                                      if (result.conversation) {
-                                                        router.push(`/messages/${result.conversation.id}`);
-                                                      }
-                                                    } catch (error: any) {
-                                                      toastService.error(error.response?.data?.error || "Ошибка");
-                                                    } finally {
-                                                      setProcessingProposalId(null);
-                                                    }
-                                                  }}
-                                                  disabled={processingProposalId === proposal.id}
-                                                >
-                                                  Принять
-                                                </Button>
-                                                <Button
-                                                  variant="outlined"
-                                                  size="small"
-                                                  fullWidth
-                                                  onClick={async () => {
-                                                    setProcessingProposalId(proposal.id);
-                                                    try {
-                                                      await updateProposalStatus(orderId, proposal.id, "shortlisted");
-                                                      toastService.success("Добавлено в шорт-лист");
-                                                      await loadProposals();
-                                                    } catch (error: any) {
-                                                      toastService.error(error.response?.data?.error || "Ошибка");
-                                                    } finally {
-                                                      setProcessingProposalId(null);
-                                                    }
-                                                  }}
-                                                  disabled={processingProposalId === proposal.id}
-                                                >
-                                                  В шорт-лист
-                                                </Button>
-                                                <Button
-                                                  variant="outlined"
-                                                  color="error"
-                                                  size="small"
-                                                  startIcon={<XCircle size={14} />}
-                                                  fullWidth
-                                                  onClick={async () => {
-                                                    setProcessingProposalId(proposal.id);
-                                                    try {
-                                                      await updateProposalStatus(orderId, proposal.id, "rejected");
-                                                      toastService.success("Отклик отклонен");
-                                                      await loadProposals();
-                                                    } catch (error: any) {
-                                                      toastService.error(error.response?.data?.error || "Ошибка");
-                                                    } finally {
-                                                      setProcessingProposalId(null);
-                                                    }
-                                                  }}
-                                                  disabled={processingProposalId === proposal.id}
-                                                >
-                                                  Отклонить
-                                                </Button>
-                                              </>
-                                            )}
-                                            {proposal.status === "accepted" && (
-                                              <Button
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={<MessageSquare size={14} />}
-                                                fullWidth
-                                                onClick={async () => {
-                                                  try {
-                                                    const { getConversation } = await import("@/src/shared/api/conversations");
-                                                    const convData = await getConversation(orderId, proposal.freelancer_id);
-                                                    if (convData.conversation) {
-                                                      router.push(`/messages/${convData.conversation.id}`);
-                                                    }
-                                                  } catch (error: any) {
-                                                    toastService.error("Ошибка открытия чата");
-                                                  }
-                                                }}
-                                              >
-                                                Открыть чат
-                                              </Button>
-                                            )}
-                                            <Button
-                                              variant="text"
-                                              size="small"
-                                              fullWidth
-                                              onClick={() => router.push(`/orders/${orderId}/proposals`)}
-                                            >
-                                              Подробнее
-                                            </Button>
-                                          </Stack>
-                                        </Grid>
-                                      </Grid>
-                                    </Card>
+                                      proposal={proposal}
+                                      isRecommended={isRecommended}
+                                      statusInfo={statusInfo}
+                                      bestRecommendation={bestRecommendation}
+                                      orderId={orderId}
+                                      processingProposalId={processingProposalId}
+                                      onAcceptClick={handleAcceptClick}
+                                      onReject={handleReject}
+                                      router={router}
+                                      theme={theme}
+                                    />
                                   );
                                 })}
                                 <Box sx={{ textAlign: "center", mt: 1 }}>
@@ -904,8 +1090,8 @@ export default function OrderDetailPage() {
                               ? "Принят"
                               : myProposal.status === "rejected"
                               ? "Отклонен"
-                              : myProposal.status === "shortlisted"
-                              ? "В шорт-листе"
+                              : myProposal.status === "withdrawn"
+                              ? "Отозван"
                               : "Ожидает рассмотрения"
                           }
                           color={
@@ -913,8 +1099,8 @@ export default function OrderDetailPage() {
                               ? "success"
                               : myProposal.status === "rejected"
                               ? "error"
-                              : myProposal.status === "shortlisted"
-                              ? "warning"
+                              : myProposal.status === "withdrawn"
+                              ? "default"
                               : "primary"
                           }
                           sx={{ alignSelf: "flex-start" }}
@@ -939,6 +1125,72 @@ export default function OrderDetailPage() {
                             Посмотреть все мои отклики
                           </Button>
                         </Link>
+                      </Stack>
+                    </Card>
+                  )}
+
+                  {/* Reviews Section for Completed Orders */}
+                  {order.status === "completed" && (
+                    <Card
+                      sx={{
+                        borderRadius: 2,
+                        border: `1px solid ${theme.palette.divider}`,
+                        p: 3,
+                      }}
+                    >
+                      <Stack spacing={2}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                            <Star size={20} style={{ color: "#ffc107" }} />
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                              Отзывы
+                            </Typography>
+                          </Box>
+                          {canLeaveReview && (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => setReviewDialogOpen(true)}
+                              sx={{ textTransform: "none" }}
+                            >
+                              Оставить отзыв
+                            </Button>
+                          )}
+                        </Box>
+
+                        {reviews.length === 0 ? (
+                          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 2 }}>
+                            Пока нет отзывов
+                          </Typography>
+                        ) : (
+                          <Stack spacing={2}>
+                            {reviews.map((review) => (
+                              <Box key={review.id} sx={{ p: 2, bgcolor: theme.palette.action.hover, borderRadius: 1 }}>
+                                <Stack spacing={1}>
+                                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                      <Avatar sx={{ width: 28, height: 28, bgcolor: theme.palette.primary.main, fontSize: 12 }}>
+                                        {review.reviewer?.display_name?.charAt(0).toUpperCase() || "U"}
+                                      </Avatar>
+                                      <Typography variant="body2" fontWeight={500}>
+                                        {review.reviewer?.display_name || "Пользователь"}
+                                      </Typography>
+                                    </Stack>
+                                    <Rating value={review.rating} readOnly size="small" />
+                                  </Stack>
+                                  {review.comment && (
+                                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                                      {review.comment}
+                                    </Typography>
+                                  )}
+                                  <Typography variant="caption" color="text.secondary">
+                                    {dayjs(review.created_at).fromNow()}
+                                  </Typography>
+                                </Stack>
+                              </Box>
+                            ))}
+                          </Stack>
+                        )}
                       </Stack>
                     </Card>
                   )}
@@ -1003,7 +1255,8 @@ export default function OrderDetailPage() {
                     </Box>
                   </Card>
 
-                  {/* Actions */}
+                  {/* Actions - показываем только если есть действия */}
+                  {(isOwner || (userRole === "freelancer" && myProposal?.status === "accepted")) && (
                   <Card
                     sx={{
                       borderRadius: 2,
@@ -1025,7 +1278,7 @@ export default function OrderDetailPage() {
                                 onClick={() => router.push(`/orders/${orderId}/proposals`)}
                                 sx={{ height: 40, fontSize: 14, textTransform: "none" }}
                               >
-                                Просмотреть отклики ({order.proposals_count || 0})
+                                Просмотреть отклики ({proposals.length > 0 ? proposals.length : order.proposals_count || 0})
                               </Button>
                             )}
                             {order.status === "in_progress" && (
@@ -1067,6 +1320,7 @@ export default function OrderDetailPage() {
                       </Stack>
                     </Box>
                   </Card>
+                  )}
 
                   {/* Client Info */}
                   <Card
@@ -1151,6 +1405,127 @@ export default function OrderDetailPage() {
             sx={{ textTransform: "none" }}
           >
             Завершить заказ
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm Accept Dialog */}
+      <Dialog
+        open={confirmModalOpen}
+        onClose={() => {
+          setConfirmModalOpen(false);
+          setSelectedProposal(null);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Подтверждение выбора исполнителя</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Alert severity="info" icon={<Wallet size={20} />}>
+              <Typography variant="body2">
+                При выборе исполнителя средства будут зарезервированы до завершения заказа.
+              </Typography>
+            </Alert>
+            <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 1 }}>
+              <Stack spacing={1}>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2" color="text.secondary">Ваш баланс:</Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {userBalance.toLocaleString("ru-RU")} ₽
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2" color="text.secondary">Будет зарезервировано:</Typography>
+                  <Typography variant="body2" fontWeight={600} color="warning.main">
+                    {getProposalAmount(selectedProposal).toLocaleString("ru-RU")} ₽
+                  </Typography>
+                </Box>
+                <Divider />
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2" color="text.secondary">Останется:</Typography>
+                  <Typography 
+                    variant="body2" 
+                    fontWeight={600}
+                    color={userBalance - getProposalAmount(selectedProposal) >= 0 ? "success.main" : "error.main"}
+                  >
+                    {(userBalance - getProposalAmount(selectedProposal)).toLocaleString("ru-RU")} ₽
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
+            {userBalance < getProposalAmount(selectedProposal) && (
+              <Alert severity="error">
+                Недостаточно средств. Пополните баланс для продолжения.
+              </Alert>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setConfirmModalOpen(false);
+            setSelectedProposal(null);
+          }}>
+            Отмена
+          </Button>
+          {userBalance < getProposalAmount(selectedProposal) ? (
+            <Button
+              variant="contained"
+              onClick={() => router.push("/wallet")}
+            >
+              Пополнить баланс
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              onClick={handleAcceptConfirm}
+              disabled={processingProposalId !== null}
+            >
+              {processingProposalId ? "Обработка..." : "Подтвердить"}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Review Dialog */}
+      <Dialog
+        open={reviewDialogOpen}
+        onClose={() => setReviewDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Оставить отзыв</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>Оценка</Typography>
+              <Rating
+                value={reviewRating}
+                onChange={(_, value) => setReviewRating(value)}
+                size="large"
+              />
+            </Box>
+            <TextField
+              label="Комментарий (необязательно)"
+              multiline
+              rows={4}
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              placeholder="Расскажите о вашем опыте работы..."
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReviewDialogOpen(false)} sx={{ textTransform: "none" }}>
+            Отмена
+          </Button>
+          <Button
+            onClick={handleSubmitReview}
+            variant="contained"
+            disabled={submittingReview || !reviewRating}
+            sx={{ textTransform: "none" }}
+          >
+            {submittingReview ? "Отправка..." : "Отправить отзыв"}
           </Button>
         </DialogActions>
       </Dialog>

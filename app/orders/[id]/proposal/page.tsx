@@ -15,16 +15,29 @@ import {
   CircularProgress,
   Alert,
   useTheme,
+  Menu,
+  MenuItem,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
 } from "@mui/material";
 import { motion } from "framer-motion";
-import { ArrowLeft, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, FileText, Plus, Trash2, Edit2, MoreVertical } from "lucide-react";
 import { createProposal } from "@/src/shared/api/proposals";
 import { getOrder } from "@/src/shared/api/orders";
 import { getProfile } from "@/src/shared/api/profile";
+import { getProposalTemplates, createProposalTemplate, updateProposalTemplate, deleteProposalTemplate } from "@/src/shared/api/proposal-templates";
 import { aiService } from "@/src/shared/lib/ai";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import { proposalCoverLetterRules, budgetRules } from "@/src/shared/lib/utils/form-validations";
 import type { Order } from "@/src/entities/order/model/types";
+import type { ProposalTemplate } from "@/src/entities/proposal-template/model/types";
 
 export default function CreateProposalPage() {
   const theme = useTheme();
@@ -43,6 +56,15 @@ export default function CreateProposalPage() {
   const [amount, setAmount] = useState<number | "">("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Шаблоны
+  const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
+  const [templateMenuAnchor, setTemplateMenuAnchor] = useState<null | HTMLElement>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<ProposalTemplate | null>(null);
+  const [templateName, setTemplateName] = useState("");
+  const [templateContent, setTemplateContent] = useState("");
+  const [manageTemplatesOpen, setManageTemplatesOpen] = useState(false);
+
   useEffect(() => {
     if (!authService.isAuthenticated()) {
       toastService.warning("Необходимо авторизоваться");
@@ -58,7 +80,67 @@ export default function CreateProposalPage() {
     }
 
     loadOrder();
+    loadTemplates();
   }, [orderId, router]);
+
+  const loadTemplates = async () => {
+    try {
+      const data = await getProposalTemplates();
+      setTemplates(Array.isArray(data) ? data : []);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim() || !templateContent.trim()) {
+      toastService.error("Заполните название и текст шаблона");
+      return;
+    }
+    try {
+      if (editingTemplate) {
+        await updateProposalTemplate(editingTemplate.id, { title: templateName, content: templateContent });
+        toastService.success("Шаблон обновлён");
+      } else {
+        await createProposalTemplate({ title: templateName, content: templateContent });
+        toastService.success("Шаблон создан");
+      }
+      setTemplateDialogOpen(false);
+      setEditingTemplate(null);
+      setTemplateName("");
+      setTemplateContent("");
+      loadTemplates();
+    } catch {
+      toastService.error("Ошибка сохранения шаблона");
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      await deleteProposalTemplate(id);
+      toastService.success("Шаблон удалён");
+      loadTemplates();
+    } catch {
+      toastService.error("Ошибка удаления");
+    }
+  };
+
+  const handleUseTemplate = (template: ProposalTemplate) => {
+    setCoverLetter(template.content);
+    setTemplateMenuAnchor(null);
+    toastService.success("Шаблон применён");
+  };
+
+  const handleSaveAsTemplate = () => {
+    if (!coverLetter.trim()) {
+      toastService.error("Сначала напишите текст отклика");
+      return;
+    }
+    setTemplateName("");
+    setTemplateContent(coverLetter);
+    setEditingTemplate(null);
+    setTemplateDialogOpen(true);
+  };
 
   const loadOrder = async () => {
     setOrderLoading(true);
@@ -82,9 +164,9 @@ export default function CreateProposalPage() {
     setShowAiHelp(true);
 
     try {
-      let profileData = null;
+      let profileResponse = null;
       try {
-        profileData = await getProfile();
+        profileResponse = await getProfile();
       } catch (e) {
         console.warn("Could not load profile for AI context:", e);
       }
@@ -93,23 +175,26 @@ export default function CreateProposalPage() {
       await aiService.generateProposalStream(
         orderId,
         {
-          user_skills: profileData?.skills || [],
-          user_experience: profileData?.experience_level || "middle",
-          user_bio: profileData?.bio || "",
+          user_skills: profileResponse?.profile?.skills || [],
+          user_experience: profileResponse?.profile?.experience_level || "middle",
+          user_bio: profileResponse?.profile?.bio || "",
         },
         (chunk) => {
           finalText += chunk;
           setAiGeneratedText((prev) => prev + chunk);
+          // Показываем текст в реальном времени в превью, не в инпуте
         }
       );
 
-      setCoverLetter(finalText);
-      toastService.success("Отклик сгенерирован с помощью AI!");
+      // После генерации показываем превью с кнопкой "Использовать"
+      // Текст НЕ записываем автоматически в coverLetter
+      toastService.success("AI сгенерировал отклик! Проверьте и примените.");
     } catch (error: any) {
       console.error("Error generating proposal:", error);
       toastService.error(
         error.response?.data?.error || "Ошибка при генерации отклика"
       );
+      setShowAiHelp(false);
     } finally {
       setGenerating(false);
     }
@@ -118,7 +203,7 @@ export default function CreateProposalPage() {
   const handleUseAIGenerated = () => {
     setCoverLetter(aiGeneratedText);
     setShowAiHelp(false);
-    toastService.success("Текст применен к форме");
+    toastService.success("Текст применён!");
   };
 
   const validate = (): boolean => {
@@ -164,7 +249,7 @@ export default function CreateProposalPage() {
 
   if (orderLoading) {
     return (
-      <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+      <Box sx={{ minHeight: 'auto', bgcolor: "transparent" }}>
         <Container maxWidth="md" sx={{ py: { xs: 5, md: 7 } }}>
           <Card sx={{ p: { xs: 3, md: 4 } }}>
             <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
@@ -181,7 +266,7 @@ export default function CreateProposalPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+    <Box sx={{ minHeight: 'auto', bgcolor: "transparent" }}>
       <Container maxWidth="md" sx={{ py: { xs: 5, md: 7 }, width: "100%" }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -226,20 +311,55 @@ export default function CreateProposalPage() {
                       justifyContent="space-between"
                       alignItems="center"
                       mb={2}
+                      flexWrap="wrap"
+                      gap={1}
                     >
                       <Typography variant="subtitle1" fontWeight={600}>
                         Сопроводительное письмо
                       </Typography>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Sparkles size={16} />}
-                        onClick={handleGenerateWithAI}
-                        disabled={generating}
-                        size="small"
-                        sx={{ minHeight: 36 }}
-                      >
-                        {generating ? "Генерирую..." : "Сгенерировать с AI"}
-                      </Button>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="outlined"
+                          startIcon={<FileText size={16} />}
+                          onClick={(e) => setTemplateMenuAnchor(e.currentTarget)}
+                          size="small"
+                          sx={{ minHeight: 36 }}
+                        >
+                          Шаблоны
+                        </Button>
+                        <Menu
+                          anchorEl={templateMenuAnchor}
+                          open={Boolean(templateMenuAnchor)}
+                          onClose={() => setTemplateMenuAnchor(null)}
+                        >
+                          {templates.length === 0 ? (
+                            <MenuItem disabled>Нет шаблонов</MenuItem>
+                          ) : (
+                            templates.map((t) => (
+                              <MenuItem key={t.id} onClick={() => handleUseTemplate(t)}>
+                                {t.title}
+                              </MenuItem>
+                            ))
+                          )}
+                          <MenuItem divider />
+                          <MenuItem onClick={() => { setTemplateMenuAnchor(null); handleSaveAsTemplate(); }}>
+                            <Plus size={14} style={{ marginRight: 8 }} /> Сохранить как шаблон
+                          </MenuItem>
+                          <MenuItem onClick={() => { setTemplateMenuAnchor(null); setManageTemplatesOpen(true); }}>
+                            <Edit2 size={14} style={{ marginRight: 8 }} /> Управление шаблонами
+                          </MenuItem>
+                        </Menu>
+                        <Button
+                          variant="outlined"
+                          startIcon={<Sparkles size={16} />}
+                          onClick={handleGenerateWithAI}
+                          disabled={generating}
+                          size="small"
+                          sx={{ minHeight: 36 }}
+                        >
+                          {generating ? "Генерирую..." : "AI"}
+                        </Button>
+                      </Stack>
                     </Stack>
 
                     {showAiHelp && aiGeneratedText && (
@@ -328,6 +448,94 @@ export default function CreateProposalPage() {
           </Stack>
         </motion.div>
       </Container>
+
+      {/* Диалог создания/редактирования шаблона */}
+      <Dialog open={templateDialogOpen} onClose={() => setTemplateDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingTemplate ? "Редактировать шаблон" : "Сохранить как шаблон"}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Название шаблона"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="Например: Для веб-разработки"
+            />
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              label="Текст шаблона"
+              value={templateContent}
+              onChange={(e) => setTemplateContent(e.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTemplateDialogOpen(false)}>Отмена</Button>
+          <Button variant="contained" onClick={handleSaveTemplate}>Сохранить</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог управления шаблонами */}
+      <Dialog open={manageTemplatesOpen} onClose={() => setManageTemplatesOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            Мои шаблоны
+            <Button
+              size="small"
+              startIcon={<Plus size={14} />}
+              onClick={() => {
+                setEditingTemplate(null);
+                setTemplateName("");
+                setTemplateContent("");
+                setManageTemplatesOpen(false);
+                setTemplateDialogOpen(true);
+              }}
+            >
+              Создать
+            </Button>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {templates.length === 0 ? (
+            <Typography color="text.secondary" sx={{ py: 3, textAlign: "center" }}>
+              У вас пока нет шаблонов
+            </Typography>
+          ) : (
+            <List>
+              {templates.map((t) => (
+                <ListItem key={t.id} divider>
+                  <ListItemText
+                    primary={t.title}
+                    secondary={t.content.slice(0, 100) + (t.content.length > 100 ? "..." : "")}
+                  />
+                  <ListItemSecondaryAction>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setEditingTemplate(t);
+                        setTemplateName(t.title);
+                        setTemplateContent(t.content);
+                        setManageTemplatesOpen(false);
+                        setTemplateDialogOpen(true);
+                      }}
+                    >
+                      <Edit2 size={16} />
+                    </IconButton>
+                    <IconButton size="small" color="error" onClick={() => handleDeleteTemplate(t.id)}>
+                      <Trash2 size={16} />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setManageTemplatesOpen(false)}>Закрыть</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

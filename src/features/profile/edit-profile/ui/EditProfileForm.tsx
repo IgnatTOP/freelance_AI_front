@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TextField,
   Select,
@@ -25,10 +25,16 @@ import {
   Briefcase,
   Code,
   Save,
+  Phone,
+  Send,
+  Globe,
+  Building2,
+  FileText,
 } from "lucide-react";
 import { AIAssistantInline } from "@/src/shared/ui/AIAssistantInline";
 import { aiService } from "@/src/shared/lib/ai/ai.service";
 import { formatNumber, parseFormattedNumber } from "@/src/shared/lib/utils/number-utils";
+import { getSkills } from "@/src/shared/api/catalog";
 
 interface EditProfileFormProps {
   form: any;
@@ -52,9 +58,27 @@ export function EditProfileForm({
     location: form?.getFieldValue?.('location') || '',
     experience_level: form?.getFieldValue?.('experience_level') || '',
     hourly_rate: form?.getFieldValue?.('hourly_rate') || 0,
+    phone: form?.getFieldValue?.('phone') || '',
+    telegram: form?.getFieldValue?.('telegram') || '',
+    website: form?.getFieldValue?.('website') || '',
+    company_name: form?.getFieldValue?.('company_name') || '',
+    inn: form?.getFieldValue?.('inn') || '',
   }));
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadSkills = async () => {
+      try {
+        const data = await getSkills();
+        setSkillOptions(data.skills?.map(s => s.name) || []);
+      } catch (error) {
+        console.error("Failed to load skills:", error);
+      }
+    };
+    loadSkills();
+  }, []);
 
   const handleChange = (field: string, value: any) => {
     const newData = { ...formData, [field]: value };
@@ -152,17 +176,15 @@ export function EditProfileForm({
 
         <AIAssistantInline
           onImprove={async (onChunk) => {
-            const currentBio = formData.bio || "";
-            const currentExperienceLevel = formData.experience_level || "";
-            if (!currentBio && skills.length === 0 && !currentExperienceLevel) {
-              toastService.warning("Сначала заполните описание, добавьте навыки или выберите уровень опыта");
+            if (skills.length === 0) {
+              toastService.warning("Сначала добавьте хотя бы один навык");
               return;
             }
             await aiService.improveProfileStream(
               {
-                current_bio: currentBio || "Фрилансер с опытом работы",
+                current_bio: formData.bio || "",
                 skills: skills,
-                experience_level: currentExperienceLevel,
+                experience_level: formData.experience_level || "",
               },
               onChunk
             );
@@ -170,7 +192,7 @@ export function EditProfileForm({
           onApply={(text) => {
             handleChange('bio', text);
           }}
-          disabled={isAIDisabled}
+          disabled={skills.length === 0}
         />
 
         <TextField
@@ -247,7 +269,123 @@ export function EditProfileForm({
 
       <Divider sx={{ my: 4 }} />
 
-      {/* Секция 3: Навыки */}
+      {/* Секция 3: Контактная информация */}
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+          <Phone size={20} />
+          <Typography variant="h6" fontWeight={600}>
+            Контактная информация
+          </Typography>
+        </Stack>
+
+        <TextField
+          fullWidth
+          label="Телефон"
+          value={formData.phone}
+          onChange={(e) => handleChange('phone', e.target.value)}
+          placeholder="+7 999 123-45-67"
+          helperText="Номер телефона для связи (опционально)"
+          inputProps={{ maxLength: 20 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Phone size={16} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+
+        <TextField
+          fullWidth
+          label="Telegram"
+          value={formData.telegram}
+          onChange={(e) => handleChange('telegram', e.target.value)}
+          placeholder="@username"
+          helperText="Ваш Telegram username (опционально)"
+          inputProps={{ maxLength: 50 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Send size={16} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+
+        <TextField
+          fullWidth
+          label="Веб-сайт"
+          value={formData.website}
+          onChange={(e) => handleChange('website', e.target.value)}
+          placeholder="https://example.com"
+          helperText="Ваш личный сайт или портфолио (опционально)"
+          inputProps={{ maxLength: 200 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Globe size={16} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+      </Box>
+
+      <Divider sx={{ my: 4 }} />
+
+      {/* Секция 4: Для юридических лиц */}
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+          <Building2 size={20} />
+          <Typography variant="h6" fontWeight={600}>
+            Для юридических лиц
+          </Typography>
+        </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Заполните, если работаете как компания или ИП
+        </Typography>
+
+        <TextField
+          fullWidth
+          label="Название компании"
+          value={formData.company_name}
+          onChange={(e) => handleChange('company_name', e.target.value)}
+          placeholder="ООО Разработка"
+          helperText="Название вашей компании или ИП (опционально)"
+          inputProps={{ maxLength: 200 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Building2 size={16} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+
+        <TextField
+          fullWidth
+          label="ИНН"
+          value={formData.inn}
+          onChange={(e) => handleChange('inn', e.target.value)}
+          placeholder="1234567890"
+          helperText="ИНН компании или ИП (опционально)"
+          inputProps={{ maxLength: 12 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <FileText size={16} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      <Divider sx={{ my: 4 }} />
+
+      {/* Секция 5: Навыки */}
       <Box sx={{ mb: 4 }}>
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
           <Code size={20} />
@@ -259,7 +397,7 @@ export function EditProfileForm({
         <Autocomplete
           multiple
           freeSolo
-          options={[]}
+          options={skillOptions}
           value={skills}
           onChange={(_, newValue) => onSkillsChange(newValue)}
           renderTags={(value, getTagProps) =>
@@ -275,8 +413,8 @@ export function EditProfileForm({
             <TextField
               {...params}
               label="Навыки"
-              placeholder="Введите навык и нажмите Enter"
-              helperText="Добавьте навыки и технологии, которыми владеете. Нажмите Enter после каждого"
+              placeholder="Выберите или введите навык"
+              helperText="Выберите из списка или введите свой навык и нажмите Enter"
             />
           )}
           sx={{ mb: 2 }}

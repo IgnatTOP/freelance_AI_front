@@ -6,7 +6,7 @@
 
 import { Avatar } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import type { User, Profile } from "@/src/shared/lib/auth/auth.service";
+import type { User, Profile } from "@/src/entities/user/model/types";
 
 interface UserAvatarProps {
   user?: User | null;

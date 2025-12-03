@@ -1,6 +1,23 @@
 "use client";
 
-import { Card, Typography, Space, Button, Tag, Divider, App, Spin, Empty, Tooltip, theme, Modal } from "antd";
+import {
+  Box,
+  Card,
+  Typography,
+  Button,
+  Chip,
+  Divider,
+  CircularProgress,
+  Tooltip,
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Stack,
+  alpha,
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { Calendar, DollarSign, CheckCircle, XCircle, FileText, Briefcase, ExternalLink, AlertCircle, TrendingUp } from "lucide-react";
 import { useState } from "react";
@@ -16,9 +33,6 @@ import { motion } from "framer-motion";
 dayjs.extend(relativeTime);
 dayjs.locale("ru");
 
-const { Title, Text, Paragraph } = Typography;
-const { useToken } = theme;
-
 interface OrderInfoSidebarProps {
   order?: MessagesResponse["order"];
   conversation: Conversation;
@@ -32,26 +46,25 @@ export function OrderInfoSidebar({ order, conversation, currentUserId, onOrderUp
   const [completeByClientModalOpen, setCompleteByClientModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const router = useRouter();
-  const { token } = useToken();
+  const theme = useTheme();
 
   if (!order) {
     return (
-      <Card 
-        style={{ 
+      <Card
+        sx={{
           height: "100%",
-          borderRadius: token.borderRadiusLG,
+          borderRadius: 2,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          p: 3,
         }}
       >
-        <Empty 
-          description={
-            <span style={{ color: token.colorTextSecondary }}>
-              Информация о заказе недоступна
-            </span>
-          } 
-        />
+        <Box sx={{ textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            Информация о заказе недоступна
+          </Typography>
+        </Box>
       </Card>
     );
   }
@@ -170,240 +183,294 @@ export function OrderInfoSidebar({ order, conversation, currentUserId, onOrderUp
 
   return (
     <Card
-      style={{
+      sx={{
         height: "100%",
-        borderRadius: token.borderRadiusLG,
+        borderRadius: 2,
         overflowY: "auto",
-        overflowX: "hidden",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         display: "flex",
         flexDirection: "column",
-      }}
-      styles={{
-        body: { padding: 16, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" },
+        position: "relative",
       }}
     >
-      <Spin spinning={loading}>
-        <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", overflowX: "hidden" }}>
-        <Space direction="vertical" size="middle" style={{ width: "100%", flex: 1 }}>
+      {loading && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: alpha(theme.palette.background.paper, 0.8),
+            zIndex: 10,
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      )}
+      <Box sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", overflowX: "hidden" }}>
+        <Stack spacing={3} sx={{ width: "100%", flex: 1 }}>
           {/* Заголовок */}
-          <div>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
-              <Title level={5} style={{ margin: 0, flex: 1, lineHeight: 1.3, fontSize: 15 }}>
-                Информация о заказе
-              </Title>
-              <Tag 
-                color={getOrderStatusColor(order.status || "")}
-                style={{ 
-                  margin: 0,
-                  borderRadius: token.borderRadius,
-                  padding: "2px 10px",
-                  fontSize: 11,
-                  fontWeight: 500,
-                  flexShrink: 0,
-                  lineHeight: 1.4,
-                }}
-              >
-                {getOrderStatusLabel(order.status || "")}
-              </Tag>
-            </div>
-            <Text 
-              strong 
-              style={{ 
-                fontSize: 15, 
-                lineHeight: 1.3,
-                display: "block",
-                marginBottom: 3,
-              }}
-            >
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Инфо о заказе
+              </Typography>
+              <Chip
+                label={getOrderStatusLabel(order.status || "")}
+                size="small"
+                color={getOrderStatusColor(order.status || "") as any}
+              />
+            </Box>
+            <Typography variant="body1" sx={{ mb: 2, fontWeight: 600 }}>
               {order.title}
-            </Text>
+            </Typography>
             <Button
-              type="link"
               size="small"
-              icon={<ExternalLink size={12} />}
+              variant="outlined"
+              startIcon={<ExternalLink size={16} />}
               onClick={() => router.push(`/orders/${order.id}`)}
-              style={{
-                padding: 0,
-                height: "auto",
-                fontSize: 12,
-                color: token.colorPrimary,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 3,
-              }}
             >
               Открыть заказ
             </Button>
-          </div>
+          </Box>
 
-          <Divider style={{ margin: "10px 0", borderColor: token.colorBorder }} />
+          <Divider />
 
           {/* Описание */}
           {order.description && (
-            <div style={{ 
-              padding: 12,
-              background: token.colorFillQuaternary || token.colorFillTertiary,
-              borderRadius: token.borderRadius,
-              border: `1px solid ${token.colorBorder}`,
-            }}>
-              <Text 
-                type="secondary" 
-                style={{ 
-                  fontSize: 11, 
-                  textTransform: "uppercase", 
-                  letterSpacing: 0.6,
-                  fontWeight: 600,
-                  display: "block",
-                  marginBottom: 8,
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Box
+                sx={{
+                  p: 2.5,
+                  bgcolor: alpha(theme.palette.background.default, 0.4),
+                  borderRadius: 2.5,
+                  border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                  transition: "all 0.3s",
+                  "&:hover": {
+                    backgroundColor: alpha(theme.palette.background.default, 0.6),
+                    borderColor: alpha(theme.palette.divider, 0.15),
+                  },
                 }}
               >
-                Описание
-              </Text>
-              <Paragraph
-                ellipsis={{ rows: 3, expandable: true, symbol: "показать больше" }}
-                style={{ 
-                  margin: 0,
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                  color: token.colorText,
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                    fontWeight: 700,
+                    display: "block",
+                    mb: 1.5,
+                    color: alpha(theme.palette.text.secondary, 0.8),
                 }}
-              >
-                {order.description}
-              </Paragraph>
-            </div>
+                >
+                  Описание
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    margin: 0,
+                    fontSize: 14,
+                    lineHeight: 1.65,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    color: theme.palette.text.primary,
+                    fontWeight: 400,
+                  }}
+                >
+                  {order.description}
+                </Typography>
+              </Box>
+            </motion.div>
           )}
 
           {/* Бюджет */}
           <motion.div
-            whileHover={{ scale: 1.01 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              padding: 12,
-              background: token.colorBgContainer,
-              borderRadius: token.borderRadius,
-              border: `1px solid ${token.colorBorder}`,
-            }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            transition={{ duration: 0.3 }}
           >
-            <Space size={10} style={{ width: "100%" }}>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: token.borderRadius,
-                background: token.colorPrimary + "15",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}>
-                <DollarSign size={16} style={{ color: token.colorPrimary }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Text 
-                  type="secondary" 
-                  style={{ 
-                    fontSize: 11, 
-                    display: "block",
-                    marginBottom: 3,
-                    fontWeight: 500,
+            <Box
+              sx={{
+                p: 2.5,
+                bgcolor: alpha(theme.palette.success.main, 0.06),
+                borderRadius: 2.5,
+                border: `1px solid ${alpha(theme.palette.success.main, 0.15)}`,
+                transition: "all 0.3s",
+                boxShadow: `0 2px 8px ${alpha(theme.palette.success.main, 0.08)}`,
+                "&:hover": {
+                  backgroundColor: alpha(theme.palette.success.main, 0.1),
+                  borderColor: alpha(theme.palette.success.main, 0.25),
+                  boxShadow: `0 4px 16px ${alpha(theme.palette.success.main, 0.15)}`,
+                },
+              }}
+            >
+              <Stack direction="row" spacing={2} sx={{ width: "100%", alignItems: "center" }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2.5,
+                    bgcolor: alpha(theme.palette.success.main, 0.15),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    border: `2px solid ${alpha(theme.palette.success.main, 0.2)}`,
                   }}
                 >
-                  Бюджет
-                </Text>
-                <Text strong style={{ fontSize: 16, display: "block", lineHeight: 1.3 }}>
-                  {formatBudget()}
-                </Text>
-              </div>
-            </Space>
+                  <DollarSign size={24} style={{ color: theme.palette.success.main }} />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: 11,
+                      display: "block",
+                      mb: 0.75,
+                      fontWeight: 700,
+                      letterSpacing: 0.8,
+                      textTransform: "uppercase",
+                      color: alpha(theme.palette.text.secondary, 0.7),
+                    }}
+                  >
+                    Бюджет
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: 20,
+                      fontWeight: 800,
+                      lineHeight: 1.2,
+                      color: theme.palette.success.main,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {formatBudget()}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
           </motion.div>
 
           {/* Дедлайн */}
           <motion.div
             whileHover={{ scale: 1.01 }}
             transition={{ duration: 0.2 }}
-            style={{
-              padding: 12,
-              background: token.colorFillQuaternary || token.colorBgContainer,
-              borderRadius: token.borderRadius,
-              border: `1px solid ${
-                isDeadlineOverdue() 
-                  ? (token.colorError || token.colorBorder)
-                  : isDeadlineNear()
-                  ? (token.colorWarning || token.colorBorder)
-                  : token.colorBorder
-              }`,
-            }}
           >
-            <Space size={10} style={{ width: "100%" }}>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: token.borderRadius,
-                background: (isDeadlineOverdue() ? (token.colorError || "#ff4d4f") : isDeadlineNear() ? (token.colorWarning || "#faad14") : token.colorPrimary) + "15",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}>
-                <Calendar 
-                  size={16} 
-                  style={{ 
-                    color: isDeadlineOverdue() ? (token.colorError || "#ff4d4f") : isDeadlineNear() ? (token.colorWarning || "#faad14") : token.colorPrimary
-                  }} 
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Text 
-                  type="secondary" 
-                  style={{ 
-                    fontSize: 11, 
-                    display: "block",
-                    marginBottom: 3,
-                    fontWeight: 500,
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: alpha(theme.palette.background.default, 0.5),
+                borderRadius: 1,
+                border: 1,
+                borderColor: isDeadlineOverdue()
+                  ? "error.main"
+                  : isDeadlineNear()
+                  ? "warning.main"
+                  : "divider",
+              }}
+            >
+              <Stack direction="row" spacing={1.25} sx={{ width: "100%" }}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 1,
+                    bgcolor: alpha(
+                      isDeadlineOverdue()
+                        ? theme.palette.error.main
+                        : isDeadlineNear()
+                        ? theme.palette.warning.main
+                        : theme.palette.primary.main,
+                      0.15
+                    ),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  Дедлайн
-                </Text>
-                <Text 
-                  strong 
-                  style={{ 
-                    fontSize: 16,
-                    display: "block",
-                    lineHeight: 1.3,
-                    color: isDeadlineOverdue() ? (token.colorError || "#ff4d4f") : isDeadlineNear() ? (token.colorWarning || "#faad14") : undefined
-                  }}
-                >
-                  {formatDeadline()}
-                </Text>
-                {order.deadline_at && (
-                  <Text 
-                    type="secondary" 
-                    style={{ 
-                      fontSize: 11, 
-                      display: "block", 
-                      marginTop: 3,
+                  <Calendar
+                    size={16}
+                    style={{
+                      color: isDeadlineOverdue()
+                        ? theme.palette.error.main
+                        : isDeadlineNear()
+                        ? theme.palette.warning.main
+                        : theme.palette.primary.main,
+                    }}
+                  />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      fontSize: 11,
+                      display: "block",
+                      mb: 0.5,
+                      fontWeight: 500,
                     }}
                   >
-                    {dayjs(order.deadline_at).format("D MMMM YYYY, HH:mm")}
-                  </Text>
-                )}
-                {isDeadlineNear() && !isDeadlineOverdue() && (
-                  <Tooltip title="Дедлайн скоро истечет">
-                    <div style={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      gap: 3, 
-                      marginTop: 4,
-                    }}>
-                      <AlertCircle size={10} style={{ color: token.colorWarning || "#faad14" }} />
-                      <Text type="secondary" style={{ fontSize: 10 }}>
-                        Срочно
-                      </Text>
-                    </div>
-                  </Tooltip>
-                )}
-              </div>
-            </Space>
+                    Дедлайн
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      color: isDeadlineOverdue()
+                        ? "error.main"
+                        : isDeadlineNear()
+                        ? "warning.main"
+                        : "text.primary",
+                    }}
+                  >
+                    {formatDeadline()}
+                  </Typography>
+                  {order.deadline_at && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        fontSize: 11,
+                        display: "block",
+                        mt: 0.5,
+                      }}
+                    >
+                      {dayjs(order.deadline_at).format("D MMMM YYYY, HH:mm")}
+                    </Typography>
+                  )}
+                  {isDeadlineNear() && !isDeadlineOverdue() && (
+                    <Tooltip title="Дедлайн скоро истечет">
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          mt: 0.5,
+                        }}
+                      >
+                        <AlertCircle size={10} style={{ color: theme.palette.warning.main }} />
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                          Срочно
+                        </Typography>
+                      </Box>
+                    </Tooltip>
+                  )}
+                </Box>
+              </Stack>
+            </Box>
           </motion.div>
 
           {/* Принятое предложение */}
@@ -411,162 +478,173 @@ export function OrderInfoSidebar({ order, conversation, currentUserId, onOrderUp
             <motion.div
               whileHover={{ scale: 1.01 }}
               transition={{ duration: 0.2 }}
-              style={{
-                padding: 12,
-                background: token.colorFillQuaternary || token.colorBgContainer,
-                borderRadius: token.borderRadius,
-                border: `1px solid ${token.colorBorder}`,
-              }}
             >
-              <Space size={10} style={{ width: "100%" }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: token.borderRadius,
-                  background: (token.colorSuccess || token.colorPrimary) + "15",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <TrendingUp size={16} style={{ color: token.colorSuccess || token.colorPrimary }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Text 
-                    type="secondary" 
-                    style={{ 
-                      fontSize: 11, 
-                      display: "block",
-                      marginBottom: 3,
-                      fontWeight: 500,
+              <Box
+                sx={{
+                  p: 1.5,
+                  bgcolor: alpha(theme.palette.background.default, 0.5),
+                  borderRadius: 1,
+                  border: 1,
+                  borderColor: "divider",
+                }}
+              >
+                <Stack direction="row" spacing={1.25} sx={{ width: "100%" }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1,
+                      bgcolor: alpha(theme.palette.success.main, 0.15),
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    Согласованная сумма
-                  </Text>
-                  <Text strong style={{ fontSize: 16, display: "block", lineHeight: 1.3, color: token.colorSuccess || token.colorPrimary }}>
-                    {order.accepted_proposal.proposed_amount?.toLocaleString() || "Не указана"} ₽
-                  </Text>
-                </div>
-              </Space>
+                    <TrendingUp size={16} style={{ color: theme.palette.success.main }} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        fontSize: 11,
+                        display: "block",
+                        mb: 0.5,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Согласованная сумма
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontSize: 16,
+                        fontWeight: 600,
+                        lineHeight: 1.3,
+                        color: "success.main",
+                      }}
+                    >
+                      {order.accepted_proposal.proposed_amount?.toLocaleString() || "Не указана"} ₽
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
             </motion.div>
           )}
 
           {/* Требования */}
           {order.requirements && order.requirements.length > 0 && (
-            <div>
-              <Text 
-                type="secondary" 
-                style={{ 
-                  fontSize: 11, 
-                  textTransform: "uppercase", 
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: 11,
+                  textTransform: "uppercase",
                   letterSpacing: 0.6,
                   fontWeight: 600,
-                  display: "block", 
-                  marginBottom: 8 
+                  display: "block",
+                  mb: 1,
                 }}
               >
                 Требования
-              </Text>
-              <div style={{ 
-                display: "flex", 
-                flexWrap: "wrap", 
-                gap: 6,
-              }}>
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
                 {order.requirements.map((req) => (
-                  <Tag 
-                    key={req.id} 
-                    color="blue"
-                    style={{
-                      margin: 0,
-                      padding: "2px 10px",
-                      borderRadius: token.borderRadius,
+                  <Chip
+                    key={req.id}
+                    label={
+                      <>
+                        {req.skill} <span style={{ opacity: 0.7 }}>({req.level})</span>
+                      </>
+                    }
+                    color="info"
+                    size="small"
+                    sx={{
                       fontSize: 12,
-                      border: "none",
-                      lineHeight: 1.4,
+                      height: "auto",
+                      py: 0.25,
                     }}
-                  >
-                    {req.skill} <span style={{ opacity: 0.7 }}>({req.level})</span>
-                  </Tag>
+                  />
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
 
           {/* Вложения */}
           {order.attachments && order.attachments.length > 0 && (
-            <div>
-              <Text 
-                type="secondary" 
-                style={{ 
-                  fontSize: 11, 
-                  textTransform: "uppercase", 
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: 11,
+                  textTransform: "uppercase",
                   letterSpacing: 0.6,
                   fontWeight: 600,
-                  display: "block", 
-                  marginBottom: 8 
+                  display: "block",
+                  mb: 1,
                 }}
               >
                 Вложения
-              </Text>
-              <Space direction="vertical" size={6} style={{ width: "100%" }}>
+              </Typography>
+              <Stack spacing={0.75} sx={{ width: "100%" }}>
                 {order.attachments.map((att) => (
-                  <div 
-                    key={att.id} 
-                    style={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      gap: 8,
-                      padding: "8px 10px",
-                      background: token.colorFillQuaternary || token.colorFillTertiary,
-                      borderRadius: token.borderRadius,
-                      border: `1px solid ${token.colorBorder}`,
+                  <Box
+                    key={att.id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      p: 1,
+                      bgcolor: alpha(theme.palette.background.default, 0.5),
+                      borderRadius: 1,
+                      border: 1,
+                      borderColor: "divider",
                       transition: "all 0.2s",
                       cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = token.colorFillTertiary;
-                      e.currentTarget.style.borderColor = token.colorPrimary;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = token.colorFillQuaternary || token.colorFillTertiary;
-                      e.currentTarget.style.borderColor = token.colorBorder;
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        borderColor: "primary.main",
+                      },
                     }}
                   >
-                    <FileText size={14} style={{ color: token.colorPrimary, flexShrink: 0 }} />
-                    <Text 
-                      ellipsis
-                      style={{ 
+                    <FileText size={14} style={{ color: theme.palette.primary.main, flexShrink: 0 }} />
+                    <Typography
+                      variant="body2"
+                      noWrap
+                      sx={{
                         fontSize: 12,
                         flex: 1,
                         minWidth: 0,
                       }}
                     >
                       {att.media?.file_path?.split("/").pop() || "Файл"}
-                    </Text>
-                  </div>
+                    </Typography>
+                  </Box>
                 ))}
-              </Space>
-            </div>
+              </Stack>
+            </Box>
           )}
 
-          <Divider style={{ margin: "12px 0", borderColor: token.colorBorder }} />
+          <Divider sx={{ my: 1.5 }} />
 
           {/* Кнопки действий */}
           {isInProgress && (
-            <Space direction="vertical" style={{ width: "100%" }} size="small">
+            <Stack spacing={1} sx={{ width: "100%" }}>
               {isFreelancer && (
                 <Button
-                  type="primary"
-                  icon={<CheckCircle size={16} />}
-                  block
+                  variant="contained"
+                  fullWidth
+                  startIcon={<CheckCircle size={16} />}
                   onClick={handleCompleteByFreelancer}
-                  loading={loading}
-                  style={{
+                  disabled={loading}
+                  sx={{
                     height: 36,
-                    borderRadius: token.borderRadius,
                     fontWeight: 500,
                     fontSize: 13,
-                    boxShadow: `0 2px 8px ${token.colorPrimary}25`,
+                    textTransform: "none",
                   }}
                 >
                   Отметить как выполненный
@@ -574,17 +652,16 @@ export function OrderInfoSidebar({ order, conversation, currentUserId, onOrderUp
               )}
               {isClient && (
                 <Button
-                  type="primary"
-                  icon={<CheckCircle size={16} />}
-                  block
+                  variant="contained"
+                  fullWidth
+                  startIcon={<CheckCircle size={16} />}
                   onClick={handleCompleteByClient}
-                  loading={loading}
-                  style={{
+                  disabled={loading}
+                  sx={{
                     height: 36,
-                    borderRadius: token.borderRadius,
                     fontWeight: 500,
                     fontSize: 13,
-                    boxShadow: `0 2px 8px ${token.colorPrimary}25`,
+                    textTransform: "none",
                   }}
                 >
                   Завершить заказ
@@ -592,142 +669,206 @@ export function OrderInfoSidebar({ order, conversation, currentUserId, onOrderUp
               )}
               {(isClient || isFreelancer) && (
                 <Button
-                  danger
-                  icon={<XCircle size={16} />}
-                  block
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  startIcon={<XCircle size={16} />}
                   onClick={handleCancel}
-                  loading={loading}
-                  style={{
+                  disabled={loading}
+                  sx={{
                     height: 36,
-                    borderRadius: token.borderRadius,
                     fontWeight: 500,
                     fontSize: 13,
+                    textTransform: "none",
                   }}
                 >
                   Отменить заказ
                 </Button>
               )}
-            </Space>
+            </Stack>
           )}
 
           {isCompleted && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              style={{ 
-                textAlign: "center", 
-                padding: "16px 12px", 
-                background: token.colorFillQuaternary || token.colorBgContainer,
-                borderRadius: token.borderRadius,
-                border: `1px solid ${token.colorSuccess || token.colorBorder}`,
-              }}
-            >
-              <CheckCircle size={24} style={{ color: token.colorSuccess || token.colorPrimary, marginBottom: 8 }} />
-              <Text strong style={{ color: token.colorSuccess || token.colorPrimary, display: "block", fontSize: 14, marginBottom: 3 }}>
-                Заказ выполнен
-              </Text>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                {order.updated_at && dayjs(order.updated_at).format("D MMMM YYYY, HH:mm")}
-              </Text>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+              <Box
+                sx={{
+                  textAlign: "center",
+                  p: 2,
+                  bgcolor: alpha(theme.palette.background.default, 0.5),
+                  borderRadius: 1,
+                  border: 1,
+                  borderColor: "success.main",
+                }}
+              >
+                <CheckCircle size={24} style={{ color: theme.palette.success.main, marginBottom: 8 }} />
+                <Typography
+                  variant="body2"
+                  sx={{ color: "success.main", fontWeight: 600, fontSize: 14, mb: 0.5 }}
+                >
+                  Заказ выполнен
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                  {order.updated_at && dayjs(order.updated_at).format("D MMMM YYYY, HH:mm")}
+                </Typography>
+              </Box>
             </motion.div>
           )}
 
           {isCancelled && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              style={{ 
-                textAlign: "center", 
-                padding: "16px 12px", 
-                background: token.colorFillQuaternary || token.colorBgContainer,
-                borderRadius: token.borderRadius,
-                border: `1px solid ${token.colorError || token.colorBorder}`,
-              }}
-            >
-              <XCircle size={24} style={{ color: token.colorError || "#ff4d4f", marginBottom: 8 }} />
-              <Text strong style={{ color: token.colorError || "#ff4d4f", display: "block", fontSize: 14, marginBottom: 3 }}>
-                Заказ отменен
-              </Text>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                {order.updated_at && dayjs(order.updated_at).format("D MMMM YYYY, HH:mm")}
-              </Text>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+              <Box
+                sx={{
+                  textAlign: "center",
+                  p: 2,
+                  bgcolor: alpha(theme.palette.background.default, 0.5),
+                  borderRadius: 1,
+                  border: 1,
+                  borderColor: "error.main",
+                }}
+              >
+                <XCircle size={24} style={{ color: theme.palette.error.main, marginBottom: 8 }} />
+                <Typography
+                  variant="body2"
+                  sx={{ color: "error.main", fontWeight: 600, fontSize: 14, mb: 0.5 }}
+                >
+                  Заказ отменен
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                  {order.updated_at && dayjs(order.updated_at).format("D MMMM YYYY, HH:mm")}
+                </Typography>
+              </Box>
             </motion.div>
           )}
 
           {/* Метаинформация */}
-          <div style={{
-            padding: "10px 12px",
-            background: token.colorFillQuaternary || token.colorFillTertiary,
-            borderRadius: token.borderRadius,
-            border: `1px solid ${token.colorBorder}`,
-          }}>
-            <Text 
-              type="secondary" 
-              style={{ 
+          <Box
+            sx={{
+              p: 1.5,
+              bgcolor: alpha(theme.palette.background.default, 0.5),
+              borderRadius: 1,
+              border: 1,
+              borderColor: "divider",
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
                 fontSize: 11,
                 display: "block",
                 lineHeight: 1.5,
               }}
             >
-              <span style={{ fontWeight: 500 }}>Создан:</span> {order.created_at ? dayjs(order.created_at).format("D MMMM YYYY, HH:mm") : "Неизвестно"}
-            </Text>
+              <Box component="span" sx={{ fontWeight: 500 }}>
+                Создан:
+              </Box>{" "}
+              {order.created_at ? dayjs(order.created_at).format("D MMMM YYYY, HH:mm") : "Неизвестно"}
+            </Typography>
             {order.updated_at && order.updated_at !== order.created_at && (
-              <Text 
-                type="secondary" 
-                style={{ 
-                  fontSize: 11, 
-                  display: "block", 
-                  marginTop: 4,
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: 11,
+                  display: "block",
+                  mt: 0.5,
                   lineHeight: 1.5,
                 }}
               >
-                <span style={{ fontWeight: 500 }}>Обновлен:</span> {dayjs(order.updated_at).format("D MMMM YYYY, HH:mm")}
-              </Text>
+                <Box component="span" sx={{ fontWeight: 500 }}>
+                  Обновлен:
+                </Box>{" "}
+                {dayjs(order.updated_at).format("D MMMM YYYY, HH:mm")}
+              </Typography>
             )}
-          </div>
-        </Space>
-        </div>
-      </Spin>
+          </Box>
+        </Stack>
+      </Box>
 
-      {/* Complete by Freelancer Modal */}
-      <Modal
+      {/* Complete by Freelancer Dialog */}
+      <Dialog
         open={completeByFreelancerModalOpen}
-        onOk={handleCompleteByFreelancerConfirm}
-        onCancel={() => setCompleteByFreelancerModalOpen(false)}
-        okText="Да, выполнен"
-        cancelText="Отмена"
-        title="Отметить заказ как выполненный?"
-        confirmLoading={loading}
+        onClose={() => setCompleteByFreelancerModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
       >
-        <p>Вы уверены, что выполнили все требования заказа? После подтверждения заказ будет отмечен как выполненный.</p>
-      </Modal>
+        <DialogTitle>Отметить заказ как выполненный?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Вы уверены, что выполнили все требования заказа? После подтверждения заказ будет отмечен как выполненный.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCompleteByFreelancerModalOpen(false)} disabled={loading}>
+            Отмена
+          </Button>
+          <Button
+            onClick={handleCompleteByFreelancerConfirm}
+            variant="contained"
+            disabled={loading}
+            autoFocus
+          >
+            Да, выполнен
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* Complete by Client Modal */}
-      <Modal
+      {/* Complete by Client Dialog */}
+      <Dialog
         open={completeByClientModalOpen}
-        onOk={handleCompleteByClientConfirm}
-        onCancel={() => setCompleteByClientModalOpen(false)}
-        okText="Завершить"
-        cancelText="Отмена"
-        title="Завершить заказ?"
-        confirmLoading={loading}
+        onClose={() => setCompleteByClientModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
       >
-        <p>Вы уверены, что хотите завершить этот заказ? Это действие нельзя отменить.</p>
-      </Modal>
+        <DialogTitle>Завершить заказ?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Вы уверены, что хотите завершить этот заказ? Это действие нельзя отменить.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCompleteByClientModalOpen(false)} disabled={loading}>
+            Отмена
+          </Button>
+          <Button
+            onClick={handleCompleteByClientConfirm}
+            variant="contained"
+            disabled={loading}
+            autoFocus
+          >
+            Завершить
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* Cancel Modal */}
-      <Modal
+      {/* Cancel Dialog */}
+      <Dialog
         open={cancelModalOpen}
-        onOk={handleCancelConfirm}
-        onCancel={() => setCancelModalOpen(false)}
-        okText="Отменить"
-        cancelText="Нет"
-        okType="danger"
-        title="Отменить заказ?"
-        confirmLoading={loading}
+        onClose={() => setCancelModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
       >
-        <p>Вы уверены, что хотите отменить этот заказ? Это действие нельзя отменить.</p>
-      </Modal>
+        <DialogTitle>Отменить заказ?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Вы уверены, что хотите отменить этот заказ? Это действие нельзя отменить.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelModalOpen(false)} disabled={loading}>
+            Нет
+          </Button>
+          <Button
+            onClick={handleCancelConfirm}
+            variant="contained"
+            color="error"
+            disabled={loading}
+            autoFocus
+          >
+            Отменить
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }

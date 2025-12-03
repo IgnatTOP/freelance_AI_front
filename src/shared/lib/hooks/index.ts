@@ -9,5 +9,6 @@ export { useScroll } from "./useScroll";
 export { useMobileMenu } from "./useMobileMenu";
 export { calculateDockScale } from "./useDockScale";
 export { useActivities } from "./useActivities";
-export type { Activity } from "./useActivities";
 
+// Re-export Activity type from shared utility
+export type { Activity } from "../utils/activity-parser";

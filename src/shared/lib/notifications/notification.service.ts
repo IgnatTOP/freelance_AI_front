@@ -122,12 +122,16 @@ class NotificationService {
       case "orders.updated":
         return extractMessage(data.message) || `Заказ обновлён: ${data.order?.title || "Без названия"}`;
       case "proposals.new":
-        return extractMessage(data.message) || `Новое предложение на заказ: ${data.order?.title || "Без названия"}`;
+      case "new_proposal":
+        return extractMessage(data.message) || `Новое предложение на заказ: ${data.order?.title || data.order_title || "Без названия"}`;
       case "proposals.sent":
         return extractMessage(data.message) || `Ваше предложение отправлено на заказ: ${data.order?.title || "Без названия"}`;
       case "proposals.updated":
+      case "proposal_accepted":
+      case "proposal_rejected":
         return extractMessage(data.message) || `Статус предложения изменён: ${data.proposal?.status || "неизвестно"}`;
       case "chat.message":
+      case "new_message":
         // Для сообщений чата, если message - это объект Message, используем его content
         if (data.message && typeof data.message === 'object' && 'content' in data.message) {
           return data.message.content || `Новое сообщение в чате`;
@@ -203,20 +207,30 @@ class NotificationService {
         if (data.order?.id) {
           return `/orders/${data.order.id}`;
         }
+        if (data.order_id) {
+          return `/orders/${data.order_id}`;
+        }
         return "/orders";
       
       case "proposals.new":
       case "proposals.sent":
       case "proposals.updated":
+      case "new_proposal":
+      case "proposal_accepted":
+      case "proposal_rejected":
         if (data.order?.id) {
           return `/orders/${data.order.id}/proposals`;
         }
-        if (data.proposal?.id) {
-          return "/proposals";
+        if (data.order_id) {
+          return `/orders/${data.order_id}/proposals`;
         }
-        return "/proposals";
+        if (data.proposal?.order_id) {
+          return `/orders/${data.proposal.order_id}/proposals`;
+        }
+        return "/my-projects";
       
       case "chat.message":
+      case "new_message":
         // Если есть conversation ID, переходим в конкретный чат
         if (data.conversation?.id) {
           return `/messages/${data.conversation.id}`;

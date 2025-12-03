@@ -26,18 +26,46 @@ export interface ConversationListItem {
   unread_count?: number;
 }
 
+export interface MessageAttachment {
+  id: string;
+  message_id: string;
+  media_id: string;
+  created_at: string;
+  media: {
+    id: string;
+    file_path: string;
+    file_type: string;
+    file_size: number;
+    is_public: boolean;
+    created_at: string;
+  };
+}
+
+export interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
 export interface Message {
   id: string;
   conversation_id: string;
-  author_type: "client" | "freelancer";
-  author_id: string;
+  author_type: "client" | "freelancer" | "system" | "assistant";
+  author_id: string | null;
   content: string;
+  parent_message_id?: string | null;
   created_at: string;
-  updated_at?: string;
+  updated_at?: string | null;
+  attachments?: MessageAttachment[];
+  reactions?: MessageReaction[];
 }
 
 export interface CreateMessageRequest {
   content: string;
+  parent_message_id?: string;
+  attachment_ids?: string[];
 }
 
 export interface UpdateMessageRequest {

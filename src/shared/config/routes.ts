@@ -14,9 +14,12 @@ export const DASHBOARD_ROUTES = [
   "/settings",
   "/analytics",
   "/my-projects",
+  "/my-orders",
   "/freelancers",
   "/users",
   "/portfolio",
+  "/wallet",
+  "/favorites",
 ] as const;
 
 /**

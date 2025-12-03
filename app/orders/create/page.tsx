@@ -12,7 +12,7 @@ function CreateOrderPageContent() {
   const description = searchParams.get("description") || undefined;
 
   return (
-    <Box sx={{ minHeight: '100vh', py: 8, position: 'relative' }}>
+    <Box sx={{ minHeight: 'auto', py: 8, position: 'relative' }}>
       <Container maxWidth="lg">
         <CreateOrderFeature
           initialTitle={title}
@@ -27,7 +27,7 @@ function CreateOrderPageContent() {
 export default function CreateOrderPage() {
   return (
     <Suspense fallback={
-      <Box sx={{ minHeight: '100vh', py: 8, position: 'relative' }}>
+      <Box sx={{ minHeight: 'auto', py: 8, position: 'relative' }}>
         <Container maxWidth="lg">
           <Box>Загрузка...</Box>
         </Container>

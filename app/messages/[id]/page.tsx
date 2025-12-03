@@ -1,879 +1,1132 @@
 "use client";
-import { toastService } from "@/src/shared/lib/toast";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Box,
-  Card,
   Typography,
   TextField,
   Avatar,
   CircularProgress,
-  Badge,
-  Tooltip,
   IconButton,
-  Button,
   Stack,
-  useTheme,
+  Chip,
+  Button,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Popover,
+  Alert,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, User, Briefcase, CheckCheck, ChevronDown, Wifi, WifiOff } from "lucide-react";
-import { OrderInfoSidebar } from "./OrderInfoSidebar";
-import { getMessages, sendMessage } from "@/src/shared/api/conversations";
-import { markOrderAsCompletedByFreelancer, updateOrder } from "@/src/shared/api/orders";
+import {
+  ArrowLeft,
+  Send,
+  User,
+  Briefcase,
+  CheckCheck,
+  MoreVertical,
+  Reply,
+  Edit,
+  Trash2,
+  Smile,
+  Paperclip,
+  Calendar,
+  DollarSign,
+  ExternalLink,
+  X,
+  CheckCircle,
+  AlertTriangle,
+  Star,
+} from "lucide-react";
+import {
+  getMessages,
+  sendMessage,
+  updateMessage,
+  deleteMessage,
+  addReaction,
+  removeReaction,
+} from "@/src/shared/api/conversations";
+import { uploadPhoto } from "@/src/shared/api/media";
+import { updateOrder } from "@/src/shared/api/orders";
+import { canReview, createReview } from "@/src/shared/api/reviews";
 import { useAuth } from "@/src/shared/lib/hooks";
 import { websocketService } from "@/src/shared/lib/notifications/websocket.service";
-import type { Message, MessagesResponse, Conversation } from "@/src/entities/conversation/model/types";
+import { toastService } from "@/src/shared/lib/toast";
 import { getMediaUrl } from "@/src/shared/lib/api/axios";
+import type { Message, MessagesResponse } from "@/src/entities/conversation/model/types";
 import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ru";
 
-dayjs.extend(relativeTime);
 dayjs.locale("ru");
 
+const EMOJIS = ["👍", "❤️", "😊", "😂", "😮", "😢", "🎉", "🔥"];
+
 export default function ChatPage() {
-  const theme = useTheme();
-  const params = useParams();
+  const { id } = useParams();
   const router = useRouter();
-  const conversationId = params.id as string;
   const { user } = useAuth();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [messageText, setMessageText] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [conversation, setConversation] = useState<MessagesResponse | null>(null);
+  const [text, setText] = useState("");
+  const [data, setData] = useState<MessagesResponse | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const currentUserId = user?.id ? String(user.id) : null;
-  const [isConnected, setIsConnected] = useState(false);
-  const [isAtBottom, setIsAtBottom] = useState(true);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const shouldAutoScrollRef = useRef(true);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [files, setFiles] = useState<{ id: string; name: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-  // Проверка, находится ли пользователь внизу чата
-  const checkIfAtBottom = useCallback(() => {
-    if (!messagesContainerRef.current) return false;
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-    const threshold = 150;
-    return scrollHeight - scrollTop - clientHeight < threshold;
-  }, []);
+  // Menu state
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [menuMsg, setMenuMsg] = useState<Message | null>(null);
 
-  // Обработчик скролла
-  const handleScroll = useCallback(() => {
-    const atBottom = checkIfAtBottom();
-    setIsAtBottom(atBottom);
-    shouldAutoScrollRef.current = atBottom;
-  }, [checkIfAtBottom]);
+  // Edit dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editText, setEditText] = useState("");
 
+  // Emoji picker
+  const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
+  const [emojiMsg, setEmojiMsg] = useState<Message | null>(null);
+
+  // Confirm order
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [showFullDesc, setShowFullDesc] = useState(false);
+
+  // Review
+  const [canLeaveReview, setCanLeaveReview] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Image viewer
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
+
+  const myId = user?.id ? String(user.id) : null;
+  const isClient = myId && data?.conversation?.client_id === myId;
+  const isFreelancer = myId && data?.conversation?.freelancer_id === myId;
+  const isInProgress = data?.order?.status === "in_progress";
+  const isCompleted = data?.order?.status === "completed";
+
+  const scroll = () => bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+  // Load
   useEffect(() => {
     if (!user?.id) return;
-    
-    // Подключаемся к WebSocket
-    const connectWebSocket = async () => {
+
+    const load = async () => {
       try {
-        await websocketService.connect();
-        setIsConnected(true);
-      } catch (error) {
-        // Silently handle connection errors - they're expected if backend is down
-        setIsConnected(false);
+        const res = await getMessages(id as string, { limit: 100 });
+        console.log("Chat loaded, order status:", res.order?.status, "order id:", res.order?.id);
+        setData(res);
+        setMessages(res.messages || []);
+        setTimeout(scroll, 100);
+        
+        // Check if can leave review
+        if (res.order?.status === "completed" && res.order?.id) {
+          try {
+            const reviewCheck = await canReview(res.order.id);
+            console.log("canReview response:", reviewCheck);
+            setCanLeaveReview(reviewCheck.can_review);
+          } catch (err) {
+            console.log("canReview error:", err);
+            // If API fails, still show the button - will check again on click
+            setCanLeaveReview(true);
+          }
+        }
+      } catch {
+        toastService.error("Ошибка загрузки");
+      } finally {
+        setLoading(false);
       }
     };
 
-    connectWebSocket();
-    loadMessages();
+    load();
+    websocketService.connect().catch(() => {});
 
-    // Подписываемся на события WebSocket
-    const unsubscribeChat = websocketService.on("chat.message", (wsMessage) => {
-      const chatData = wsMessage.data;
-      if (chatData?.conversation?.id === conversationId) {
-        const newMessage = chatData.message;
-        if (newMessage) {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newMessage.id)) {
-              return prev;
+    const unsub = websocketService.on("chat.message", (ws) => {
+      if (ws.data?.conversation?.id === id && ws.data?.message) {
+        setMessages((prev) => {
+          if (prev.find((m) => m.id === ws.data.message.id)) return prev;
+          return [...prev, ws.data.message];
+        });
+        setTimeout(scroll, 100);
+      }
+    });
+
+    // Подписка на добавление реакций
+    const unsubReactionAdded = websocketService.on("message.reaction.added", (ws) => {
+      if (ws.data?.conversation_id === id && ws.data?.message_id) {
+        const { message_id, reaction } = ws.data;
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === message_id && reaction) {
+              let reactions: Record<string, string[]> = {};
+              if (Array.isArray(m.reactions)) {
+                m.reactions.forEach((r: any) => {
+                  if (!reactions[r.emoji]) reactions[r.emoji] = [];
+                  reactions[r.emoji].push(r.user_id);
+                });
+              } else if (m.reactions) {
+                reactions = { ...(m.reactions as any) };
+              }
+              reactions[reaction.emoji] = [...(reactions[reaction.emoji] || []), reaction.user_id];
+              return { ...m, reactions: reactions as any };
             }
-            return [...prev, newMessage];
-          });
-          
-          if (shouldAutoScrollRef.current) {
-            setTimeout(() => scrollToBottom(), 100);
-          }
+            return m;
+          })
+        );
+      }
+    });
+
+    // Подписка на удаление реакций
+    const unsubReactionRemoved = websocketService.on("message.reaction.removed", (ws) => {
+      if (ws.data?.conversation_id === id && ws.data?.message_id) {
+        const { message_id, user_id } = ws.data;
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === message_id) {
+              let reactions: Record<string, string[]> = {};
+              if (Array.isArray(m.reactions)) {
+                m.reactions.forEach((r: any) => {
+                  if (!reactions[r.emoji]) reactions[r.emoji] = [];
+                  reactions[r.emoji].push(r.user_id);
+                });
+              } else if (m.reactions) {
+                reactions = { ...(m.reactions as any) };
+              }
+              Object.keys(reactions).forEach((emoji) => {
+                if (Array.isArray(reactions[emoji])) {
+                  reactions[emoji] = reactions[emoji].filter((uid: string) => uid !== user_id);
+                  if (reactions[emoji].length === 0) delete reactions[emoji];
+                }
+              });
+              return { ...m, reactions: reactions as any };
+            }
+            return m;
+          })
+        );
+      }
+    });
+
+    // Подписка на обновления заказа
+    const unsubOrder = websocketService.on("orders.updated", (ws) => {
+      setData((prev) => {
+        if (prev?.order?.id && ws.data?.order?.id === prev.order.id) {
+          return { ...prev, order: ws.data.order };
         }
-      }
-    });
-
-    // Подписываемся на обновления заказов (завершение, отмена и т.д.)
-    const unsubscribeOrders = websocketService.on("orders.updated", (wsMessage) => {
-      const data = wsMessage.data;
-      
-      // Если заказ относится к текущему чату, перезагружаем данные
-      if (data.order) {
-        // Проверяем через загруженный conversation или просто перезагружаем
-        // (событие приходит только для заказов, связанных с текущим пользователем)
-        loadMessages();
-      }
-    });
-
-    const unsubscribeConnection = websocketService.onConnectionChange((connected) => {
-      setIsConnected(connected);
+        return prev;
+      });
     });
 
     return () => {
-      unsubscribeChat();
-      unsubscribeOrders();
-      unsubscribeConnection();
+      unsub();
+      unsubReactionAdded();
+      unsubReactionRemoved();
+      unsubOrder();
     };
-  }, [conversationId, user?.id]);
+  }, [id, user?.id]);
 
-  const loadMessages = async () => {
-    setLoading(true);
-    try {
-      const data = await getMessages(conversationId);
-      setConversation(data);
-      setMessages(data.messages || []);
-      scrollToBottom();
-    } catch (error: any) {
-      console.error("Error loading messages:", error);
-      toastService.error(error.response?.data?.error || "Ошибка загрузки сообщений");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const scrollToBottom = useCallback(() => {
-    setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-      } else {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 100);
-  }, []);
-
-  const handleSend = async (value?: string) => {
-    const text = value || messageText;
-    if (!text.trim() || sending) return;
-
-    // Валидация длины сообщения (синхронизировано с бекендом)
-    const trimmedText = text.trim();
-    if (trimmedText.length < 1) {
-      toastService.warning("Сообщение не может быть пустым");
-      return;
-    }
-    if (trimmedText.length > 5000) {
-      toastService.warning("Сообщение не может быть длиннее 5000 символов");
-      return;
-    }
-
+  // Send
+  const send = async () => {
+    if ((!text.trim() && files.length === 0) || sending) return;
     setSending(true);
     try {
-      const response = await sendMessage(conversationId, {
-        content: trimmedText,
+      const res = await sendMessage(id as string, {
+        content: text.trim(),
+        parent_message_id: replyTo?.id,
+        attachment_ids: files.length > 0 ? files.map((f) => f.id) : undefined,
       });
-
-      setMessages((prev) => [...prev, response.message]);
-      setMessageText("");
-      scrollToBottom();
-    } catch (error: any) {
-      console.error("Error sending message:", error);
-      toastService.error(error.response?.data?.error || "Ошибка отправки сообщения");
+      setMessages((prev) => [...prev, res.message]);
+      setText("");
+      setReplyTo(null);
+      setFiles([]);
+      setTimeout(scroll, 100);
+    } catch {
+      toastService.error("Ошибка отправки");
     } finally {
       setSending(false);
     }
   };
 
-  const isMyMessage = (message: Message) => {
-    if (!currentUserId) return false;
-    return (
-      (message.author_type === "client" || message.author_type === "freelancer") &&
-      message.author_id === currentUserId
-    );
-  };
-
-  const formatTime = (dateString: string) => {
-    return dayjs(dateString).format("HH:mm");
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = dayjs(dateString);
-    const now = dayjs();
-    if (date.isSame(now, "day")) return "Сегодня";
-    if (date.isSame(now.subtract(1, "day"), "day")) return "Вчера";
-    return date.format("D MMMM YYYY");
-  };
-
-  const groupedMessages = messages.reduce((acc, msg, index) => {
-    const prevMsg = index > 0 ? messages[index - 1] : null;
-    const msgDate = dayjs(msg.created_at);
-    const prevDate = prevMsg ? dayjs(prevMsg.created_at) : null;
-
-    if (!prevDate || !msgDate.isSame(prevDate, "day")) {
-      acc.push({ type: "date", date: msg.created_at });
+  // Edit
+  const saveEdit = async () => {
+    if (!menuMsg || !editText.trim()) return;
+    try {
+      await updateMessage(id as string, menuMsg.id, { content: editText.trim() });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === menuMsg.id ? { ...m, content: editText.trim(), updated_at: new Date().toISOString() } : m))
+      );
+      toastService.success("Изменено");
+    } catch {
+      toastService.error("Ошибка");
     }
+    setEditOpen(false);
+    setMenuMsg(null);
+  };
 
-    acc.push({ type: "message", message: msg });
-    return acc;
-  }, [] as Array<{ type: "date" | "message"; date?: string; message?: Message }>);
+  // Delete
+  const del = async () => {
+    if (!menuMsg) return;
+    try {
+      await deleteMessage(id as string, menuMsg.id);
+      setMessages((prev) => prev.map((m) => (m.id === menuMsg.id ? { ...m, content: "[Удалено]" } : m)));
+      toastService.success("Удалено");
+    } catch {
+      toastService.error("Ошибка");
+    }
+    setMenuAnchor(null);
+    setMenuMsg(null);
+  };
+
+  // Reaction
+  const react = async (emoji: string) => {
+    if (!emojiMsg) return;
+    try {
+      await addReaction(id as string, emojiMsg.id, emoji);
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === emojiMsg.id) {
+            // Handle both array and object formats
+            let reactions: Record<string, string[]> = {};
+            if (Array.isArray(m.reactions)) {
+              m.reactions.forEach((r: any) => {
+                if (!reactions[r.emoji]) reactions[r.emoji] = [];
+                reactions[r.emoji].push(r.user_id);
+              });
+            } else if (m.reactions && typeof m.reactions === "object") {
+              reactions = { ...(m.reactions as Record<string, string[]>) };
+            }
+            // Удаляем старую реакцию этого пользователя
+            Object.keys(reactions).forEach((e) => {
+              if (Array.isArray(reactions[e])) {
+                reactions[e] = reactions[e].filter((uid: string) => uid !== myId);
+                if (reactions[e].length === 0) delete reactions[e];
+              }
+            });
+            // Добавляем новую
+            reactions[emoji] = [...(reactions[emoji] || []), myId!];
+            return { ...m, reactions: reactions as any };
+          }
+          return m;
+        })
+      );
+    } catch {
+      toastService.error("Ошибка");
+    }
+    setEmojiAnchor(null);
+    setEmojiMsg(null);
+  };
+
+  const unreact = async (msg: Message) => {
+    try {
+      await removeReaction(id as string, msg.id);
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === msg.id) {
+            let reactions: Record<string, string[]> = {};
+            if (Array.isArray(m.reactions)) {
+              m.reactions.forEach((r: any) => {
+                if (!reactions[r.emoji]) reactions[r.emoji] = [];
+                reactions[r.emoji].push(r.user_id);
+              });
+            } else if (m.reactions) {
+              reactions = { ...(m.reactions as any) };
+            }
+            Object.keys(reactions).forEach((e) => {
+              if (Array.isArray(reactions[e])) {
+                reactions[e] = reactions[e].filter((uid: string) => uid !== myId);
+                if (reactions[e].length === 0) delete reactions[e];
+              }
+            });
+            return { ...m, reactions: reactions as any };
+          }
+          return m;
+        })
+      );
+    } catch {
+      toastService.error("Ошибка");
+    }
+  };
+
+  // Confirm order (client only)
+  const handleConfirmOrder = async () => {
+    if (!data?.order) return;
+    setConfirming(true);
+    try {
+      await updateOrder(data.order.id, {
+        title: data.order.title,
+        description: data.order.description,
+        status: "completed",
+      });
+      setData((prev) => prev ? { ...prev, order: { ...prev.order!, status: "completed" } } : prev);
+      toastService.success("Заказ подтверждён! Средства переведены исполнителю.");
+      setConfirmOpen(false);
+      setCanLeaveReview(true); // Allow review after completion
+    } catch (error: any) {
+      toastService.error(error.response?.data?.error || "Ошибка подтверждения заказа");
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  // Submit review
+  const handleSubmitReview = async () => {
+    if (!data?.order) return;
+    setSubmittingReview(true);
+    try {
+      await createReview(data.order.id, {
+        rating: reviewRating,
+        comment: reviewComment || undefined,
+      });
+      toastService.success("Отзыв отправлен!");
+      setReviewOpen(false);
+      setCanLeaveReview(false);
+    } catch (error: any) {
+      toastService.error(error.response?.data?.error || "Ошибка отправки отзыва");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  // Open review dialog with check
+  const handleOpenReview = async () => {
+    if (!data?.order) return;
+    try {
+      const check = await canReview(data.order.id);
+      if (check.can_review) {
+        setReviewOpen(true);
+      } else {
+        toastService.info("Вы уже оставили отзыв");
+        setCanLeaveReview(false);
+      }
+    } catch {
+      setReviewOpen(true);
+    }
+  };
+
+  // File upload
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) {
+      toastService.warning("Макс 10МБ");
+      return;
+    }
+    setUploading(true);
+    try {
+      const res = await uploadPhoto(f);
+      setFiles((prev) => [...prev, { id: res.id, name: f.name }]);
+    } catch {
+      toastService.error("Ошибка загрузки");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const isMine = (m: Message): boolean => !!(myId && m.author_id === myId);
+
+  // Group by date
+  const grouped: { date?: string; msg?: Message }[] = [];
+  let lastD = "";
+  messages.forEach((m) => {
+    const d = dayjs(m.created_at).format("YYYY-MM-DD");
+    if (d !== lastD) {
+      grouped.push({ date: m.created_at });
+      lastD = d;
+    }
+    grouped.push({ msg: m });
+  });
 
   if (loading) {
     return (
-      <Box sx={{ height: "100vh", background: "transparent", overflow: "hidden" }}>
-        <Box sx={{ height: "100vh", overflow: "hidden", padding: 0 }}>
-          <Box
-            sx={{
-              height: "100vh",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-            }}
-          >
-            <Card
-              sx={{
-                borderRadius: 2,
-                background: theme.palette.background.paper,
-                p: 5,
-              }}
-            >
-              <CircularProgress size={60} />
-            </Card>
-          </Box>
-        </Box>
+      <Box sx={{ pt: 12, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
       </Box>
     );
   }
 
-  if (!conversation) {
+  if (!data) {
     return (
-      <Box sx={{ height: "100vh", background: "transparent", overflow: "hidden" }}>
-        <Box sx={{ height: "100vh", overflow: "hidden", padding: 0 }}>
-          <Box
-            sx={{
-              height: "100vh",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-            }}
-          >
-            <Card
-              sx={{
-                borderRadius: 2,
-                background: theme.palette.background.paper,
-                p: 5,
-              }}
-            >
-              <Box sx={{ textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary">
-                  Чат не найден
-                </Typography>
-              </Box>
-            </Card>
-          </Box>
-        </Box>
+      <Box sx={{ pt: 12, textAlign: "center" }}>
+        <Typography color="text.secondary">Чат не найден</Typography>
       </Box>
     );
   }
 
-  const otherUser = conversation.other_user;
-  const order = conversation.order;
-  const freelancer = conversation.freelancer;
-  
-  const avatarUrl = otherUser?.photo_url 
-    ? getMediaUrl(otherUser.photo_url) 
-    : null;
+  const other = data.other_user;
+  const order = data.order;
+  const avatar = other?.photo_url ? getMediaUrl(other.photo_url) : null;
 
   return (
-    <Box sx={{ height: "80vh", maxHeight: "80vh", background: "transparent", overflow: "hidden" }}>
-      <Box sx={{ height: "80vh", maxHeight: "80vh", overflow: "hidden", padding: 0 }}>
-        <Grid container spacing={2.5} sx={{ height: "80vh", maxHeight: "80vh", maxWidth: 1400, margin: "0 auto", padding: "8px", overflow: "hidden" }}>
-          {/* Чат */}
-          <Grid size={{ xs: 12, lg: 5, xl: 5 }} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                maxHeight: "100%",
-                overflow: "hidden",
-                borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16,
-                background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-                border: `1px solid ${theme.palette.divider}`,
-                boxShadow: theme.shadows[8],
-                backdropFilter: "blur(10px)",
-              }}
+    <Box sx={{ pt: "70px", height: "calc(100vh - 70px)", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ flex: 1, display: "flex", overflow: "hidden", px: 2, py: 1, gap: 2, maxWidth: 1000, mx: "auto", width: "100%", justifyContent: "center" }}>
+        {/* CHAT */}
+        <Box
+          sx={{
+            flex: 1,
+            maxWidth: 550,
+            maxHeight: "70vh",
+            display: "flex",
+            flexDirection: "column",
+            bgcolor: "var(--bg-elevated)",
+            borderRadius: 3,
+            border: "1px solid var(--border)",
+            overflow: "hidden",
+          }}
+        >
+          {/* Header */}
+          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 2, borderBottom: "1px solid var(--border)" }}>
+            <IconButton size="small" onClick={() => router.push("/messages")}>
+              <ArrowLeft size={20} />
+            </IconButton>
+            <Avatar 
+              src={avatar || undefined} 
+              sx={{ width: 36, height: 36, bgcolor: "var(--primary-10)", cursor: "pointer" }}
+              onClick={() => other?.id && router.push(`/users/${other.id}`)}
             >
-              {/* Заголовок чата */}
-              <Box
-                sx={{
-                  padding: "12px 16px",
-                  borderBottom: `1px solid ${theme.palette.divider}`,
-                  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-                  borderRadius: `${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16}px ${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16}px 0 0`,
-                  position: "relative",
-                  overflow: "hidden",
-                }}
+              {other?.display_name?.[0] || <User size={16} />}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography 
+                sx={{ fontWeight: 600, fontSize: 14, cursor: "pointer", "&:hover": { color: "var(--primary)" } }}
+                onClick={() => other?.id && router.push(`/users/${other.id}`)}
               >
-                {/* Декоративный градиент */}
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: "2px",
-                    background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}40, transparent)`,
-                  }}
-                />
+                {other?.display_name || "Пользователь"}
+              </Typography>
+              {order && (
+                <Typography
+                  sx={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer", "&:hover": { color: "var(--primary)" } }}
+                  onClick={() => router.push(`/orders/${order.id}`)}
+                >
+                  {order.title}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
 
-                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ flexWrap: "nowrap" }}>
-                  <Box sx={{ flexShrink: 0 }}>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <IconButton
-                        onClick={() => router.push("/messages")}
-                        sx={{
-                          width: 36,
-                          height: 36,
-                          transition: "all 0.2s",
-                          "&:hover": {
-                            backgroundColor: theme.palette.action.hover,
-                            color: theme.palette.primary.main,
-                          },
-                        }}
-                      >
-                        <ArrowLeft size={18} />
-                      </IconButton>
-                    </motion.div>
-                  </Box>
-                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Stack direction="row" spacing={1.5} sx={{ width: "100%" }}>
-                      <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                        <Avatar
-                          src={avatarUrl || undefined}
+          {/* Messages */}
+          <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+            {messages.length === 0 ? (
+              <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Typography sx={{ color: "var(--text-muted)" }}>Начните диалог</Typography>
+              </Box>
+            ) : (
+              <Stack spacing={1}>
+                {grouped.map((item, i) => {
+                  if (item.date) {
+                    const d = dayjs(item.date);
+                    const label = d.isSame(dayjs(), "day") ? "Сегодня" : d.isSame(dayjs().subtract(1, "day"), "day") ? "Вчера" : d.format("D MMMM");
+                    return (
+                      <Box key={`d-${i}`} sx={{ textAlign: "center", py: 1 }}>
+                        <Chip label={label} size="small" sx={{ fontSize: 11 }} />
+                      </Box>
+                    );
+                  }
+
+                  const m = item.msg!;
+                  const mine = isMine(m);
+                  const parent = replyTo?.id === m.parent_message_id ? replyTo : messages.find((x) => x.id === m.parent_message_id);
+
+                  return (
+                    <Box key={m.id} sx={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
+                      <Box sx={{ maxWidth: "70%" }}>
+                        {/* Bubble */}
+                        <Box
                           sx={{
-                            width: 44,
-                            height: 44,
-                            bgcolor: `${theme.palette.primary.main}20`,
-                            color: theme.palette.primary.main,
-                            border: `2px solid ${theme.palette.primary.main}30`,
-                            flexShrink: 0,
-                            boxShadow: `0 2px 8px ${theme.palette.primary.main}15`,
+                            p: 1.5,
+                            borderRadius: 2,
+                            bgcolor: mine ? "var(--primary)" : "var(--bg-secondary)",
+                            border: mine ? "none" : "1px solid var(--border)",
+                            position: "relative",
                           }}
                         >
-                          {otherUser?.display_name?.charAt(0).toUpperCase() || <User size={20} />}
-                        </Avatar>
-                      </motion.div>
-                      <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontSize: 16,
-                              lineHeight: 1.3,
-                              fontWeight: 600,
-                              color: theme.palette.text.primary,
-                            }}
-                          >
-                            {otherUser?.display_name || "Пользователь"}
-                          </Typography>
-                          <Tooltip title={isConnected ? "Подключено" : "Переподключение..."}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                              {isConnected ? (
-                                <Wifi size={14} style={{ color: theme.palette.success.main }} />
-                              ) : (
-                                <WifiOff size={14} style={{ color: theme.palette.error.main }} />
-                              )}
-                              <Badge
-                                color={isConnected ? "success" : "error"}
-                                variant="dot"
-                                sx={{ ml: 0 }}
-                              />
+                          {/* Reply preview */}
+                          {parent && (
+                            <Box sx={{ mb: 1, pl: 1, borderLeft: "2px solid", borderColor: mine ? "rgba(255,255,255,0.5)" : "var(--primary)", opacity: 0.8 }}>
+                              <Typography sx={{ fontSize: 11, color: mine ? "rgba(255,255,255,0.8)" : "var(--text-muted)" }}>
+                                {parent.content.slice(0, 40)}...
+                              </Typography>
                             </Box>
-                          </Tooltip>
-                        </Box>
-                        {order && (
-                          <motion.div
-                            whileHover={{ x: 2 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={0.75}
-                              sx={{
-                                flexWrap: "wrap",
-                                cursor: "pointer",
-                                alignItems: "center",
-                              }}
-                              onClick={() => router.push(`/orders/${order.id}`)}
-                            >
-                              <Briefcase
-                                size={12}
-                                style={{
-                                  color: theme.palette.text.secondary,
-                                  flexShrink: 0,
-                                  transition: "color 0.2s",
-                                }}
-                              />
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                noWrap
-                                sx={{
-                                  fontSize: 12,
-                                  transition: "color 0.2s",
-                                  maxWidth: "100%",
-                                  lineHeight: 1.4,
-                                  fontWeight: 500,
-                                  "&:hover": {
-                                    color: theme.palette.primary.main,
-                                  },
-                                }}
-                              >
-                                {order.title}
-                              </Typography>
-                            </Stack>
-                          </motion.div>
-                        )}
-                      </Stack>
-                    </Stack>
-                  </Box>
-                </Stack>
-              </Box>
+                          )}
 
-              {/* Область сообщений */}
-              <Box
-                ref={messagesContainerRef}
-                onScroll={handleScroll}
-                className="chat-messages-container"
-                sx={{
-                  flex: 1,
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  padding: "16px 16px 12px 16px",
-                  scrollBehavior: "smooth",
-                  background: `linear-gradient(180deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
-                  position: "relative",
-                }}
-              >
+                          <Typography sx={{ fontSize: 13, color: mine ? "#fff" : "var(--text)", whiteSpace: "pre-wrap" }}>
+                            {m.content}
+                          </Typography>
 
-                {messages.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                      minHeight: "300px",
-                      flexDirection: "column",
-                      gap: 16,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: "50%",
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main}20, ${theme.palette.primary.main}10)`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border: `2px solid ${theme.palette.primary.main}30`,
-                      }}
-                    >
-                      <User size={36} style={{ color: theme.palette.primary.main, opacity: 0.6 }} />
-                    </Box>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        fontSize: 14,
-                        textAlign: "center",
-                        maxWidth: 280,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      Начните общение с <strong>{otherUser?.display_name || "пользователем"}</strong>
-                    </Typography>
-                  </motion.div>
-                ) : (
-                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 4 }}>
-                    <AnimatePresence>
-                      {groupedMessages.map((item, index) => {
-                        if (item.type === "date") {
-                          return (
-                            <motion.div
-                              key={`date-${item.date}`}
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3 }}
-                              style={{
-                                textAlign: "center",
-                                margin: "24px 0 16px 0",
-                                position: "relative",
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  position: "absolute",
-                                  top: "50%",
-                                  left: 0,
-                                  right: 0,
-                                  height: "1px",
-                                  background: `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`,
-                                }}
-                              />
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  fontSize: 11,
-                                  padding: "6px 14px",
-                                  background: `linear-gradient(135deg, ${theme.palette.background.paper}, ${theme.palette.background.default})`,
-                                  borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16,
-                                  display: "inline-block",
-                                  border: `1px solid ${theme.palette.divider}`,
-                                  fontWeight: 600,
-                                  letterSpacing: 0.5,
-                                  textTransform: "uppercase",
-                                  position: "relative",
-                                  boxShadow: theme.shadows[2],
-                                }}
-                              >
-                                {formatDate(item.date!)}
-                              </Typography>
-                            </motion.div>
-                          );
-                        }
-
-                        const msg = item.message!;
-                        const isMine = isMyMessage(msg);
-                        const prevMsg = index > 0 && groupedMessages[index - 1]?.type === "message" 
-                          ? groupedMessages[index - 1].message 
-                          : null;
-                        const nextMsg = index < groupedMessages.length - 1 && groupedMessages[index + 1]?.type === "message"
-                          ? groupedMessages[index + 1].message
-                          : null;
-                        const showAvatar = !isMine && (!prevMsg || prevMsg.author_id !== msg.author_id || 
-                          dayjs(msg.created_at).diff(dayjs(prevMsg.created_at), "minute") > 5);
-                        const isLastInGroup = !nextMsg || nextMsg.author_id !== msg.author_id ||
-                          dayjs(nextMsg.created_at).diff(dayjs(msg.created_at), "minute") > 5;
-
-                        return (
-                          <motion.div
-                            key={msg.id}
-                            initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                            style={{
-                              display: "flex",
-                              justifyContent: isMine ? "flex-end" : "flex-start",
-                              width: "100%",
-                              marginBottom: isLastInGroup ? "12px" : "4px",
-                            }}
-                          >
-                            <div
-                              style={{ 
-                                display: "flex",
-                                flexDirection: isMine ? "row-reverse" : "row",
-                                gap: 10,
-                                maxWidth: "75%",
-                                minWidth: "100px",
-                                alignItems: "flex-end",
-                              }}
-                            >
-                              {showAvatar && !isMine && (
-                                <motion.div
-                                  whileHover={{ scale: 1.05 }}
-                                  transition={{ duration: 0.2 }}
-                                >
-                                  <Avatar
-                                    src={avatarUrl || undefined}
-                                    sx={{
-                                      width: 32,
-                                      height: 32,
-                                      bgcolor: `${theme.palette.primary.main}20`,
-                                      color: theme.palette.primary.main,
-                                      flexShrink: 0,
-                                      border: `2px solid ${theme.palette.primary.main}30`,
-                                      boxShadow: `0 2px 6px ${theme.palette.primary.main}15`,
-                                    }}
-                                  >
-                                    {otherUser?.display_name?.charAt(0).toUpperCase() || <User size={14} />}
-                                  </Avatar>
-                                </motion.div>
-                              )}
-                              {!showAvatar && !isMine && <div style={{ width: 32 }} />}
-                              <motion.div
-                                whileHover={{ scale: 1.01 }}
-                                transition={{ duration: 0.2 }}
-                                style={{
-                                  maxWidth: "100%",
-                                  position: "relative",
-                                }}
-                              >
-                                <Box
-                                  sx={{
-                                    borderRadius: isMine
-                                      ? "18px 18px 6px 18px"
-                                      : "18px 18px 18px 6px",
-                                    background: isMine
-                                      ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`
-                                      : `linear-gradient(135deg, ${theme.palette.background.paper}, ${theme.palette.background.default})`,
-                                    border: isMine
-                                      ? "none"
-                                      : `1px solid ${theme.palette.divider}`,
-                                    padding: "12px 16px",
-                                    boxShadow: isMine
-                                      ? `0 4px 12px ${theme.palette.primary.main}30, 0 2px 4px ${theme.palette.primary.main}15`
-                                      : theme.shadows[2],
-                                    transition: "all 0.2s",
-                                    position: "relative",
-                                    backdropFilter: "blur(10px)",
-                                    "&:hover": {
-                                      boxShadow: isMine
-                                        ? `0 6px 16px ${theme.palette.primary.main}40, 0 3px 6px ${theme.palette.primary.main}20`
-                                        : theme.shadows[4],
-                                      transform: "translateY(-1px)",
-                                    },
+                          {/* Attachments */}
+                          {m.attachments?.map((a) => {
+                            const url = getMediaUrl(a.media.file_path);
+                            const isImage = a.media.file_type?.startsWith("image/") || 
+                              /\.(jpg|jpeg|png|gif|webp)$/i.test(a.media.file_path);
+                            
+                            return isImage ? (
+                              <Box key={a.id} sx={{ mt: 1 }}>
+                                <img
+                                  src={url || ""}
+                                  alt="attachment"
+                                  style={{
+                                    maxWidth: "100%",
+                                    maxHeight: 200,
+                                    borderRadius: 8,
+                                    cursor: "pointer",
                                   }}
-                                >
-                                  <div style={{ width: "100%" }}>
-                                    <Typography
-                                      sx={{
-                                        fontSize: 14,
-                                        lineHeight: 1.6,
-                                        color: isMine ? "#ffffff" : theme.palette.text.primary,
-                                        whiteSpace: "pre-wrap",
-                                        wordBreak: "break-word",
-                                        display: "block",
-                                        fontWeight: 400,
-                                        letterSpacing: "0.01em",
-                                      }}
-                                    >
-                                      {msg.content}
-                                    </Typography>
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: isMine ? "flex-end" : "flex-start",
-                                        gap: 6,
-                                        marginTop: 6,
-                                      }}
-                                    >
-                                      <Typography
-                                        sx={{
-                                          fontSize: 10,
-                                          color: isMine ? "rgba(255,255,255,0.7)" : theme.palette.text.secondary,
-                                          lineHeight: 1,
-                                          fontWeight: 500,
-                                          letterSpacing: "0.02em",
-                                        }}
-                                      >
-                                        {formatTime(msg.created_at)}
-                                      </Typography>
-                                      {isMine && (
-                                        <CheckCheck 
-                                          size={11} 
-                                          style={{ 
-                                            color: "rgba(255,255,255,0.7)",
-                                            flexShrink: 0,
-                                          }} 
-                                        />
-                                      )}
-                                    </div>
-                                  </div>
-                                </Box>
-                              </motion.div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                    <div ref={messagesEndRef} style={{ height: 4 }} />
-                  </div>
-                )}
-                
-                {/* Кнопка прокрутки вниз */}
-                {!isAtBottom && messages.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                    style={{
-                      position: "sticky",
-                      bottom: 20,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      zIndex: 10,
-                      display: "flex",
-                      justifyContent: "center",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<ChevronDown size={16} />}
-                        onClick={() => {
-                          scrollToBottom();
-                          setIsAtBottom(true);
-                        }}
-                        sx={{
-                          pointerEvents: "auto",
-                          boxShadow: `0 4px 12px ${theme.palette.primary.main}40, 0 2px 4px ${theme.palette.primary.main}20`,
-                          width: 40,
-                          height: 40,
-                          minWidth: 40,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 0,
-                        }}
-                      />
-                    </motion.div>
-                  </motion.div>
-                )}
-              </Box>
+                                  onClick={() => setViewerImage(url)}
+                                />
+                              </Box>
+                            ) : (
+                              <a
+                                key={a.id}
+                                href={url || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ display: "block", marginTop: 8, color: mine ? "#fff" : "var(--primary)", fontSize: 12 }}
+                              >
+                                📎 {a.media.file_path.split("/").pop()}
+                              </a>
+                            );
+                          })}
 
-              {/* Область ввода */}
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderTop: `1px solid ${theme.palette.divider}`,
-                  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-                  borderRadius: `0 0 ${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 3 : 24}px ${typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 3 : 24}px`,
-                  position: "relative",
+                          {/* Time + menu */}
+                          <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center" sx={{ mt: 0.5 }}>
+                            <Typography sx={{ fontSize: 10, color: mine ? "rgba(255,255,255,0.7)" : "var(--text-muted)" }}>
+                              {dayjs(m.created_at).format("HH:mm")}
+                              {m.updated_at && " (изм.)"}
+                            </Typography>
+                            {mine && <CheckCheck size={12} style={{ color: "rgba(255,255,255,0.7)" }} />}
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                setMenuAnchor(e.currentTarget);
+                                setMenuMsg(m);
+                              }}
+                              sx={{ ml: 0.5, p: 0.25 }}
+                            >
+                              <MoreVertical size={14} style={{ color: mine ? "rgba(255,255,255,0.7)" : "var(--text-muted)" }} />
+                            </IconButton>
+                          </Stack>
+                        </Box>
+
+                        {/* Reactions */}
+                        {m.reactions && (Array.isArray(m.reactions) ? m.reactions.length > 0 : Object.keys(m.reactions).length > 0) && (
+                          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
+                            {(() => {
+                              // Convert to object format
+                              let reactionsObj: Record<string, string[]> = {};
+                              if (Array.isArray(m.reactions)) {
+                                m.reactions.forEach((r: any) => {
+                                  if (!reactionsObj[r.emoji]) reactionsObj[r.emoji] = [];
+                                  reactionsObj[r.emoji].push(r.user_id);
+                                });
+                              } else {
+                                reactionsObj = m.reactions as any;
+                              }
+                              return Object.entries(reactionsObj).map(([emoji, userIds]) => {
+                                const ids = Array.isArray(userIds) ? userIds : [];
+                                const count = ids.length;
+                                if (count === 0) return null;
+                                const myR = ids.includes(myId!);
+                                return (
+                                  <Chip
+                                    key={emoji}
+                                    label={`${emoji} ${count}`}
+                                    size="small"
+                                    onClick={() => (myR ? unreact(m) : null)}
+                                    sx={{
+                                      fontSize: 11,
+                                      height: 22,
+                                    cursor: "pointer",
+                                    bgcolor: myR ? "var(--primary-10)" : "var(--bg-secondary)",
+                                    border: myR ? "1px solid var(--primary)" : "1px solid var(--border)",
+                                  }}
+                                />
+                              );
+                            });
+                            })()}
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                setEmojiAnchor(e.currentTarget);
+                                setEmojiMsg(m);
+                              }}
+                              sx={{ p: 0.25 }}
+                            >
+                              <Smile size={14} />
+                            </IconButton>
+                          </Stack>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+                <div ref={bottomRef} />
+              </Stack>
+            )}
+          </Box>
+
+          {/* Mobile action blocks */}
+          {order && (
+            <Box sx={{ display: { xs: "block", lg: "none" }, px: 2, pt: 1 }}>
+              {/* Confirm order for client */}
+              {isClient && isInProgress && (
+                <Box sx={{ p: 1.5, mb: 1, bgcolor: "var(--primary-10)", borderRadius: 2, border: "1px solid var(--primary)" }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 600 }}>Подтвердить заказ</Typography>
+                      <Typography sx={{ fontSize: 10, color: "var(--text-muted)" }}>
+                        Средства будут переведены исполнителю
+                      </Typography>
+                    </Box>
+                    <Button size="small" variant="contained" onClick={() => setConfirmOpen(true)}>
+                      Подтвердить
+                    </Button>
+                  </Stack>
+                </Box>
+              )}
+              {/* Review block */}
+              {isCompleted && (isClient || isFreelancer) && canLeaveReview && (
+                <Box sx={{ p: 1.5, mb: 1, bgcolor: "var(--success-10)", borderRadius: 2, border: "1px solid var(--success)" }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Star size={18} style={{ color: "var(--warning)" }} />
+                    <Typography sx={{ flex: 1, fontSize: 12, fontWeight: 600 }}>
+                      Оставьте отзыв о {isClient ? "исполнителе" : "заказчике"}
+                    </Typography>
+                    <Button size="small" variant="contained" onClick={handleOpenReview}>
+                      Отзыв
+                    </Button>
+                  </Stack>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* Input */}
+          <Box sx={{ p: 2, borderTop: "1px solid var(--border)" }}>
+            {replyTo && (
+              <Stack direction="row" alignItems="center" sx={{ mb: 1, p: 1, bgcolor: "var(--bg-secondary)", borderRadius: 1 }}>
+                <Reply size={14} style={{ marginRight: 8 }} />
+                <Typography sx={{ flex: 1, fontSize: 12, color: "var(--text-muted)" }}>{replyTo.content.slice(0, 50)}...</Typography>
+                <IconButton size="small" onClick={() => setReplyTo(null)}>
+                  <X size={14} />
+                </IconButton>
+              </Stack>
+            )}
+
+            {files.length > 0 && (
+              <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                {files.map((f) => (
+                  <Chip
+                    key={f.id}
+                    label={f.name}
+                    size="small"
+                    onDelete={() => setFiles((prev) => prev.filter((x) => x.id !== f.id))}
+                  />
+                ))}
+              </Stack>
+            )}
+
+            <Stack direction="row" spacing={1} alignItems="flex-end">
+              <input ref={fileInputRef} type="file" hidden onChange={handleFile} />
+              <IconButton onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                {uploading ? <CircularProgress size={20} /> : <Paperclip size={20} />}
+              </IconButton>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Сообщение..."
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
+                multiline
+                maxRows={4}
+              />
+              <IconButton
+                onClick={send}
+                disabled={(!text.trim() && files.length === 0) || sending}
+                sx={{
+                  bgcolor: text.trim() || files.length > 0 ? "var(--primary)" : undefined,
+                  color: text.trim() || files.length > 0 ? "#fff" : undefined,
                 }}
               >
-                {!isConnected && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      marginBottom: 8,
-                      padding: "8px 12px",
-                      background: `${theme.palette.warning.main}15`,
-                      border: `1px solid ${theme.palette.warning.main}30`,
-                      borderRadius: theme.shape.borderRadius,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <WifiOff size={14} style={{ color: theme.palette.warning.main }} />
-                    <Typography sx={{ fontSize: 11, color: theme.palette.warning.main }}>
-                      Ожидание подключения...
-                    </Typography>
-                  </motion.div>
-                )}
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-                  <div style={{ flex: 1, position: "relative" }}>
-                    <TextField
-                      placeholder="Напишите сообщение..."
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend();
-                        }
-                      }}
-                      disabled={sending || !isConnected}
-                      multiline
-                      minRows={1}
-                      maxRows={4}
-                      sx={{
-                        borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 1.5 : 12,
-                        fontSize: 14,
-                        lineHeight: 1.5,
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 1.5 : 12,
-                          backgroundColor: theme.palette.background.default,
-                          transition: "all 0.2s",
-                          '& fieldset': {
-                            borderColor: theme.palette.divider,
-                          },
-                          '&:hover fieldset': {
-                            borderColor: theme.palette.divider,
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: theme.palette.primary.main,
-                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}20`,
-                          },
-                        },
-                        '& .MuiInputBase-input': {
-                          padding: "12px 16px",
-                          fontSize: 14,
-                          lineHeight: 1.5,
-                          resize: "none",
-                        },
-                      }}
-                    />
-                  </div>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
+                {sending ? <CircularProgress size={20} color="inherit" /> : <Send size={20} />}
+              </IconButton>
+            </Stack>
+          </Box>
+        </Box>
+
+        {/* ORDER INFO */}
+        <Box
+          sx={{
+            width: 320,
+            flexShrink: 0,
+            maxHeight: "70vh",
+            display: { xs: "none", lg: "flex" },
+            flexDirection: "column",
+            bgcolor: "var(--bg-elevated)",
+            borderRadius: 3,
+            border: "1px solid var(--border)",
+            overflow: "auto",
+          }}
+        >
+          {order ? (
+            <Box sx={{ p: 2 }}>
+              <Stack spacing={2}>
+                <Box>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <Briefcase size={16} style={{ color: "var(--primary)" }} />
+                    <Typography sx={{ fontWeight: 600, fontSize: 14 }}>О заказе</Typography>
+                  </Stack>
+                  <Typography sx={{ fontWeight: 600, fontSize: 15, mb: 1 }}>{order.title}</Typography>
+                  <Chip
+                    label={order.status === "in_progress" ? "В работе" : order.status === "completed" ? "Завершён" : order.status}
+                    size="small"
+                    color={order.status === "completed" ? "success" : order.status === "in_progress" ? "info" : "default"}
+                  />
+                </Box>
+
+                {/* Confirm order button for client */}
+                {isClient && isInProgress && (
+                  <Box sx={{ p: 1.5, bgcolor: "var(--primary-10)", borderRadius: 2, border: "1px solid var(--primary)" }}>
                     <Button
                       variant="contained"
-                      startIcon={sending ? <CircularProgress size={16} color="inherit" /> : <Send size={16} />}
-                      disabled={!messageText.trim() || sending || !isConnected}
-                      onClick={() => handleSend()}
-                      sx={{
-                        height: 44,
-                        width: 44,
-                        minWidth: 44,
-                        padding: 0,
-                        borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 1.5 : 12,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        boxShadow: messageText.trim() && !sending && isConnected 
-                          ? `0 4px 12px ${theme.palette.primary.main}40, 0 2px 4px ${theme.palette.primary.main}20`
-                          : undefined,
-                        fontSize: 14,
-                        fontWeight: 600,
+                      fullWidth
+                      startIcon={<CheckCircle size={18} />}
+                      onClick={() => setConfirmOpen(true)}
+                      sx={{ mb: 1, fontWeight: 600 }}
+                    >
+                      Подтвердить заказ
+                    </Button>
+                    <Stack direction="row" spacing={0.5} alignItems="flex-start">
+                      <AlertTriangle size={14} style={{ color: "var(--warning)", marginTop: 2, flexShrink: 0 }} />
+                      <Typography sx={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                        Зарезервированная сумма будет переведена исполнителю
+                      </Typography>
+                    </Stack>
+                  </Box>
+                )}
+
+                {/* Review block */}
+                {isCompleted && (isClient || isFreelancer) && canLeaveReview && (
+                  <Box sx={{ p: 1.5, bgcolor: "var(--success-10)", borderRadius: 2, border: "1px solid var(--success)" }}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                      <Star size={18} style={{ color: "var(--warning)" }} />
+                      <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Оставьте отзыв</Typography>
+                    </Stack>
+                    <Typography sx={{ fontSize: 11, color: "var(--text-muted)", mb: 1.5 }}>
+                      Поделитесь впечатлениями о работе с {isClient ? "исполнителем" : "заказчиком"}
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      size="small"
+                      startIcon={<Star size={16} />}
+                      onClick={handleOpenReview}
+                      sx={{ fontWeight: 600 }}
+                    >
+                      Написать отзыв
+                    </Button>
+                  </Box>
+                )}
+
+                {order.description && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "var(--text-muted)", mb: 0.5 }}>Описание</Typography>
+                    <Typography 
+                      sx={{ 
+                        fontSize: 13,
+                        ...(!showFullDesc && {
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        })
                       }}
-                    />
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-          </Grid>
-          
-          {/* Сайдбар с информацией о заказе */}
-          <Grid size={{ xs: 12, lg: 7, xl: 7 }} sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%" }}>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              style={{ height: "100%", maxHeight: "100%", overflow: "hidden" }}
-            >
-              <OrderInfoSidebar 
-                order={conversation.order} 
-                conversation={conversation.conversation}
-                currentUserId={currentUserId}
-                onOrderUpdate={loadMessages}
-              />
-            </motion.div>
-          </Grid>
-        </Grid>
+                    >
+                      {order.description}
+                    </Typography>
+                    {order.description.length > 80 && (
+                      <Button 
+                        size="small" 
+                        onClick={() => setShowFullDesc(!showFullDesc)}
+                        sx={{ mt: 0.5, p: 0, minWidth: 0, fontSize: 12 }}
+                      >
+                        {showFullDesc ? "Скрыть" : "Показать всё"}
+                      </Button>
+                    )}
+                  </Box>
+                )}
+
+                {(order.budget_min || order.budget_max) && (
+                  <Box sx={{ p: 1.5, bgcolor: "var(--bg-secondary)", borderRadius: 2 }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <DollarSign size={18} style={{ color: "var(--success)" }} />
+                      <Box>
+                        <Typography sx={{ fontSize: 11, color: "var(--text-muted)" }}>Бюджет</Typography>
+                        <Typography sx={{ fontSize: 15, fontWeight: 600, color: "var(--success)" }}>
+                          {order.budget_min?.toLocaleString()} - {order.budget_max?.toLocaleString()} ₽
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                )}
+
+                {order.deadline_at && (
+                  <Box sx={{ p: 1.5, bgcolor: "var(--bg-secondary)", borderRadius: 2 }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Calendar size={18} style={{ color: "var(--primary)" }} />
+                      <Box>
+                        <Typography sx={{ fontSize: 11, color: "var(--text-muted)" }}>Дедлайн</Typography>
+                        <Typography sx={{ fontSize: 14, fontWeight: 500 }}>{dayjs(order.deadline_at).format("D MMMM YYYY")}</Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                )}
+
+                {order.accepted_proposal?.proposed_amount && (
+                  <Box sx={{ p: 1.5, bgcolor: "var(--primary-10)", borderRadius: 2, border: "1px solid var(--primary)" }}>
+                    <Typography sx={{ fontSize: 11, color: "var(--text-muted)", mb: 0.5 }}>Согласованная сумма</Typography>
+                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: "var(--primary)" }}>
+                      {order.accepted_proposal.proposed_amount.toLocaleString()} ₽
+                    </Typography>
+                  </Box>
+                )}
+
+                {order.requirements && order.requirements.length > 0 && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "var(--text-muted)", mb: 1 }}>Требования</Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.5}>
+                      {order.requirements.map((r) => (
+                        <Chip key={r.id} label={`${r.skill} (${r.level})`} size="small" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+
+                {order.attachments && order.attachments.length > 0 && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "var(--text-muted)", mb: 1 }}>Файлы</Typography>
+                    <Stack spacing={0.5}>
+                      {order.attachments.map((a) => (
+                        <a
+                          key={a.id}
+                          href={a.media ? getMediaUrl(a.media.file_path) || "#" : "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: 8,
+                            background: "var(--bg-secondary)",
+                            borderRadius: 4,
+                            fontSize: 12,
+                            color: "var(--text)",
+                            textDecoration: "none",
+                          }}
+                        >
+                          📎 {a.media?.file_path.split("/").pop() || "Файл"}
+                        </a>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+
+                <Button
+                  variant="outlined"
+                  startIcon={<ExternalLink size={16} />}
+                  onClick={() => router.push(`/orders/${order.id}`)}
+                  fullWidth
+                >
+                  Открыть заказ
+                </Button>
+              </Stack>
+            </Box>
+          ) : (
+            <Box sx={{ p: 3, textAlign: "center" }}>
+              <Typography sx={{ color: "var(--text-muted)" }}>Нет информации о заказе</Typography>
+            </Box>
+          )}
+        </Box>
       </Box>
+
+      {/* Message menu */}
+      <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
+        <MenuItem
+          onClick={() => {
+            setReplyTo(menuMsg);
+            setMenuAnchor(null);
+          }}
+        >
+          <Reply size={16} style={{ marginRight: 8 }} /> Ответить
+        </MenuItem>
+        <MenuItem
+          onClick={(e) => {
+            setEmojiAnchor(e.currentTarget);
+            setEmojiMsg(menuMsg);
+            setMenuAnchor(null);
+          }}
+        >
+          <Smile size={16} style={{ marginRight: 8 }} /> Реакция
+        </MenuItem>
+        {menuMsg && isMine(menuMsg) && (
+          <>
+            <MenuItem
+              onClick={() => {
+                setEditText(menuMsg?.content || "");
+                setEditOpen(true);
+                setMenuAnchor(null);
+              }}
+            >
+              <Edit size={16} style={{ marginRight: 8 }} /> Редактировать
+            </MenuItem>
+            <MenuItem onClick={del} sx={{ color: "error.main" }}>
+              <Trash2 size={16} style={{ marginRight: 8 }} /> Удалить
+            </MenuItem>
+          </>
+        )}
+      </Menu>
+
+      {/* Emoji picker */}
+      <Popover anchorEl={emojiAnchor} open={!!emojiAnchor} onClose={() => setEmojiAnchor(null)}>
+        <Stack direction="row" spacing={0.5} sx={{ p: 1 }}>
+          {EMOJIS.map((e) => (
+            <IconButton key={e} onClick={() => react(e)} sx={{ fontSize: 20 }}>
+              {e}
+            </IconButton>
+          ))}
+        </Stack>
+      </Popover>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Редактировать</DialogTitle>
+        <DialogContent>
+          <TextField fullWidth multiline rows={3} value={editText} onChange={(e) => setEditText(e.target.value)} sx={{ mt: 1 }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditOpen(false)}>Отмена</Button>
+          <Button variant="contained" onClick={saveEdit}>
+            Сохранить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm order dialog */}
+      <Dialog open={confirmOpen} onClose={() => !confirming && setConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Подтвердить выполнение заказа?</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 500 }}>
+              Внимание! После подтверждения зарезервированная сумма будет переведена исполнителю.
+            </Typography>
+          </Alert>
+          <DialogContentText>
+            Убедитесь, что работа выполнена в полном объёме и соответствует вашим требованиям. Это действие нельзя отменить.
+          </DialogContentText>
+          {order?.accepted_proposal?.proposed_amount && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: "var(--bg-secondary)", borderRadius: 2 }}>
+              <Typography sx={{ fontSize: 12, color: "var(--text-muted)" }}>Сумма к переводу:</Typography>
+              <Typography sx={{ fontSize: 18, fontWeight: 700, color: "var(--success)" }}>
+                {order.accepted_proposal.proposed_amount.toLocaleString()} ₽
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)} disabled={confirming}>
+            Отмена
+          </Button>
+          <Button variant="contained" color="success" onClick={handleConfirmOrder} disabled={confirming}>
+            {confirming ? <CircularProgress size={20} color="inherit" /> : "Подтвердить"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Review dialog */}
+      <Dialog open={reviewOpen} onClose={() => !submittingReview && setReviewOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Оставить отзыв</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: 13, color: "var(--text-muted)", mb: 2 }}>
+            Оцените работу с {isClient ? "исполнителем" : "заказчиком"}
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <IconButton
+                key={star}
+                onClick={() => setReviewRating(star)}
+                sx={{ p: 0.5 }}
+              >
+                <Star
+                  size={32}
+                  fill={star <= reviewRating ? "var(--warning)" : "none"}
+                  color={star <= reviewRating ? "var(--warning)" : "var(--text-muted)"}
+                />
+              </IconButton>
+            ))}
+          </Box>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            placeholder="Комментарий (необязательно)"
+            value={reviewComment}
+            onChange={(e) => setReviewComment(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReviewOpen(false)} disabled={submittingReview}>
+            Отмена
+          </Button>
+          <Button variant="contained" onClick={handleSubmitReview} disabled={submittingReview}>
+            {submittingReview ? <CircularProgress size={20} color="inherit" /> : "Отправить"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Image viewer */}
+      {viewerImage && (
+        <Dialog 
+          open={true} 
+          onClose={() => setViewerImage(null)} 
+          maxWidth={false}
+          PaperProps={{
+            sx: { bgcolor: "transparent", boxShadow: "none", m: 1 }
+          }}
+        >
+          <Box sx={{ position: "relative" }}>
+            <IconButton
+              onClick={() => setViewerImage(null)}
+              sx={{ 
+                position: "absolute", 
+                top: 8, 
+                right: 8, 
+                bgcolor: "rgba(0,0,0,0.5)",
+                color: "#fff",
+                "&:hover": { bgcolor: "rgba(0,0,0,0.7)" }
+              }}
+            >
+              <X size={20} />
+            </IconButton>
+            <img
+              src={viewerImage}
+              alt="preview"
+              style={{
+                maxWidth: "90vw",
+                maxHeight: "90vh",
+                objectFit: "contain",
+                borderRadius: 8,
+              }}
+            />
+          </Box>
+        </Dialog>
+      )}
     </Box>
   );
 }

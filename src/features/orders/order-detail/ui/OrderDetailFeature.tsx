@@ -47,7 +47,7 @@ export function OrderDetailFeature({ orderId }: OrderDetailFeatureProps) {
 
   if (loading) {
     return (
-      <Box sx={{ minHeight: "100vh", py: 4 }}>
+      <Box sx={{ py: 4 }}>
         <Card sx={{ p: 3 }}>
           <Skeleton variant="text" width="60%" height={40} />
           <Skeleton variant="text" width="40%" sx={{ mt: 2 }} />
@@ -62,7 +62,7 @@ export function OrderDetailFeature({ orderId }: OrderDetailFeatureProps) {
 
   if (!order) {
     return (
-      <Box sx={{ minHeight: "100vh", py: 4 }}>
+      <Box sx={{ py: 4 }}>
         <Card sx={{ p: 6, textAlign: "center" }}>
           <Typography variant="h6" color="text.secondary">
             Заказ не найден

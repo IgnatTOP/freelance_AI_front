@@ -43,9 +43,9 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       case "warning":
         return <AlertTriangle className={`${iconClass} text-yellow-500`} />;
       case "info":
-        return <Info className={`${iconClass} text-blue-500`} />;
+        return <Info className={`${iconClass} text-teal-500`} />;
       case "loading":
-        return <Loader2 className={`${iconClass} text-blue-500 animate-spin`} />;
+        return <Loader2 className={`${iconClass} text-teal-500 animate-spin`} />;
       default:
         return null;
     }
@@ -60,9 +60,9 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       case "warning":
         return "bg-yellow-500/10 border-yellow-500/20";
       case "info":
-        return "bg-blue-500/10 border-blue-500/20";
+        return "bg-teal-500/10 border-teal-500/20";
       case "loading":
-        return "bg-blue-500/10 border-blue-500/20";
+        return "bg-teal-500/10 border-teal-500/20";
       default:
         return "bg-gray-500/10 border-gray-500/20";
     }

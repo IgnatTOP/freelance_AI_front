@@ -1,221 +1,133 @@
 "use client";
 
-import { Card, CardContent, Chip, Box, Typography, LinearProgress, Stack } from "@mui/material";
-import { Calendar, DollarSign, Clock, Code, MessageSquare, User, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
-import { useTheme } from "@mui/material/styles";
-import type { Order } from "@/src/entities/order/model/types";
+import Link from "next/link";
+import { Typography, Stack, Box, Chip } from "@mui/material";
+import { Clock, Wallet, Users, Sparkles, Calendar } from "lucide-react";
+import { StyledCard, StatusChip, MetaItem } from "@/src/shared/ui";
 import { formatPriceRange } from "@/src/shared/lib/utils";
-import { getOrderStatusColor, getOrderStatusLabel } from "@/src/shared/lib/order-utils";
-import { authService } from "@/src/shared/lib/auth/auth.service";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import "dayjs/locale/ru";
-
-dayjs.extend(relativeTime);
-dayjs.locale("ru");
+import { formatTimeAgo } from "@/src/shared/lib/utils/date-utils";
+import type { Order } from "@/src/entities/order/model/types";
 
 interface OrderCardProps {
   order: Order;
-  matchScore?: number;
-  matchExplanation?: string;
+  userRole?: "client" | "freelancer" | null;
+  aiScore?: number;
+  aiReason?: string;
+  showStatus?: boolean;
 }
 
-const statusColorMap: Record<string, string> = {
-  open: 'info',
-  in_progress: 'warning',
-  completed: 'success',
-  cancelled: 'error',
-  pending: 'default',
-};
-
-export function OrderCard({ order, matchScore, matchExplanation }: OrderCardProps) {
-  const theme = useTheme();
-  const currentUser = authService.getCurrentUser();
-  const isMyOrder = currentUser && String(order.client_id) === String(currentUser.id);
-
-  const handleCardClick = () => {
-    window.location.href = `/orders/${order.id}`;
-  };
+export function OrderCard({ order, userRole, aiScore, aiReason, showStatus = false }: OrderCardProps) {
+  const hasAI = aiScore !== undefined && aiScore > 0;
+  const matchPercent = hasAI ? Math.min(Math.round((aiScore / 10) * 100), 100) : 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card
-        onClick={handleCardClick}
+    <Link href={`/orders/${order.id}`} style={{ textDecoration: "none" }}>
+      <StyledCard
+        interactive
         sx={{
-          borderRadius: 2,
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          "&:hover": {
-            boxShadow: 4,
-            transform: 'translateY(-2px)',
-          },
+          height: "100%",
+          borderColor: hasAI ? "var(--primary-20)" : undefined,
+          bgcolor: hasAI ? "var(--primary-5)" : undefined,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
-          <Stack spacing={2}>
-            {/* Header: Title + Status */}
-            <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
-              <Box flex={1} minWidth={0}>
-                {isMyOrder && (
-                  <Chip
-                    icon={<User size={12} />}
-                    label="Мой заказ"
-                    size="small"
-                    color="info"
-                    sx={{ mb: 0.5, height: 20, fontSize: '0.6875rem' }}
-                  />
-                )}
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    transition: "color 0.2s",
-                    "&:hover": {
-                      color: theme.palette.primary.main,
-                    }
-                  }}
-                >
-                  {order.title}
-                </Typography>
-
-                {/* Match Score */}
-                {matchScore !== undefined && matchScore >= 0 && (
-                  <Stack spacing={0.5} mt={1}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Sparkles size={14} color={theme.palette.primary.main} />
-                      <Typography variant="caption" color="primary" fontWeight={600}>
-                        Совместимость: {Math.round(matchScore * 10)}%
-                      </Typography>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.round(matchScore * 10)}
-                        sx={{
-                          flex: 1,
-                          maxWidth: 120,
-                          height: 4,
-                          borderRadius: 2,
-                          backgroundColor: theme.palette.action.hover,
-                        }}
-                      />
-                    </Box>
-                    {matchExplanation && (
-                      <Typography variant="caption" color="text.secondary" fontStyle="italic">
-                        {matchExplanation}
-                      </Typography>
-                    )}
-                  </Stack>
-                )}
-              </Box>
-
-              <Chip
-                label={getOrderStatusLabel(order.status)}
-                size="small"
-                color={statusColorMap[order.status] as any || 'default'}
-                sx={{ flexShrink: 0 }}
-              />
-            </Box>
-
-            {/* Description */}
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {order.description}
-            </Typography>
-
-            {/* Meta Info */}
-            <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
-              {order.budget_min && (
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <DollarSign size={15} color={theme.palette.success.main} />
-                  <Typography variant="caption" fontWeight={500}>
-                    {formatPriceRange(order.budget_min, order.budget_max)}
-                  </Typography>
-                </Box>
-              )}
-
-              {order.deadline_at && (
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <Calendar size={15} color={theme.palette.warning.main} />
-                  <Typography variant="caption" color="text.secondary">
-                    {dayjs(order.deadline_at).format("DD MMM YYYY")}
-                  </Typography>
-                </Box>
-              )}
-
-              <Box display="flex" alignItems="center" gap={0.5}>
-                <Clock size={15} color={theme.palette.text.disabled} />
-                <Typography variant="caption" color="text.secondary">
-                  {dayjs(order.created_at).fromNow()}
-                </Typography>
-              </Box>
-
-              {order.proposals_count !== undefined && order.proposals_count > 0 && (
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <MessageSquare size={15} color={theme.palette.info.main} />
-                  <Typography variant="caption" color="text.secondary">
-                    {order.proposals_count}{" "}
-                    {order.proposals_count === 1
-                      ? "отклик"
-                      : order.proposals_count < 5
-                      ? "отклика"
-                      : "откликов"}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-
-            {/* Skills */}
-            {order.requirements && order.requirements.length > 0 && (
-              <Box
-                display="flex"
-                flexWrap="wrap"
-                gap={1}
-                pt={1}
-                borderTop={1}
-                borderColor="divider"
+        <Stack spacing={2}>
+          {/* Header */}
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={600}
+                sx={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  flex: 1,
+                }}
               >
-                {order.requirements.slice(0, 8).map((req, idx) => (
-                  <Chip
-                    key={idx}
-                    icon={<Code size={11} />}
-                    label={req.skill}
-                    size="small"
-                    variant="outlined"
-                    color="primary"
-                    sx={{ height: 24, fontSize: '0.6875rem' }}
-                  />
-                ))}
-                {order.requirements.length > 8 && (
-                  <Chip
-                    label={`+${order.requirements.length - 8}`}
-                    size="small"
-                    variant="outlined"
-                    sx={{ height: 24, fontSize: '0.6875rem' }}
-                  />
-                )}
+                {order.title}
+              </Typography>
+              {hasAI && (
+                <Chip
+                  size="small"
+                  icon={<Sparkles size={12} />}
+                  label={`${matchPercent}%`}
+                  color="primary"
+                  sx={{ fontWeight: 600, minWidth: 60 }}
+                />
+              )}
+            </Stack>
+            {showStatus && order.status && (
+              <Box sx={{ mt: 1 }}>
+                <StatusChip status={order.status} type="order" />
               </Box>
             )}
+          </Box>
+
+          {/* Description */}
+          <Typography
+            variant="body2"
+            sx={{
+              color: "var(--text-muted)",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              minHeight: 40,
+            }}
+          >
+            {order.ai_summary || order.description || "Без описания"}
+          </Typography>
+
+          {/* AI Reason */}
+          {hasAI && aiReason && (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 1,
+                bgcolor: "var(--primary-10)",
+                border: "1px solid var(--primary-20)",
+              }}
+            >
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <Sparkles size={14} style={{ color: "var(--primary)", marginTop: 2, flexShrink: 0 }} />
+                <Typography variant="caption" sx={{ color: "var(--primary)", lineHeight: 1.4 }}>
+                  {aiReason.length > 100 ? aiReason.slice(0, 100) + "..." : aiReason}
+                </Typography>
+              </Stack>
+            </Box>
+          )}
+
+          {/* Meta */}
+          <Stack direction="row" flexWrap="wrap" gap={2}>
+            <MetaItem icon={Wallet} size="md">{formatPriceRange(order.budget_min, order.budget_max)}</MetaItem>
+            
+            {order.deadline_at && (
+              <MetaItem icon={Calendar} size="md">до {new Date(order.deadline_at).toLocaleDateString("ru-RU")}</MetaItem>
+            )}
+
+            {order.proposals_count !== undefined && order.proposals_count > 0 && (
+              <MetaItem icon={Users} size="md">{order.proposals_count} откликов</MetaItem>
+            )}
           </Stack>
-        </CardContent>
-      </Card>
-    </motion.div>
+
+          {/* Footer */}
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 1, borderTop: "1px solid var(--border)" }}>
+            <MetaItem icon={Clock}>{formatTimeAgo(order.created_at)}</MetaItem>
+            
+            {order.requirements && order.requirements.length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                {order.requirements.slice(0, 2).map((req) => (
+                  <Chip key={req.skill} label={req.skill} size="small" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+                ))}
+                {order.requirements.length > 2 && (
+                  <Chip label={`+${order.requirements.length - 2}`} size="small" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+                )}
+              </Stack>
+            )}
+          </Stack>
+        </Stack>
+      </StyledCard>
+    </Link>
   );
 }

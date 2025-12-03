@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TextField,
   Select,
@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, DollarSign, Tag as TagIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
-import { COMMON_SKILLS } from "@/src/shared/lib/utils";
+import { getSkills } from "@/src/shared/api/catalog";
 
 interface OrderFiltersProps {
   search: string;
@@ -63,6 +63,19 @@ export function OrderFilters({
 }: OrderFiltersProps) {
   const theme = useTheme();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadSkills = async () => {
+      try {
+        const data = await getSkills();
+        setSkillOptions(data.skills?.map(s => s.name) || []);
+      } catch (error) {
+        console.error("Failed to load skills:", error);
+      }
+    };
+    loadSkills();
+  }, []);
 
   const hasActiveFilters =
     search.length > 0 ||
@@ -217,7 +230,8 @@ export function OrderFilters({
               <Autocomplete
                 multiple
                 size="small"
-                options={COMMON_SKILLS}
+                freeSolo
+                options={skillOptions}
                 value={skillsFilter}
                 onChange={(_, newValue) => onSkillsFilterChange?.(newValue)}
                 renderInput={(params) => (

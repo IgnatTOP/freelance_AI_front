@@ -19,30 +19,26 @@ export default function OrderChatPage() {
       return;
     }
 
+    const loadChat = async () => {
+      try {
+        const chatData = await getOrderChat(orderId);
+        router.push(`/messages/${chatData.conversation.id}`);
+      } catch (error: any) {
+        console.error("Error loading chat:", error);
+        const errorMessage = error.response?.data?.error || "Не удалось открыть чат";
+        
+        if (errorMessage.includes("нет принятого исполнителя")) {
+          toastService.warning("Для этого заказа нет принятого исполнителя. Сначала примите предложение.");
+        } else {
+          toastService.error(errorMessage);
+        }
+        
+        router.push(`/orders/${orderId}`);
+      }
+    };
+
     loadChat();
   }, [orderId, router]);
 
-  const loadChat = async () => {
-    try {
-      // Используем новый API для получения чата по заказу
-      const chatData = await getOrderChat(orderId);
-      
-      // Перенаправляем на страницу сообщений
-      router.push(`/messages/${chatData.conversation.id}`);
-    } catch (error: any) {
-      console.error("Error loading chat:", error);
-      const errorMessage = error.response?.data?.error || "Не удалось открыть чат";
-      
-      if (errorMessage.includes("нет принятого исполнителя")) {
-        toastService.warning("Для этого заказа нет принятого исполнителя. Сначала примите предложение.");
-      } else {
-        toastService.error(errorMessage);
-      }
-      
-      router.push(`/orders/${orderId}`);
-    }
-  };
-
   return null;
 }
-

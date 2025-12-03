@@ -7,7 +7,11 @@ export type WebSocketEventType =
   | "proposals.new"
   | "proposals.sent"
   | "proposals.updated"
+  | "proposals.ai_analysis_ready"
   | "chat.message"
+  | "chat.reaction"
+  | "message.reaction.added"
+  | "message.reaction.removed"
   | "profile.updated"
   | "notification";
 

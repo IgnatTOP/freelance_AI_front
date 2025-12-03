@@ -6,13 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { DesktopDock, AuthButtons, MobileAuthButtons, MobileMenu, DockLogo } from "@/src/shared/ui";
 import { useMobileMenu, useAuth } from "@/src/shared/lib/hooks";
 import { createAnchorClickHandler } from "@/src/shared/lib/utils/navigation";
-import {
-  Home,
-  Sparkles,
-  Wallet,
-  BookOpen,
-  Users,
-} from "lucide-react";
+import { Home, Sparkles, Wallet, BookOpen, Users } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Главная", icon: Home },
@@ -29,39 +23,25 @@ export function DockHeader() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch by only showing auth-dependent content after mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
-  // Show loading state during SSR and initial hydration
   const showAuthContent = mounted && !authLoading;
 
-  // Handle anchor clicks for navigation links
   const handleNavClick = (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const handler = createAnchorClickHandler(href, pathname, router, "/");
-    handler(e);
+    createAnchorClickHandler(href, pathname, router, "/")(e);
   };
 
   return (
     <>
-      {/* Desktop macOS Dock Bar */}
       <DesktopDock
         logoHref="/"
         navItems={navLinks}
         pathname={pathname}
         showScrollEffect
         onNavItemClick={handleNavClick}
-        actions={
-          <AuthButtons
-            isAuthenticated={showAuthContent && isAuthenticated}
-            showLabels
-            size="sm"
-          />
-        }
+        actions={<AuthButtons isAuthenticated={showAuthContent && isAuthenticated} showLabels size="sm" />}
       />
 
-      {/* Mobile Header */}
       <MobileMenu
         isOpen={mobileMenuOpen}
         onToggle={toggleMobileMenu}
@@ -76,11 +56,8 @@ export function DockHeader() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="flex items-center gap-3 text-foreground-secondary hover:text-primary transition-colors font-medium py-2"
-                  onClick={(e) => {
-                    handleNavClick(link.href)(e);
-                    closeMobileMenu();
-                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--foreground-secondary)", fontWeight: 500, padding: "8px 0", textDecoration: "none" }}
+                  onClick={(e) => { handleNavClick(link.href)(e); closeMobileMenu(); }}
                 >
                   <Icon size={20} />
                   {link.label}
@@ -89,18 +66,11 @@ export function DockHeader() {
             })}
           </>
         }
-        actions={
-          <MobileAuthButtons
-            isAuthenticated={showAuthContent && isAuthenticated}
-            onClose={closeMobileMenu}
-          />
-        }
+        actions={<MobileAuthButtons isAuthenticated={showAuthContent && isAuthenticated} onClose={closeMobileMenu} />}
       />
 
-      {/* Spacer */}
-      <div className="hidden lg:block" style={{ height: "5rem" }} />
+      <div style={{ height: "1rem", display: "none" }} className="lg:block" />
       <div className="lg:hidden" style={{ height: mobileMenuOpen ? "auto" : "4rem", minHeight: "4rem" }} />
     </>
   );
 }
-

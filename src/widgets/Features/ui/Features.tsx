@@ -1,86 +1,52 @@
-'use client';
+"use client";
 
-import { Container } from '@/src/shared/ui/Container';
-import { Card } from '@/src/shared/ui/Card';
-import { ScrollReveal } from '@/src/shared/ui/ScrollReveal';
-import { Bot, FileText, Target, MessageSquare, Shield, TrendingUp } from 'lucide-react';
+import { Container } from "@/src/shared/ui/Container";
+import { Card } from "@/src/shared/ui/Card";
+import { ScrollReveal } from "@/src/shared/ui/ScrollReveal";
+import { Bot, FileText, Target, MessageSquare, Shield, TrendingUp, Wallet, Star, Bell, Briefcase } from "lucide-react";
 
 const features = [
-  {
-    icon: Bot,
-    title: 'ИИ-Ассистент',
-    description: 'Умный помощник составит идеальное ТЗ для клиента и поможет фрилансеру создать выигрышный отклик',
-  },
-  {
-    icon: FileText,
-    title: 'Автоматизация ТЗ',
-    description: 'ИИ анализирует ваши требования и формирует подробное техническое задание',
-  },
-  {
-    icon: Target,
-    title: 'Умный подбор',
-    description: 'Алгоритм находит наиболее подходящих исполнителей для вашего проекта',
-  },
-  {
-    icon: MessageSquare,
-    title: 'Контроль проекта',
-    description: 'ИИ следит за этапами выполнения и уведомляет о важных событиях',
-  },
-  {
-    icon: Shield,
-    title: 'Безопасные сделки',
-    description: 'Защита платежей через эскроу и гарантия выполнения обязательств',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Аналитика и рост',
-    description: 'Статистика работы, рейтинги и рекомендации для развития на платформе',
-  },
+  { icon: Bot, title: "ИИ-Ассистент", description: "Умный помощник составит идеальное ТЗ, поможет создать выигрышный отклик и проконтролирует сроки" },
+  { icon: FileText, title: "Автоматизация ТЗ", description: "ИИ задаёт уточняющие вопросы и формирует детальное техническое задание с оценкой бюджета" },
+  { icon: Target, title: "Умный подбор", description: "Алгоритм анализирует навыки, рейтинг и опыт для рекомендации лучших исполнителей" },
+  { icon: MessageSquare, title: "Чат с историей", description: "Удобное общение с сохранением переписки, вложениями и привязкой к заказам" },
+  { icon: Shield, title: "Эскроу-платежи", description: "Деньги замораживаются до приёмки работы — защита для обеих сторон сделки" },
+  { icon: Wallet, title: "Кошелёк и выводы", description: "Управление балансом, история транзакций и быстрый вывод на карту или счёт" },
+  { icon: Star, title: "Рейтинг и отзывы", description: "Прозрачная система оценок помогает выбрать надёжного исполнителя или заказчика" },
+  { icon: Bell, title: "Уведомления", description: "Мгновенные оповещения о новых откликах, сообщениях и изменениях статуса" },
+  { icon: Briefcase, title: "Портфолио", description: "Демонстрация работ с описанием, изображениями и ссылками на проекты" },
+  { icon: TrendingUp, title: "Аналитика", description: "Статистика заказов, доходов и эффективности для принятия решений" },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="relative py-24 overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
+    <section id="features" style={{ position: "relative", padding: "96px 0", overflow: "hidden" }}>
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent, var(--primary-05), transparent)" }} />
 
       <Container className="relative z-10">
-        {/* Section header */}
         <ScrollReveal direction="up" delay={0}>
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-4xl lg:text-5xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
-              <span className="gradient-text">Возможности</span>
-              <span className="text-foreground"> платформы</span>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
+            <h2 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 700, fontFamily: "var(--font-display)" }}>
+              <span style={{ background: "var(--primary-gradient)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Возможности</span>
+              <span style={{ color: "var(--foreground)" }}> платформы</span>
             </h2>
-            <p className="text-lg text-foreground-secondary max-w-2xl mx-auto">
-              ИИ-технологии для эффективной работы клиентов и фрилансеров
+            <p style={{ fontSize: 18, color: "var(--foreground-secondary)", maxWidth: 600, margin: "16px auto 0" }}>
+              Полный набор инструментов для эффективной работы заказчиков и фрилансеров
             </p>
           </div>
         </ScrollReveal>
 
-        {/* Features grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
           {features.map((feature, idx) => {
             const Icon = feature.icon;
             return (
-              <ScrollReveal key={idx} direction="up" delay={idx * 0.1}>
+              <ScrollReveal key={idx} direction="up" delay={idx * 0.05}>
                 <Card padding="lg" className="h-full">
-                  <div className="flex flex-col space-y-4">
-                    {/* Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-primary" />
-                    </div>
-
-                    {/* Content */}
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-semibold text-foreground">
-                        {feature.title}
-                      </h3>
-                      <p className="text-foreground-secondary leading-relaxed">
-                        {feature.description}
-                      </p>
-                    </div>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--primary-10)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, flexShrink: 0 }}>
+                    <Icon size={24} style={{ color: "var(--primary)" }} />
                   </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--foreground)", marginBottom: 8 }}>{feature.title}</h3>
+                  <p style={{ color: "var(--foreground-secondary)", lineHeight: 1.6, fontSize: 15, flex: 1 }}>{feature.description}</p>
                 </Card>
               </ScrollReveal>
             );

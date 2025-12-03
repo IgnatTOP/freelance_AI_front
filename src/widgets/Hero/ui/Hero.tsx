@@ -53,9 +53,9 @@ export function Hero() {
       {/* Animated Gradient Mesh Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary-dark/10" />
 
-      {/* Animated Grid Pattern */}
+      {/* Animated Grid Pattern - hidden on mobile */}
       <div
-        className="absolute inset-0 opacity-20"
+        className="absolute inset-0 opacity-20 hidden md:block"
         style={{
           backgroundImage: `
             linear-gradient(var(--primary-06) 1px, transparent 1px),
@@ -66,9 +66,9 @@ export function Hero() {
         }}
       />
 
-      {/* Floating gradient orbs with enhanced animations */}
+      {/* Floating gradient orbs - hidden on mobile */}
       <motion.div
-        className="absolute top-[10%] left-[10%] w-[500px] h-[500px] rounded-full blur-3xl"
+        className="absolute top-[10%] left-[10%] w-[500px] h-[500px] rounded-full blur-3xl hidden md:block"
         style={{
           background:
             "radial-gradient(circle, var(--primary-18) 0%, rgba(var(--primary-dark-rgb), 0.06) 50%, transparent 100%)",
@@ -86,7 +86,7 @@ export function Hero() {
       />
 
       <motion.div
-        className="absolute bottom-[15%] right-[15%] w-[600px] h-[600px] rounded-full blur-3xl"
+        className="absolute bottom-[15%] right-[15%] w-[600px] h-[600px] rounded-full blur-3xl hidden md:block"
         style={{
           background:
             "radial-gradient(circle, rgba(var(--primary-dark-rgb), 0.18) 0%, var(--primary-06) 50%, transparent 100%)",
@@ -105,7 +105,7 @@ export function Hero() {
       />
 
       <motion.div
-        className="absolute top-[50%] left-[50%] w-[400px] h-[400px] rounded-full blur-3xl"
+        className="absolute top-[50%] left-[50%] w-[400px] h-[400px] rounded-full blur-3xl hidden md:block"
         style={{
           background:
             "radial-gradient(circle, rgba(var(--primary-light-rgb), 0.12) 0%, var(--primary-05) 50%, transparent 100%)",
@@ -123,11 +123,11 @@ export function Hero() {
         }}
       />
 
-      {/* Animated Particles */}
+      {/* Animated Particles - hidden on mobile */}
       {particles.map((particle, i) => (
         <motion.div
           key={i}
-          className="absolute w-1 h-1 bg-primary rounded-full"
+          className="absolute w-1 h-1 bg-primary rounded-full hidden md:block"
           style={{
             left: `${particle.left}%`,
             top: `${particle.top}%`,
@@ -145,9 +145,9 @@ export function Hero() {
         />
       ))}
 
-      {/* Floating geometric shapes */}
+      {/* Floating geometric shapes - hidden on mobile */}
       <motion.div
-        className="absolute top-[20%] right-[10%] w-20 h-20 border-2 border-primary/20 rounded-lg"
+        className="absolute top-[20%] right-[10%] w-20 h-20 border-2 border-primary/20 rounded-lg hidden md:block"
         animate={{
           rotate: [0, 180, 360],
           y: [0, -20, 0],
@@ -160,7 +160,7 @@ export function Hero() {
       />
 
       <motion.div
-        className="absolute bottom-[25%] left-[8%] w-16 h-16 border-2 border-primary-light/20"
+        className="absolute bottom-[25%] left-[8%] w-16 h-16 border-2 border-primary-light/20 hidden md:block"
         style={{ borderRadius: "30%" }}
         animate={{
           rotate: [0, -180, -360],
@@ -178,7 +178,7 @@ export function Hero() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 15, 13, 0.5) 100%)",
+            "radial-gradient(circle at 50% 50%, transparent 0%, var(--background) 100%)",
         }}
       />
 
@@ -266,7 +266,7 @@ export function Hero() {
               {[
                 { value: "10K+", label: "Активных заказов" },
                 { value: "5K+", label: "Фрилансеров" },
-                { value: "ИИ", label: "Ассистент 24/7" },
+                { value: "98%", label: "Успешных сделок" },
               ].map((stat, idx) => (
                 <motion.div
                   key={idx}

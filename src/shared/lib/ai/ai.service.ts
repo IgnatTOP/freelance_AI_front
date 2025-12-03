@@ -87,9 +87,9 @@ export interface AIAssistantResponse {
 }
 
 export interface AIProfileImproveRequest {
-  current_bio?: string;
+  current_bio?: string;  // internal field, mapped to 'bio' in API call
   skills?: string[];
-  experience_level?: string;
+  experience_level?: string;  // internal field, mapped to 'level' in API call
 }
 
 export interface AIProfileImproveResponse {
@@ -568,7 +568,11 @@ class AIService {
   ): Promise<AIProfileImproveResponse> {
     const response = await api.post<AIProfileImproveResponse>(
       "/ai/profile/improve",
-      data
+      {
+        bio: data.current_bio || "",
+        skills: data.skills || [],
+        level: data.experience_level || "",
+      }
     );
     return response.data;
   }
@@ -708,11 +712,12 @@ class AIService {
   }
 
   // Генерация списка навыков для заказа
+  // API возвращает skills с уровнями: [{ skill: string, level: "junior" | "middle" | "senior" }]
   async generateOrderSkills(data: {
     title: string;
     description: string;
-  }): Promise<{ skills: string[] }> {
-    const response = await api.post<{ skills: string[] }>(
+  }): Promise<{ skills: Array<{ skill: string; level: "junior" | "middle" | "senior" }> }> {
+    const response = await api.post<{ skills: Array<{ skill: string; level: "junior" | "middle" | "senior" }> }>(
       "/ai/orders/skills",
       data
     );
@@ -736,14 +741,21 @@ class AIService {
   }
 
   // Генерация бюджета для заказа
+  // API возвращает budget_min, budget_max и explanation
   async generateOrderBudget(data: {
     title: string;
     description: string;
+    requirements?: Array<{ skill: string; level: string }>;
   }): Promise<{
     budget_min?: number;
     budget_max?: number;
+    explanation?: string;
   }> {
-    const response = await api.post(
+    const response = await api.post<{
+      budget_min?: number;
+      budget_max?: number;
+      explanation?: string;
+    }>(
       "/ai/orders/budget",
       data
     );
@@ -755,6 +767,7 @@ class AIService {
     data: {
       title: string;
       description: string;
+      requirements?: Array<{ skill: string; level: string }>;
     },
     onChunk: (chunk: string) => void
   ): Promise<void> {
@@ -766,9 +779,10 @@ class AIService {
     });
   }
 
-  // Генерация приветственного сообщения
+  // Генерация приветственного сообщения для чата
   async generateWelcomeMessage(data: {
-    user_role: string;
+    order_id: string;
+    freelancer_id: string;
   }): Promise<{ message: string }> {
     const response = await api.post<{ message: string }>(
       "/ai/welcome-message",
@@ -780,7 +794,8 @@ class AIService {
   // Генерация приветственного сообщения (стриминг)
   async generateWelcomeMessageStream(
     data: {
-      user_role: string;
+      order_id: string;
+      freelancer_id: string;
     },
     onChunk: (chunk: string) => void
   ): Promise<void> {

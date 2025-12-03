@@ -1,20 +1,15 @@
 "use client";
 
-import { Box } from "@mui/material";
 import { OrderListFeature } from "@/src/features/orders/order-list";
 import { useAuth } from "@/src/shared/lib/hooks";
-import { Metadata } from "next";
-
-// Note: Metadata export doesn't work with "use client" components
-// This should be moved to a layout or wrapper component
-// For now, we'll handle SEO via head tags in the component
+import { LoadingState } from "@/src/shared/ui";
 
 export default function OrdersPage() {
-  const { userRole } = useAuth();
+  const { userRole, loading } = useAuth();
 
-  return (
-    <Box sx={{ minHeight: "100vh" }}>
-      <OrderListFeature userRole={userRole} />
-    </Box>
-  );
+  if (loading) {
+    return <LoadingState type="spinner" />;
+  }
+
+  return <OrderListFeature userRole={userRole === "admin" ? "client" : userRole} isMarketplace />;
 }

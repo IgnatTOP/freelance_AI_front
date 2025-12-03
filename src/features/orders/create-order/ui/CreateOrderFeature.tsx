@@ -23,6 +23,7 @@ interface CreateOrderFormData {
   budget_min?: number;
   budget_max?: number;
   deadline?: dayjs.Dayjs | null;
+  category_id?: string;
 }
 
 interface CreateOrderFeatureProps {
@@ -48,6 +49,7 @@ export function CreateOrderFeature({
     budget_min: undefined,
     budget_max: undefined,
     deadline: null,
+    category_id: undefined,
   });
 
   const {
@@ -138,6 +140,9 @@ export function CreateOrderFeature({
       }
       if (values.deadline) {
         orderData.deadline_at = values.deadline.toISOString();
+      }
+      if (values.category_id) {
+        orderData.category_id = values.category_id;
       }
 
       const order = await createOrder(orderData);

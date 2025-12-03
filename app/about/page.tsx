@@ -1,7 +1,7 @@
 import { Container } from '@/src/shared/ui/Container';
 import { Card } from '@/src/shared/ui/Card';
 import { Metadata } from 'next';
-import { Github, Linkedin, Mail, User } from 'lucide-react';
+import { Github, Linkedin, Mail } from 'lucide-react';
 import Image from 'next/image';
 
 export const metadata: Metadata = {
@@ -40,6 +40,21 @@ const team = [
       linkedin: 'https://linkedin.com',
       email: 'alexey@example.com',
     },
+  },
+];
+
+const values = [
+  {
+    title: 'ИИ-технологии',
+    description: 'Используем передовой ИИ для упрощения работы',
+  },
+  {
+    title: 'Прозрачность',
+    description: 'Честные условия и защита интересов обеих сторон',
+  },
+  {
+    title: 'Эффективность',
+    description: 'Автоматизация рутины для фокуса на результате',
   },
 ];
 
@@ -101,10 +116,10 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {team.map((member) => (
-              <Card key={member.name} padding="lg" className="group">
-                <div className="flex flex-col items-center text-center space-y-4">
+              <Card key={member.name} padding="lg" className="h-full group">
+                <div className="flex flex-col items-center text-center h-full">
                   {/* Avatar */}
-                  <div className="relative w-40 h-40 rounded-2xl overflow-hidden border-2 border-border/50 group-hover:scale-105 transition-transform duration-300">
+                  <div className="relative w-40 h-40 rounded-2xl overflow-hidden border-2 border-border/50 group-hover:scale-105 transition-transform duration-300 flex-shrink-0">
                     <Image
                       src={member.avatar}
                       alt={member.name}
@@ -115,7 +130,7 @@ export default function AboutPage() {
                   </div>
 
                   {/* Info */}
-                  <div>
+                  <div className="mt-4 flex-1">
                     <h3 className="text-2xl font-bold mb-1" style={{ fontFamily: 'var(--font-display)' }}>
                       {member.name}
                     </h3>
@@ -128,7 +143,7 @@ export default function AboutPage() {
                   </div>
 
                   {/* Social Links */}
-                  <div className="flex items-center space-x-3 pt-4">
+                  <div className="flex items-center space-x-3 pt-4 mt-auto">
                     <a
                       href={member.social.github}
                       target="_blank"
@@ -170,25 +185,12 @@ export default function AboutPage() {
               Наши ценности
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  title: 'ИИ-технологии',
-                  description: 'Используем передовой ИИ для упрощения работы',
-                },
-                {
-                  title: 'Прозрачность',
-                  description: 'Честные условия и защита интересов обеих сторон',
-                },
-                {
-                  title: 'Эффективность',
-                  description: 'Автоматизация рутины для фокуса на результате',
-                },
-              ].map((value) => (
-                <Card key={value.title} padding="lg">
+              {values.map((value) => (
+                <Card key={value.title} padding="lg" className="h-full">
                   <h3 className="text-xl font-bold mb-3 gradient-text">
                     {value.title}
                   </h3>
-                  <p className="text-foreground-secondary">
+                  <p className="text-foreground-secondary flex-1">
                     {value.description}
                   </p>
                 </Card>

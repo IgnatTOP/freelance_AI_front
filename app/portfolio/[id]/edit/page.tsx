@@ -5,7 +5,7 @@ import { EditPortfolioItemFeature } from "@/src/features/portfolio/edit-portfoli
 
 export default function EditPortfolioPage() {
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+    <Box sx={{ bgcolor: "transparent" }}>
       <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, width: "100%" }}>
         <EditPortfolioItemFeature />
       </Container>

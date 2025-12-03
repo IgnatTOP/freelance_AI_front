@@ -1,30 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, Button, Stack, Typography, Box, IconButton, useTheme } from "@mui/material";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Bot,
-  Sparkles,
-  ArrowRight,
-  CheckCircle,
-  X,
-  Wand2,
-  Target,
-  TrendingUp,
-} from "lucide-react";
+import { Card, CardContent, Button, Stack, Typography, Box, IconButton } from "@mui/material";
+import { Bot, ArrowRight, CheckCircle, X, Wand2, Target } from "lucide-react";
 import Link from "next/link";
-import { aiService } from "@/src/shared/lib/ai";
-import { useAuth } from "@/src/shared/lib/hooks";
 
 interface GuideStep {
   id: string;
   title: string;
   description: string;
-  action?: {
-    label: string;
-    href: string;
-  };
+  action?: { label: string; href: string };
   completed?: boolean;
 }
 
@@ -32,376 +17,138 @@ interface AIGuideProps {
   userRole: "client" | "freelancer" | null;
 }
 
+const clientSteps: GuideStep[] = [
+  { id: "1", title: "Создайте первый заказ", description: "Используйте AI для быстрого создания", action: { label: "Создать с AI", href: "/orders/create?ai=true" } },
+  { id: "2", title: "Найдите фрилансеров", description: "AI поможет найти лучших исполнителей", action: { label: "Найти", href: "/freelancers" } },
+  { id: "3", title: "Общайтесь", description: "Используйте чат для обсуждения деталей", action: { label: "Сообщения", href: "/messages" } },
+];
+
+const freelancerSteps: GuideStep[] = [
+  { id: "1", title: "Заполните профиль", description: "Добавьте навыки и портфолио", action: { label: "Профиль", href: "/profile" } },
+  { id: "2", title: "AI рекомендации", description: "Подобранные заказы для вас", action: { label: "Посмотреть", href: "/orders?ai-recommended=true" } },
+  { id: "3", title: "Отправьте отклик", description: "AI поможет с профессиональным откликом", action: { label: "Заказы", href: "/orders" } },
+];
+
+const welcomeMessages = {
+  client: "Добро пожаловать! Помогу создать заказы и найти лучших исполнителей для ваших проектов.",
+  freelancer: "Привет! Помогу найти подходящие заказы и создать профессиональные отклики.",
+};
+
 export function AIGuide({ userRole }: AIGuideProps) {
-  const { user } = useAuth({ requireAuth: false });
   const [steps, setSteps] = useState<GuideStep[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [aiMessage, setAiMessage] = useState<string>("");
+  const [aiMessage, setAiMessage] = useState("");
 
   useEffect(() => {
     if (!userRole) return;
-
-    const clientSteps: GuideStep[] = [
-      {
-        id: "1",
-        title: "Создайте первый заказ",
-        description: "Используйте AI для быстрого создания заказа с подробным описанием",
-        action: {
-          label: "Создать заказ с AI",
-          href: "/orders/create?ai=true",
-        },
-      },
-      {
-        id: "2",
-        title: "Найдите подходящих фрилансеров",
-        description: "AI поможет найти лучших исполнителей для вашего проекта",
-        action: {
-          label: "Найти фрилансеров",
-          href: "/freelancers",
-        },
-      },
-      {
-        id: "3",
-        title: "Общайтесь с исполнителями",
-        description: "Используйте встроенный чат для обсуждения деталей проекта",
-        action: {
-          label: "Открыть сообщения",
-          href: "/messages",
-        },
-      },
-    ];
-
-    const freelancerSteps: GuideStep[] = [
-      {
-        id: "1",
-        title: "Заполните профиль",
-        description: "Добавьте навыки, портфолио и описание. Это поможет AI найти подходящие заказы",
-        action: {
-          label: "Редактировать профиль",
-          href: "/profile",
-        },
-      },
-      {
-        id: "2",
-        title: "Посмотрите AI рекомендации",
-        description: "AI подобрал заказы специально для вас на основе вашего профиля",
-        action: {
-          label: "Посмотреть рекомендации",
-          href: "/orders?ai-recommended=true",
-        },
-      },
-      {
-        id: "3",
-        title: "Отправьте отклик",
-        description: "Используйте AI для генерации профессионального отклика к заказу",
-        action: {
-          label: "Найти заказы",
-          href: "/orders",
-        },
-      },
-    ];
-
     setSteps(userRole === "client" ? clientSteps : freelancerSteps);
-
-    // Генерируем персональное сообщение от AI
-    const generateAIMessage = async () => {
-      try {
-        let fullMessage = "";
-
-        await aiService.generateWelcomeMessageStream(
-          {
-            user_role: userRole || "freelancer",
-          },
-          (chunk) => {
-            fullMessage += chunk;
-            setAiMessage(fullMessage);
-          }
-        );
-      } catch {
-        setAiMessage(
-          userRole === "client"
-            ? "Добро пожаловать! Я помогу вам создать заказы, найти исполнителей и управлять проектами. Начните с создания первого заказа с помощью AI."
-            : "Привет! Я помогу вам найти подходящие заказы, создать профессиональные отклики и развивать свой бизнес. Начните с заполнения профиля."
-        );
-      }
-    };
-
-    generateAIMessage();
+    setAiMessage(welcomeMessages[userRole]);
   }, [userRole]);
 
-  const handleStepComplete = (stepId: string) => {
-    setSteps((prev) =>
-      prev.map((step) =>
-        step.id === stepId ? { ...step, completed: true } : step
-      )
-    );
+  const handleComplete = (stepId: string) => {
+    setSteps((prev) => prev.map((s) => s.id === stepId ? { ...s, completed: true } : s));
   };
-
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const theme = useTheme();
-
-  if (isMinimized) {
-    return (
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-      >
-        <Card
-          onClick={() => setIsMinimized(false)}
-          sx={{ cursor: 'pointer', '&:hover': { boxShadow: 2 } }}
-        >
-          <CardContent>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <div className="relative">
-                <Bot size={20} style={{ color: 'var(--primary)' }} />
-                <motion.div
-                  className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
-                  animate={{
-                    scale: [1, 1.3, 1],
-                    opacity: [1, 0.6, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-              </div>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="body2" fontWeight="bold">AI Гид</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {steps[currentStep]?.title || "Начните работу"}
-                </Typography>
-              </Box>
-              <Button variant="text" size="small">
-                Развернуть
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
-  }
 
   const activeStep = steps[currentStep];
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <div className="relative">
-                <Box sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 1.5,
-                  background: 'linear-gradient(135deg, var(--primary-12) 0%, rgba(139, 92, 246, 0.2) 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Bot size={24} style={{ color: 'var(--primary)' }} />
-                </Box>
-                <motion.div
-                  className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
-                  animate={{
-                    scale: [1, 1.3, 1],
-                    opacity: [1, 0.6, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-              </div>
-              <Box>
-                <Typography variant="h6">AI Гид</Typography>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>Ваш персональный помощник</Typography>
-              </Box>
+  if (isMinimized) {
+    return (
+      <Card onClick={() => setIsMinimized(false)} sx={{ cursor: "pointer", background: "var(--glass-bg)", border: "1px solid var(--border)", "&:hover": { boxShadow: "var(--shadow-md)" } }}>
+        <CardContent sx={{ p: 1.5 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box sx={{ position: "relative" }}>
+              <Bot size={18} style={{ color: "var(--primary)" }} />
+              <Box sx={{ position: "absolute", top: -2, right: -2, width: 6, height: 6, borderRadius: "50%", bgcolor: "var(--primary)" }} />
             </Box>
-            <IconButton
-              size="small"
-              onClick={() => setIsMinimized(true)}
-            >
-              <X size={16} />
-            </IconButton>
-          </Box>
-
-          {/* AI Message */}
-          {aiMessage && (
-            <Card
-              sx={{
-                mb: 3,
-                bgcolor: 'var(--primary-06)',
-                borderColor: 'var(--primary-18)',
-              }}
-            >
-              <CardContent sx={{ p: 1.5 }}>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <Bot size={18} style={{ color: 'var(--primary)' }} />
-                  <Typography variant="body2">
-                    {aiMessage}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Steps Progress */}
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body2" fontWeight="medium">
-                Шаг {currentStep + 1} из {steps.length}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {steps.map((_, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      width: index === currentStep ? 24 : 8,
-                      height: 8,
-                      borderRadius: 1,
-                      bgcolor: index === currentStep
-                        ? 'primary.main'
-                        : index < currentStep
-                        ? 'primary.light'
-                        : 'action.disabled',
-                      transition: 'all 0.3s',
-                    }}
-                  />
-                ))}
-              </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="caption" fontWeight={600}>AI Гид</Typography>
+              <Typography variant="caption" sx={{ color: "var(--foreground-muted)", display: "block", fontSize: 10 }}>{activeStep?.title || "Начните работу"}</Typography>
             </Box>
-
-            <AnimatePresence mode="wait">
-              {activeStep && (
-                <motion.div
-                  key={activeStep.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                >
-                  <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                      <Box sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 1.5,
-                        bgcolor: 'primary.main',
-                        opacity: 0.1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}>
-                        {activeStep.completed ? (
-                          <CheckCircle size={20} className="text-green-400" />
-                        ) : (
-                          <Target size={20} className="text-primary" />
-                        )}
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight="bold" sx={{ mb: 0.5 }}>
-                          {activeStep.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {activeStep.description}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {activeStep.action && (
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Link href={activeStep.action.href} style={{ flex: 1, textDecoration: 'none' }}>
-                          <Button
-                            variant="contained"
-                            fullWidth
-                            startIcon={<Wand2 size={16} />}
-                            onClick={() => handleStepComplete(activeStep.id)}
-                          >
-                            {activeStep.action.label}
-                          </Button>
-                        </Link>
-                        {!activeStep.completed && (
-                          <Button
-                            variant="outlined"
-                            startIcon={<CheckCircle size={16} />}
-                            onClick={() => handleStepComplete(activeStep.id)}
-                          >
-                            Пропустить
-                          </Button>
-                        )}
-                      </Box>
-                    )}
-                  </Stack>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Box>
-
-          {/* Navigation */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid var(--primary-12)' }}>
-            <Button
-              size="small"
-              startIcon={<ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} />}
-              onClick={prevStep}
-              disabled={currentStep === 0}
-            >
-              Назад
-            </Button>
-
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              {steps.map((step, index) => (
-                <Box
-                  key={step.id}
-                  component="button"
-                  onClick={() => setCurrentStep(index)}
-                  sx={{
-                    width: index === currentStep ? 24 : 8,
-                    height: 8,
-                    borderRadius: 0.5,
-                    border: 'none',
-                    bgcolor: index === currentStep ? 'primary.main' : 'var(--primary-18)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    '&:hover': {
-                      opacity: 0.8,
-                    }
-                  }}
-                />
-              ))}
-            </Box>
-
-            <Button
-              size="small"
-              endIcon={<ArrowRight size={16} />}
-              onClick={nextStep}
-              disabled={currentStep === steps.length - 1}
-            >
-              Далее
-            </Button>
-          </Box>
+            <Button size="small">Развернуть</Button>
+          </Stack>
         </CardContent>
       </Card>
-    </motion.div>
+    );
+  }
+
+  return (
+    <Card sx={{ background: "var(--glass-bg)", border: "1px solid var(--border)" }}>
+      <CardContent sx={{ p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box sx={{ position: "relative" }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: 1, background: "linear-gradient(135deg, var(--primary-15) 0%, rgba(139,92,246,0.2) 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Bot size={20} style={{ color: "var(--primary)" }} />
+              </Box>
+              <Box sx={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: "50%", bgcolor: "var(--primary)" }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600}>AI Гид</Typography>
+              <Typography variant="caption" sx={{ color: "var(--foreground-muted)" }}>Персональный помощник</Typography>
+            </Box>
+          </Stack>
+          <IconButton size="small" onClick={() => setIsMinimized(true)}><X size={14} /></IconButton>
+        </Stack>
+
+        {aiMessage && (
+          <Box sx={{ p: 1.5, mb: 2, borderRadius: 1, bgcolor: "var(--primary-05)", border: "1px solid var(--primary-15)" }}>
+            <Stack direction="row" spacing={1} alignItems="flex-start">
+              <Bot size={14} style={{ color: "var(--primary)", marginTop: 2 }} />
+              <Typography variant="caption" sx={{ lineHeight: 1.5 }}>{aiMessage}</Typography>
+            </Stack>
+          </Box>
+        )}
+
+        <Box sx={{ mb: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+            <Typography variant="caption" fontWeight={500}>Шаг {currentStep + 1} из {steps.length}</Typography>
+            <Stack direction="row" spacing={0.5}>
+              {steps.map((_, i) => (
+                <Box key={i} sx={{ width: i === currentStep ? 20 : 6, height: 6, borderRadius: 0.5, bgcolor: i === currentStep ? "var(--primary)" : i < currentStep ? "var(--primary-30)" : "var(--border)", transition: "all 0.2s" }} />
+              ))}
+            </Stack>
+          </Stack>
+
+          {activeStep && (
+            <Stack spacing={1.5}>
+              <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                <Box sx={{ width: 32, height: 32, borderRadius: 1, bgcolor: "var(--primary-10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {activeStep.completed ? <CheckCircle size={16} style={{ color: "#10b981" }} /> : <Target size={16} style={{ color: "var(--primary)" }} />}
+                </Box>
+                <Box>
+                  <Typography variant="caption" fontWeight={600}>{activeStep.title}</Typography>
+                  <Typography variant="caption" sx={{ color: "var(--foreground-muted)", display: "block", fontSize: 11 }}>{activeStep.description}</Typography>
+                </Box>
+              </Stack>
+
+              {activeStep.action && (
+                <Stack direction="row" spacing={1}>
+                  <Link href={activeStep.action.href} style={{ flex: 1, textDecoration: "none" }}>
+                    <Button variant="contained" fullWidth size="small" startIcon={<Wand2 size={14} />} onClick={() => handleComplete(activeStep.id)}>
+                      {activeStep.action.label}
+                    </Button>
+                  </Link>
+                  {!activeStep.completed && (
+                    <Button variant="outlined" size="small" startIcon={<CheckCircle size={14} />} onClick={() => handleComplete(activeStep.id)}>
+                      Пропустить
+                    </Button>
+                  )}
+                </Stack>
+              )}
+            </Stack>
+          )}
+        </Box>
+
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 1.5, borderTop: "1px solid var(--border)" }}>
+          <Button size="small" startIcon={<ArrowRight size={14} style={{ transform: "rotate(180deg)" }} />} onClick={() => setCurrentStep(Math.max(0, currentStep - 1))} disabled={currentStep === 0}>
+            Назад
+          </Button>
+          <Button size="small" endIcon={<ArrowRight size={14} />} onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))} disabled={currentStep === steps.length - 1}>
+            Далее
+          </Button>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
-

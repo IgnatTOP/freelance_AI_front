@@ -81,6 +81,14 @@ export default function RegisterPage() {
       setUsernameError("Минимум 3 символа");
       return false;
     }
+    if (username.length > 30) {
+      setUsernameError("Максимум 30 символов");
+      return false;
+    }
+    if (!/^[a-z0-9_]+$/i.test(username)) {
+      setUsernameError("Только буквы, цифры и _");
+      return false;
+    }
     setUsernameError("");
     return true;
   };
@@ -90,8 +98,12 @@ export default function RegisterPage() {
       setPasswordError("Введите пароль");
       return false;
     }
-    if (password.length < 6) {
-      setPasswordError("Минимум 6 символов");
+    if (password.length < 8) {
+      setPasswordError("Минимум 8 символов");
+      return false;
+    }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setPasswordError("Пароль должен содержать буквы и цифры");
       return false;
     }
     setPasswordError("");

@@ -4,19 +4,19 @@
 
 export const headerStyles = {
   desktop: {
-    background: "rgba(17, 26, 21, 0.7)",
+    background: "var(--glass-bg)",
     backdropFilter: "blur(40px)",
-    border: "1px solid var(--primary-15)",
+    border: "1px solid var(--glass-border)",
     boxShadow: {
-      default: "0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--primary-08)",
-      scrolled: "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--primary-10)",
+      default: "var(--glass-shadow), 0 0 0 1px var(--primary-08)",
+      scrolled: "var(--shadow-md), 0 0 0 1px var(--primary-10)",
     },
   },
   mobile: {
-    background: "rgba(17, 26, 21, 0.8)",
+    background: "var(--glass-bg)",
     backdropFilter: "blur(20px)",
-    borderBottom: "1px solid var(--primary-15)",
-    boxShadow: "0 2px 16px rgba(0, 0, 0, 0.2)",
+    borderBottom: "1px solid var(--glass-border)",
+    boxShadow: "var(--shadow-sm)",
   },
   divider: {
     background: "var(--primary-20)",

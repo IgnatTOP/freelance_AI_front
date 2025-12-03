@@ -23,7 +23,7 @@ export function OrderDetailContent({ order }: OrderDetailContentProps) {
       </Card>
 
       {/* AI Summary */}
-      {(order.summary || order.ai_summary) && (
+      {order.ai_summary && (
         <Card
           sx={{
             p: 3,
@@ -36,7 +36,7 @@ export function OrderDetailContent({ order }: OrderDetailContentProps) {
             <Typography variant="h6">AI Резюме</Typography>
           </Stack>
           <Typography variant="body2">
-            {order.summary || order.ai_summary}
+            {order.ai_summary}
           </Typography>
         </Card>
       )}
@@ -79,8 +79,8 @@ export function OrderDetailContent({ order }: OrderDetailContentProps) {
           </Stack>
           <Stack spacing={1}>
             {order.attachments.map((att) => {
-              const fileUrlRaw = att.url || att.media?.file_path;
-              const filename = att.filename || att.media?.file_path?.split("/").pop() || `Файл ${att.id.substring(0, 8)}`;
+              const fileUrlRaw = att.media?.url || att.media?.file_path;
+              const filename = att.media?.filename || att.media?.file_path?.split("/").pop() || `Файл ${att.id.substring(0, 8)}`;
               const mediaUrl = fileUrlRaw ? getMediaUrl(fileUrlRaw) ?? undefined : undefined;
               return (
                 <Box

@@ -8,7 +8,7 @@ import Link from "next/link";
 import { MobileMenu } from "./MobileMenu";
 import { UserAvatar } from "./UserAvatar";
 import { DockLogo } from "./DockLogo";
-import type { User, Profile } from "@/src/shared/lib/auth/auth.service";
+import type { User, Profile } from "@/src/entities/user/model/types";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 

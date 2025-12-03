@@ -11,7 +11,7 @@ const darkGreenTheme = {
     colorSuccess: '#0d9488',
     colorWarning: '#fbbf24',
     colorError: '#ef4444',
-    colorInfo: '#3b82f6',
+    colorInfo: '#14b8a6',
     colorBgBase: '#0a1110',
     colorBgContainer: '#0d1615',
     colorBgElevated: '#111a19',
