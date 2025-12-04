@@ -1,21 +1,49 @@
 "use client";
 
-import { Form, Input, DatePicker, InputNumber, Select, Row, Col, Typography, Space, Tag, Button, Spin } from "antd";
-import type { FormInstance } from "antd";
-import { Calendar, Wallet, Briefcase, Code, Sparkles } from "lucide-react";
+import {
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Stack,
+  Chip,
+  Autocomplete,
+  Grid,
+  CircularProgress,
+  Paper,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { Calendar, Wallet, Briefcase, Sparkles, FolderTree } from "lucide-react";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { aiService } from "@/src/shared/lib/ai";
 import { parseAIResponse } from "@/src/shared/lib/ai/ai-utils";
 import { formatNumber, parseFormattedNumber } from "@/src/shared/lib/utils/number-utils";
 import { toastService } from "@/src/shared/lib/toast";
+import { getCategories, getSkills } from "@/src/shared/api/catalog";
+import type { Category } from "@/src/entities/catalog/model/types";
+import 'dayjs/locale/ru';
 
-const { TextArea } = Input;
-const { Title, Text } = Typography;
-
+interface CreateOrderFormData {
+  title: string;
+  description: string;
+  skills: string[];
+  budget_min?: number;
+  budget_max?: number;
+  deadline?: dayjs.Dayjs | null;
+  category_id?: string;
+}
 
 interface CreateOrderFormProps {
-  form: FormInstance;
+  formData: CreateOrderFormData;
+  onFormDataChange: (data: Partial<CreateOrderFormData>) => void;
   skills: string[];
   onSkillsChange: (skills: string[]) => void;
   onSubmit: (values: any) => void;
@@ -26,7 +54,8 @@ interface CreateOrderFormProps {
 }
 
 export function CreateOrderForm({
-  form,
+  formData,
+  onFormDataChange,
   skills,
   onSkillsChange,
   onSubmit,
@@ -35,13 +64,42 @@ export function CreateOrderForm({
   onGenerateAll,
   aiMode,
 }: CreateOrderFormProps) {
+  // Защита от undefined formData
+  const safeFormData = formData || {
+    title: '',
+    description: '',
+    skills: [],
+    budget_min: undefined,
+    budget_max: undefined,
+    deadline: null,
+    category_id: undefined,
+  };
+
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [generatingSkills, setGeneratingSkills] = useState(false);
   const [generatingBudget, setGeneratingBudget] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [categoriesData, skillsData] = await Promise.all([
+          getCategories(),
+          getSkills(),
+        ]);
+        setCategories(categoriesData.categories || []);
+        setSkillOptions(skillsData.skills?.map(s => s.name) || []);
+      } catch (error) {
+        console.error("Failed to load catalog data:", error);
+      }
+    };
+    loadData();
+  }, []);
 
   const handleGenerateDescription = async () => {
-    const title = form.getFieldValue("title");
-    if (!title || title.trim().length < 3) {
+    if (!safeFormData.title || safeFormData.title.trim().length < 3) {
       toastService.warning("Сначала введите название заказа (минимум 3 символа)");
       return;
     }
@@ -49,18 +107,23 @@ export function CreateOrderForm({
     setGeneratingDescription(true);
     try {
       let fullDescription = "";
-      await aiService.generateOrderDescriptionStream(
-        {
-          title: title.trim(),
-          description: form.getFieldValue("description") || "Создайте подробное описание проекта",
-          skills: skills,
-        },
-        (chunk) => {
-          fullDescription += chunk;
-          form.setFieldValue("description", fullDescription);
-        }
-      );
-      toastService.success("Описание сгенерировано!");
+      try {
+        await aiService.generateOrderDescriptionStream(
+          {
+            title: safeFormData.title.trim(),
+            description: safeFormData.description || "Создайте подробное описание проекта",
+            skills: skills,
+          },
+          (chunk) => {
+            fullDescription += chunk;
+            onFormDataChange({ description: fullDescription });
+          }
+        );
+        toastService.success("Описание сгенерировано!");
+      } catch (error: any) {
+        console.error("Error generating description:", error);
+        throw new Error(error?.message || "Не удалось сгенерировать описание");
+      }
     } catch (error) {
       console.error("Error generating description:", error);
       toastService.error("Не удалось сгенерировать описание");
@@ -70,403 +133,411 @@ export function CreateOrderForm({
   };
 
   const handleGenerateSkills = async () => {
-    const title = form.getFieldValue("title");
-    const description = form.getFieldValue("description");
-    
-    if (!title || title.trim().length < 3) {
+    if (!safeFormData.title || safeFormData.title.trim().length < 3) {
       toastService.warning("Сначала введите название заказа");
       return;
     }
 
     setGeneratingSkills(true);
     try {
-      const prompt = `Ты - AI помощник для создания заказов на фриланс-платформе.
-
-На основе заказа:
-Название: "${title}"
-Описание: "${description || 'Не указано'}"
-
-Определи необходимые навыки и технологии (массив строк).
-
-ВАЖНО: Ответь ТОЛЬКО валидным JSON массивом без дополнительного текста:
-["React", "TypeScript", "Node.js"]`;
-
       let aiResponse = "";
-      await aiService.chatAssistantStream(
-        {
-          message: prompt,
-          context_data: { user_role: "client" },
-        },
-        (chunk) => {
-          aiResponse += chunk;
-        }
-      );
+      try {
+        await aiService.generateOrderSkillsStream(
+          {
+            title: safeFormData.title,
+            description: safeFormData.description || '',
+          },
+          (chunk) => {
+            aiResponse += chunk;
+          }
+        );
+      } catch (error: any) {
+        console.error("Error in generateOrderSkillsStream:", error);
+        throw new Error(error?.message || "Не удалось получить ответ от AI");
+      }
 
-      // Парсим навыки из ответа
       const parsed = parseAIResponse(aiResponse);
-      if (parsed && Array.isArray(parsed)) {
-        onSkillsChange(parsed);
-        form.setFieldValue("skills", parsed);
-        toastService.success(`Добавлено ${parsed.length} навыков!`);
-      } else if (parsed && parsed.skills && Array.isArray(parsed.skills)) {
+      if (parsed && parsed.skills && Array.isArray(parsed.skills)) {
         onSkillsChange(parsed.skills);
-        form.setFieldValue("skills", parsed.skills);
         toastService.success(`Добавлено ${parsed.skills.length} навыков!`);
+      } else if (parsed && Array.isArray(parsed)) {
+        onSkillsChange(parsed);
+        toastService.success(`Добавлено ${parsed.length} навыков!`);
       } else {
         toastService.warning("Не удалось распознать навыки. Попробуйте еще раз.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating skills:", error);
-      toastService.error("Не удалось сгенерировать навыки");
+      toastService.error(error?.message || "Не удалось сгенерировать навыки");
     } finally {
       setGeneratingSkills(false);
     }
   };
 
   const handleGenerateBudget = async () => {
-    const title = form.getFieldValue("title");
-    const description = form.getFieldValue("description");
-    
-    if (!title || title.trim().length < 3) {
+    if (!safeFormData.title || safeFormData.title.trim().length < 3) {
       toastService.warning("Сначала введите название заказа");
       return;
     }
 
     setGeneratingBudget(true);
     try {
-      const prompt = `Ты - AI помощник для создания заказов на фриланс-платформе.
-
-На основе заказа:
-Название: "${title}"
-Описание: "${description || 'Не указано'}"
-
-Определи оптимальный бюджет в рублях (минимальная и максимальная стоимость).
-
-ВАЖНО: Ответь ТОЛЬКО валидным JSON без дополнительного текста:
-{
-  "budget_min": 50000,
-  "budget_max": 100000
-}`;
-
       let aiResponse = "";
-      await aiService.chatAssistantStream(
-        {
-          message: prompt,
-          context_data: { user_role: "client" },
-        },
-        (chunk) => {
-          aiResponse += chunk;
-        }
-      );
+      try {
+        await aiService.generateOrderBudgetStream(
+          {
+            title: safeFormData.title,
+            description: safeFormData.description || '',
+          },
+          (chunk) => {
+            aiResponse += chunk;
+          }
+        );
+      } catch (error: any) {
+        console.error("Error in generateOrderBudgetStream:", error);
+        throw new Error(error?.message || "Не удалось получить ответ от AI");
+      }
 
-      // Парсим бюджет из ответа
       const parsed = parseAIResponse(aiResponse);
       if (parsed) {
         if (parsed.budget_min && typeof parsed.budget_min === "number") {
-          form.setFieldValue("budget_min", parsed.budget_min);
+          onFormDataChange({ budget_min: parsed.budget_min });
         }
         if (parsed.budget_max && typeof parsed.budget_max === "number") {
-          form.setFieldValue("budget_max", parsed.budget_max);
+          onFormDataChange({ budget_max: parsed.budget_max });
         }
         toastService.success("Бюджет предложен!");
       } else {
         toastService.warning("Не удалось распознать бюджет. Попробуйте еще раз.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating budget:", error);
-      toastService.error("Не удалось предложить бюджет");
+      toastService.error(error?.message || "Не удалось предложить бюджет");
     } finally {
       setGeneratingBudget(false);
     }
   };
 
-  return (
-    <Space direction="vertical" size={32} style={{ width: '100%' }}>
-      {/* Кнопка AI заполнить всё */}
-      {onGenerateAll && (
-        <div style={{ 
-          padding: '16px', 
-          background: 'var(--primary-05)', 
-          borderRadius: '8px',
-          border: '1px solid var(--primary-12)',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <div>
-              <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>
-                <Sparkles size={14} style={{ marginRight: 8, color: 'var(--primary)', verticalAlign: 'middle' }} />
-                AI помощник
-              </Text>
-              <Text type="secondary" style={{ fontSize: '13px', display: 'block' }}>
-                Автоматически заполнит описание, навыки, бюджет и сроки
-              </Text>
-            </div>
-            <Button
-              type="primary"
-              icon={<Sparkles size={16} />}
-              onClick={onGenerateAll}
-              style={{ background: 'var(--primary)', borderColor: 'var(--primary)', flexShrink: 0 }}
-            >
-              AI заполнить всё
-            </Button>
-          </div>
-        </div>
-      )}
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
 
-      {/* Секция 1: Основная информация */}
-      <div>
-        <Title level={4} style={{ margin: '0 0 24px 0', fontSize: '16px', fontWeight: 600 }}>
-          Основная информация
-        </Title>
-        <Space direction="vertical" size={24} style={{ width: '100%' }}>
-          <Form.Item
-            name="title"
-            label={
-              <Text strong style={{ fontSize: '14px' }}>
-                Название заказа <Text type="danger">*</Text>
-              </Text>
-            }
-            rules={[
-              { required: true, message: "Введите название заказа" },
-              { min: 3, message: "Минимум 3 символа" },
-              { max: 200, message: "Максимум 200 символов" },
-            ]}
-            style={{ marginBottom: 0 }}
+    if (!safeFormData.title || safeFormData.title.length < 3) {
+      newErrors.title = "Минимум 3 символа";
+    }
+    if (safeFormData.title && safeFormData.title.length > 200) {
+      newErrors.title = "Максимум 200 символов";
+    }
+
+    if (!safeFormData.description || safeFormData.description.length < 10) {
+      newErrors.description = "Минимум 10 символов";
+    }
+    if (safeFormData.description && safeFormData.description.length > 5000) {
+      newErrors.description = "Максимум 5000 символов";
+    }
+
+    if (safeFormData.budget_min !== undefined && safeFormData.budget_max !== undefined) {
+      if (safeFormData.budget_min > safeFormData.budget_max) {
+        newErrors.budget_min = "Минимум не может быть больше максимума";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      onSubmit(formData);
+    }
+  };
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
+      <Stack spacing={4}>
+        {/* AI Helper Section */}
+        {onGenerateAll && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              borderRadius: 2,
+            }}
           >
-            <Input
-              prefix={<Briefcase size={16} />}
-              placeholder="Например: Разработка веб-приложения для стартапа"
-              size="large"
+            <Box 
+              display="flex" 
+              flexDirection={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between" 
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              gap={2}
+            >
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} display="flex" alignItems="center" gap={1}>
+                  <Sparkles size={14} />
+                  AI помощник
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                  Автоматически заполнит описание, навыки, бюджет и сроки
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<Sparkles size={16} />}
+                onClick={onGenerateAll}
+                sx={{ flexShrink: 0 }}
+                fullWidth
+              >
+                AI заполнить всё
+              </Button>
+            </Box>
+          </Paper>
+        )}
+
+        {/* Main Information Section */}
+        <Box>
+          <Typography variant="h6" fontWeight={600} mb={3}>
+            Основная информация
+          </Typography>
+          <Stack spacing={3}>
+            <TextField
+              fullWidth
+              required
+              label="Название заказа"
+              value={safeFormData.title || ''}
               onChange={(e) => {
                 const title = e.target.value;
-                form.setFieldValue("title", title);
+                onFormDataChange({ title });
                 if (aiMode && title && onTitleChange) {
                   onTitleChange(title);
                 }
               }}
+              error={!!errors.title}
+              helperText={errors.title}
+              placeholder="Например: Разработка веб-приложения для стартапа"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Briefcase size={20} />
+                  </InputAdornment>
+                ),
+              }}
             />
-          </Form.Item>
 
-          <Form.Item
-            name="description"
-            label={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <Text strong style={{ fontSize: '14px' }}>
-                  Описание проекта <Text type="danger">*</Text>
-                </Text>
+            {categories.length > 0 && (
+              <FormControl fullWidth>
+                <InputLabel>Категория</InputLabel>
+                <Select
+                  value={safeFormData.category_id || ''}
+                  onChange={(e) => onFormDataChange({ category_id: e.target.value || undefined })}
+                  label="Категория"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <FolderTree size={20} />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="">Не выбрана</MenuItem>
+                  {categories.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
+            <Box>
+              <Box 
+                display="flex" 
+                flexDirection={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between" 
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                gap={1}
+                mb={1}
+              >
+                <Typography variant="body2" fontWeight={500}>
+                  Описание проекта <span style={{ color: 'error.main' }}>*</span>
+                </Typography>
                 <Button
-                  type="text"
                   size="small"
-                  icon={generatingDescription ? <Spin size="small" /> : <Sparkles size={14} />}
+                  startIcon={generatingDescription ? <CircularProgress size={14} /> : <Sparkles size={14} />}
                   onClick={handleGenerateDescription}
-                  loading={generatingDescription}
-                  style={{ color: 'var(--primary)', padding: '0 4px', height: 'auto' }}
+                  disabled={generatingDescription}
+                  sx={{ minWidth: 'auto' }}
                 >
                   {generatingDescription ? 'Генерирую...' : 'AI создать описание'}
                 </Button>
-              </div>
-            }
-            rules={[
-              { required: true, message: "Введите описание заказа" },
-              { min: 10, message: "Минимум 10 символов" },
-              { max: 5000, message: "Максимум 5000 символов" },
-            ]}
-            style={{ marginBottom: 0 }}
-            help={
-              <Text type="secondary" style={{ fontSize: '13px' }}>
-                Опишите детали проекта, требования, ожидания и задачи. Или используйте AI для генерации описания.
-              </Text>
-            }
-          >
-            <TextArea
-              rows={8}
-              placeholder="Опишите детали проекта, требования, ожидания..."
-              showCount
-              maxLength={5000}
-              style={{ resize: 'vertical' }}
-            />
-          </Form.Item>
-        </Space>
-      </div>
+              </Box>
+              <TextField
+                fullWidth
+                required
+                multiline
+                rows={8}
+                value={safeFormData.description || ''}
+                onChange={(e) => onFormDataChange({ description: e.target.value })}
+                error={!!errors.description}
+                helperText={errors.description || "Опишите детали проекта, требования, ожидания и задачи"}
+                placeholder="Опишите детали проекта, требования, ожидания..."
+                inputProps={{ maxLength: 5000 }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
+                {safeFormData.description?.length || 0} / 5000
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
 
-      {/* Секция 2: Требования */}
-      <div>
-        <Title level={4} style={{ margin: '0 0 24px 0', fontSize: '16px', fontWeight: 600 }}>
-          Требования к исполнителю
-        </Title>
-        <Space direction="vertical" size={24} style={{ width: '100%' }}>
-          <Form.Item
-            label={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <Text strong style={{ fontSize: '14px' }}>
-                  Требуемые навыки
-                </Text>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={generatingSkills ? <Spin size="small" /> : <Sparkles size={14} />}
-                  onClick={handleGenerateSkills}
-                  loading={generatingSkills}
-                  style={{ color: 'var(--primary)', padding: '0 4px', height: 'auto' }}
-                >
-                  {generatingSkills ? 'Генерирую...' : 'AI подобрать навыки'}
-                </Button>
-              </div>
-            }
-            help={
-              <Text type="secondary" style={{ fontSize: '13px' }}>
-                Укажите необходимые технологии и навыки. Введите навык и нажмите Enter, или используйте AI для подбора.
-              </Text>
-            }
-            style={{ marginBottom: 0 }}
-          >
-            <Select
-              mode="tags"
-              placeholder="Например: React, TypeScript, Node.js, PostgreSQL"
+        {/* Requirements Section */}
+        <Box>
+          <Typography variant="h6" fontWeight={600} mb={3}>
+            Требования к исполнителю
+          </Typography>
+          <Box>
+            <Box 
+              display="flex" 
+              flexDirection={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between" 
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              gap={1}
+              mb={1}
+            >
+              <Typography variant="body2" fontWeight={500}>
+                Требуемые навыки
+              </Typography>
+              <Button
+                size="small"
+                startIcon={generatingSkills ? <CircularProgress size={14} /> : <Sparkles size={14} />}
+                onClick={handleGenerateSkills}
+                disabled={generatingSkills}
+                sx={{ minWidth: 'auto' }}
+              >
+                {generatingSkills ? 'Генерирую...' : 'AI подобрать навыки'}
+              </Button>
+            </Box>
+            <Autocomplete
+              multiple
+              freeSolo
+              options={skillOptions}
               value={skills}
-              onChange={onSkillsChange}
-              tokenSeparators={[","]}
-              maxTagCount="responsive"
-              size="large"
-              tagRender={(props) => {
-                const { label, value, closable, onClose } = props;
-                return (
-                  <Tag
-                    color="processing"
-                    closable={closable}
-                    onClose={onClose}
-                    style={{ 
-                      margin: '2px 4px 2px 0',
-                      padding: '4px 10px',
-                      fontSize: '13px',
-                      height: '28px',
-                      lineHeight: '20px',
-                      borderRadius: '6px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    {label}
-                  </Tag>
-                );
+              onChange={(_, newValue) => onSkillsChange(newValue)}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    label={option}
+                    {...getTagProps({ index })}
+                    key={option}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Выберите или введите навыки"
+                  helperText="Выберите из списка или введите свой навык и нажмите Enter"
+                />
+              )}
+            />
+          </Box>
+        </Box>
+
+        {/* Budget and Deadline Section */}
+        <Box>
+          <Box 
+            display="flex" 
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between" 
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            gap={1}
+            mb={3}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              Бюджет и сроки выполнения
+            </Typography>
+            <Button
+              size="small"
+              startIcon={generatingBudget ? <CircularProgress size={14} /> : <Sparkles size={14} />}
+              onClick={handleGenerateBudget}
+              disabled={generatingBudget}
+              sx={{ minWidth: 'auto' }}
+            >
+              {generatingBudget ? 'Генерирую...' : 'AI предложить бюджет'}
+            </Button>
+          </Box>
+          <Stack spacing={3}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Бюджет от (₽)"
+                  value={safeFormData.budget_min || ''}
+                  onChange={(e) => onFormDataChange({ budget_min: Number(e.target.value) })}
+                  error={!!errors.budget_min}
+                  helperText={errors.budget_min || "Минимальная сумма проекта"}
+                  placeholder="0"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Wallet size={20} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Бюджет до (₽)"
+                  value={safeFormData.budget_max || ''}
+                  onChange={(e) => onFormDataChange({ budget_max: Number(e.target.value) })}
+                  helperText="Максимальная сумма проекта"
+                  placeholder="0"
+                />
+              </Grid>
+            </Grid>
+
+            <DateTimePicker
+              label="Срок выполнения"
+              value={safeFormData.deadline || null}
+              onChange={(newValue) => onFormDataChange({ deadline: newValue })}
+              minDate={dayjs()}
+              format="DD.MM.YYYY HH:mm"
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  helperText: "Выберите дату и время завершения проекта",
+                  InputProps: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Calendar size={20} />
+                      </InputAdornment>
+                    ),
+                  },
+                },
               }}
             />
-          </Form.Item>
-        </Space>
-      </div>
+          </Stack>
+        </Box>
 
-      {/* Секция 3: Бюджет и сроки */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <Title level={4} style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-            Бюджет и сроки выполнения
-          </Title>
+        {/* Submit Button */}
+        <Box display="flex" justifyContent="flex-end" gap={2}>
           <Button
-            type="text"
-            size="small"
-            icon={generatingBudget ? <Spin size="small" /> : <Sparkles size={14} />}
-            onClick={handleGenerateBudget}
-            loading={generatingBudget}
-            style={{ color: 'var(--primary)', padding: '0 4px', height: 'auto' }}
+            variant="contained"
+            size="large"
+            onClick={handleSubmit}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : undefined}
           >
-            {generatingBudget ? 'Генерирую...' : 'AI предложить бюджет'}
+            {loading ? 'Создание...' : 'Создать заказ'}
           </Button>
-        </div>
-        <Space direction="vertical" size={24} style={{ width: '100%' }}>
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="budget_min"
-                label={
-                  <Text strong style={{ fontSize: '14px' }}>
-                    Бюджет от (₽)
-                  </Text>
-                }
-                rules={[
-                  { type: 'number', min: 0, message: 'Минимальная сумма должна быть положительной' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      const max = getFieldValue('budget_max');
-                      if (!value || !max || value <= max) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error('Минимум не может быть больше максимума'));
-                    },
-                  }),
-                ]}
-                style={{ marginBottom: 0 }}
-                help={
-                  <Text type="secondary" style={{ fontSize: '13px' }}>
-                    Минимальная сумма проекта
-                  </Text>
-                }
-              >
-                <InputNumber
-                  prefix={<Wallet size={16} />}
-                  placeholder="0"
-                  min={0}
-                  size="large"
-                  style={{ width: "100%" }}
-                  formatter={(value) => formatNumber(value)}
-                  parser={(value) => parseFormattedNumber(value) as any}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="budget_max"
-                label={
-                  <Text strong style={{ fontSize: '14px' }}>
-                    Бюджет до (₽)
-                  </Text>
-                }
-                rules={[
-                  { type: 'number', min: 0, message: 'Максимальная сумма должна быть положительной' },
-                ]}
-                style={{ marginBottom: 0 }}
-                help={
-                  <Text type="secondary" style={{ fontSize: '13px' }}>
-                    Максимальная сумма проекта
-                  </Text>
-                }
-              >
-                <InputNumber
-                  placeholder="0"
-                  min={0}
-                  size="large"
-                  style={{ width: "100%" }}
-                  formatter={(value) => formatNumber(value)}
-                  parser={(value) => parseFormattedNumber(value) as any}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="deadline"
-            label={
-              <Text strong style={{ fontSize: '14px' }}>
-                Срок выполнения
-              </Text>
-            }
-            style={{ marginBottom: 0 }}
-            help={
-              <Text type="secondary" style={{ fontSize: '13px' }}>
-                Выберите дату и время завершения проекта
-              </Text>
-            }
-          >
-            <DatePicker
-              style={{ width: "100%" }}
-              size="large"
-              disabledDate={(current) => current && current < dayjs().startOf("day")}
-              showTime={{ format: 'HH:mm' }}
-              format="DD.MM.YYYY HH:mm"
-              placeholder="Выберите дату и время"
-            />
-          </Form.Item>
-        </Space>
-      </div>
-
-    </Space>
+        </Box>
+      </Stack>
+    </LocalizationProvider>
   );
 }

@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { toastService } from "@/src/shared/lib/toast";
 import { aiService } from "@/src/shared/lib/ai";
-import { parseAIResponse } from "@/src/shared/lib/ai/ai-utils";
 import type { AISuggestions } from "../ui/CreateOrderAISuggestions";
 import dayjs from "dayjs";
 
@@ -25,88 +24,64 @@ export function useAISuggestions() {
       // Генерируем описание через стриминг если его нет
       let fullDescription = description;
       if (!description || description.trim() === "") {
-        await aiService.generateOrderDescriptionStream(
-          {
-            title,
-            description: "Создайте подробное описание проекта",
-            skills: [],
-          },
-          (chunk) => {
-            fullDescription += chunk;
-            onDescriptionUpdate?.(fullDescription);
-          }
+        try {
+          await aiService.generateOrderDescriptionStream(
+            {
+              title,
+              description: "Создайте подробное описание проекта",
+              skills: [],
+            },
+            (chunk) => {
+              fullDescription += chunk;
+              onDescriptionUpdate?.(fullDescription);
+            }
+          );
+        } catch (error) {
+          console.error("Error generating description:", error);
+          // Продолжаем работу даже если описание не сгенерировалось
+        }
+      }
+
+      // Параллельно запрашиваем навыки и бюджет
+      const [skillsResult, budgetResult] = await Promise.allSettled([
+        aiService.generateOrderSkills({ title, description: fullDescription }),
+        aiService.generateOrderBudget({ title, description: fullDescription }),
+      ]);
+
+      // Извлекаем навыки
+      let skills: string[] = [];
+      if (skillsResult.status === "fulfilled" && skillsResult.value?.skills) {
+        // API возвращает { skill, level }, извлекаем только названия
+        skills = skillsResult.value.skills.map((s: any) => 
+          typeof s === "string" ? s : s.skill
         );
       }
 
-      // Генерируем предложения по остальным полям через AI
-      const prompt = `Ты - AI помощник для создания заказов на фриланс-платформе. 
+      // Извлекаем бюджет
+      let budget_min: number | undefined;
+      let budget_max: number | undefined;
+      if (budgetResult.status === "fulfilled" && budgetResult.value) {
+        budget_min = budgetResult.value.budget_min;
+        budget_max = budgetResult.value.budget_max;
+      }
 
-На основе заказа:
-Название: "${title}"
-Описание: "${fullDescription}"
+      // Формируем предложения
+      const suggestions: AISuggestions = {
+        skills,
+        budget_min,
+        budget_max,
+        deadline: undefined, // API не предоставляет рекомендацию по срокам в этом контексте
+        needsAttachments: false,
+        attachmentDescription: "",
+      };
 
-Проанализируй заказ и предложи оптимальные значения для:
-1. Навыки (skills) - список технологий/инструментов, которые нужны для выполнения заказа (массив строк, минимум 2-3 навыка)
-2. Бюджет (budget_min и budget_max) - минимальная и максимальная стоимость в рублях (числа)
-3. Срок (deadline_days) - количество дней на выполнение от сегодня (число)
-4. Файлы (needs_attachments) - нужны ли прикрепленные файлы (boolean)
-5. Описание файлов (attachment_description) - зачем нужны файлы (строка, если needs_attachments = true)
-
-КРИТИЧЕСКИ ВАЖНО: 
-- Ответь ТОЛЬКО валидным JSON объектом
-- НЕ добавляй никакого текста до или после JSON
-- НЕ используй markdown код блоки
-- JSON должен начинаться с { и заканчиваться }
-- Все поля обязательны, используй пустые значения если не уверен
-
-Пример правильного ответа:
-{
-  "skills": ["Vue.js", "TypeScript", "Node.js"],
-  "budget_min": 50000,
-  "budget_max": 100000,
-  "deadline_days": 30,
-  "needs_attachments": true,
-  "attachment_description": "Рекомендуется прикрепить примеры дизайна или техническое задание"
-}`;
-
-      let aiResponse = "";
-      await aiService.chatAssistantStream(
-        {
-          message: prompt,
-          context_data: {
-            user_role: "client",
-          },
-        },
-        (chunk) => {
-          aiResponse += chunk;
-        }
-      );
-
-      // Парсим JSON из ответа
-      console.log("AI Response for suggestions:", aiResponse);
-      const parsed = parseAIResponse(aiResponse);
-      console.log("Parsed AI suggestions:", parsed);
+      console.log("Generated AI suggestions:", suggestions);
       
-      if (parsed) {
-        const deadline = parsed.deadline_days
-          ? dayjs().add(parsed.deadline_days, "day").toISOString()
-          : undefined;
-
-        const suggestions: AISuggestions = {
-          skills: Array.isArray(parsed.skills) ? parsed.skills : [],
-          budget_min: typeof parsed.budget_min === "number" ? parsed.budget_min : undefined,
-          budget_max: typeof parsed.budget_max === "number" ? parsed.budget_max : undefined,
-          deadline,
-          needsAttachments: Boolean(parsed.needs_attachments),
-          attachmentDescription: parsed.attachment_description || "",
-        };
-        
-        console.log("Final suggestions:", suggestions);
+      if (skills.length > 0 || budget_min || budget_max) {
         setAiSuggestions(suggestions);
         return suggestions;
       }
 
-      console.warn("Failed to parse AI suggestions, response was:", aiResponse);
       toastService.warning("AI не смог сгенерировать предложения. Попробуйте еще раз.");
       return null;
     } catch (error) {
@@ -125,4 +100,3 @@ export function useAISuggestions() {
     setAiSuggestions,
   };
 }
-

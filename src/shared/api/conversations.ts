@@ -89,3 +89,28 @@ export const deleteMessage = async (
   await api.delete(`/conversations/${conversationId}/messages/${messageId}`);
 };
 
+/**
+ * Добавить реакцию на сообщение
+ */
+export const addReaction = async (
+  conversationId: string,
+  messageId: string,
+  emoji: string
+): Promise<{ reaction: any }> => {
+  const response = await api.post(
+    `/conversations/${conversationId}/messages/${messageId}/reactions`,
+    { emoji }
+  );
+  return response.data;
+};
+
+/**
+ * Удалить реакцию на сообщение
+ */
+export const removeReaction = async (
+  conversationId: string,
+  messageId: string
+): Promise<void> => {
+  await api.delete(`/conversations/${conversationId}/messages/${messageId}/reactions`);
+};
+

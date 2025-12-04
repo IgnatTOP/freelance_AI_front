@@ -26,7 +26,6 @@ const posts = [
     date: '2025-01-15',
     readTime: '5 мин',
     category: 'Новости',
-    image: '/blog/launch.jpg',
   },
   {
     id: 2,
@@ -35,7 +34,6 @@ const posts = [
     date: '2025-01-10',
     readTime: '7 мин',
     category: 'Гайды',
-    image: '/blog/ai-tz.jpg',
   },
   {
     id: 3,
@@ -44,7 +42,6 @@ const posts = [
     date: '2025-01-05',
     readTime: '10 мин',
     category: 'Советы',
-    image: '/blog/tips.jpg',
   },
   {
     id: 4,
@@ -53,7 +50,6 @@ const posts = [
     date: '2024-12-28',
     readTime: '4 мин',
     category: 'Обновления',
-    image: '/blog/update.jpg',
   },
   {
     id: 5,
@@ -62,7 +58,6 @@ const posts = [
     date: '2024-12-20',
     readTime: '6 мин',
     category: 'Гайды',
-    image: '/blog/escrow.jpg',
   },
   {
     id: 6,
@@ -71,14 +66,12 @@ const posts = [
     date: '2024-12-15',
     readTime: '8 мин',
     category: 'Истории',
-    image: '/blog/success.jpg',
   },
 ];
 
 export default function BlogPage() {
   return (
     <div className="min-h-screen">
-
       {/* Hero Section */}
       <section className="relative py-24 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary-dark/5" />
@@ -100,39 +93,36 @@ export default function BlogPage() {
         <Container>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post) => (
-              <Link key={post.id} href={`/blog/${post.id}`}>
+              <Link key={post.id} href={`/blog/${post.id}`} className="block h-full">
                 <Card padding="none" className="overflow-hidden h-full group cursor-pointer">
                   {/* Image placeholder */}
-                  <div className="relative h-56 bg-gradient-to-br from-primary/20 to-primary-dark/20 overflow-hidden glass border-b border-border/50">
+                  <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary-dark/20 overflow-hidden glass border-b border-border/50 flex-shrink-0">
                     <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 group-hover:scale-105 transition-transform duration-300">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <ImageIcon size={32} className="text-primary" />
+                      <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <ImageIcon size={28} className="text-primary" />
                       </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-foreground-secondary">{post.category}</p>
-                        <p className="text-xs text-foreground-tertiary mt-1">800x600</p>
-                      </div>
+                      <p className="text-sm font-medium text-foreground-secondary">{post.category}</p>
                     </div>
                   </div>
 
-                  <div className="p-6 space-y-4">
+                  <div className="p-6 flex flex-col flex-1">
                     {/* Category */}
-                    <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary w-fit mb-3">
                       {post.category}
                     </span>
 
                     {/* Title */}
-                    <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                    <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-3">
                       {post.title}
                     </h3>
 
                     {/* Excerpt */}
-                    <p className="text-foreground-secondary line-clamp-3">
+                    <p className="text-foreground-secondary line-clamp-3 flex-1">
                       {post.excerpt}
                     </p>
 
                     {/* Meta */}
-                    <div className="flex items-center justify-between text-sm text-foreground-tertiary pt-4 border-t border-border">
+                    <div className="flex items-center justify-between text-sm text-foreground-tertiary pt-4 mt-4 border-t border-border">
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-1">
                           <Calendar size={14} />

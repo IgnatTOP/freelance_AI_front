@@ -1,10 +1,23 @@
 /**
  * Общие валидации для форм
  * Синхронизировано с бекендом
+ * @deprecated These rules were designed for Ant Design Form. Use custom validation with MUI forms instead.
  */
 
-import { Rule } from "antd/es/form";
 import { VALIDATION_CONSTANTS } from "./validation-constants";
+
+// Custom Rule type to replace Ant Design's Rule type
+export type Rule = {
+  required?: boolean;
+  message?: string;
+  type?: 'string' | 'number' | 'boolean' | 'email' | 'url';
+  min?: number;
+  max?: number;
+  pattern?: RegExp;
+  validator?: (rule: any, value: any) => Promise<void>;
+} | ((form: { getFieldValue: (field: string) => any }) => {
+  validator: (rule: any, value: any) => Promise<void>;
+});
 
 /**
  * Валидация email

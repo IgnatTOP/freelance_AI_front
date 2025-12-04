@@ -1,22 +1,24 @@
 "use client";
-import { toastService } from "@/src/shared/lib/toast";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Layout,
+  Box,
   Card,
-  Form,
-  Input,
+  CardContent,
+  TextField,
   Button,
   Typography,
-  Space,
+  Stack,
   Alert,
-  theme,
-  Row,
-  Col,
-} from "antd";
+  Grid,
+  useTheme,
+  InputAdornment,
+  IconButton,
+} from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { toastService } from "@/src/shared/lib/toast";
 import { motion } from "framer-motion";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import {
@@ -31,19 +33,25 @@ import {
   Shield,
 } from "lucide-react";
 
-const { Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
-const { useToken } = theme;
-
 type Role = "client" | "freelancer";
 
 export default function RegisterPage() {
-  const { token } = useToken();
+  const theme = useTheme();
   const router = useRouter();
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
   useEffect(() => {
     if (authService.isAuthenticated()) {
@@ -51,7 +59,72 @@ export default function RegisterPage() {
     }
   }, [router]);
 
-  const handleSubmit = async (values: any) => {
+  const validateEmail = (email: string) => {
+    if (!email) {
+      setEmailError("Введите email");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Введите корректный email");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const validateUsername = (username: string) => {
+    if (!username) {
+      setUsernameError("Введите имя пользователя");
+      return false;
+    }
+    if (username.length < 3) {
+      setUsernameError("Минимум 3 символа");
+      return false;
+    }
+    if (username.length > 30) {
+      setUsernameError("Максимум 30 символов");
+      return false;
+    }
+    if (!/^[a-z0-9_]+$/i.test(username)) {
+      setUsernameError("Только буквы, цифры и _");
+      return false;
+    }
+    setUsernameError("");
+    return true;
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordError("Введите пароль");
+      return false;
+    }
+    if (password.length < 8) {
+      setPasswordError("Минимум 8 символов");
+      return false;
+    }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setPasswordError("Пароль должен содержать буквы и цифры");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
+
+  const validateConfirmPassword = (confirmPass: string, pass: string) => {
+    if (!confirmPass) {
+      setConfirmPasswordError("Подтвердите пароль");
+      return false;
+    }
+    if (confirmPass !== pass) {
+      setConfirmPasswordError("Пароли не совпадают");
+      return false;
+    }
+    setConfirmPasswordError("");
+    return true;
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError("");
 
     if (!selectedRole) {
@@ -59,15 +132,24 @@ export default function RegisterPage() {
       return;
     }
 
+    const isEmailValid = validateEmail(email);
+    const isUsernameValid = validateUsername(username);
+    const isPasswordValid = validatePassword(password);
+    const isConfirmPasswordValid = validateConfirmPassword(confirmPassword, password);
+
+    if (!isEmailValid || !isUsernameValid || !isPasswordValid || !isConfirmPasswordValid) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       await authService.register({
-        email: values.email,
-        password: values.password,
-        username: values.username,
+        email,
+        password,
+        username,
         role: selectedRole,
-        display_name: values.displayName || values.username,
+        display_name: displayName || username,
       });
 
       toastService.success("Регистрация прошла успешно!");
@@ -111,460 +193,438 @@ export default function RegisterPage() {
   ];
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "100vh",
-            padding: "40px 24px",
-          }}
+    <Box sx={{ minHeight: "100vh", background: "transparent" }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          padding: { xs: "24px", md: "40px 24px" },
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          style={{ width: "100%", maxWidth: selectedRole ? 480 : 960 }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            style={{ width: "100%", maxWidth: selectedRole ? 480 : 960 }}
-          >
-            <Space direction="vertical" size={32} style={{ width: "100%" }}>
-              {/* Header */}
-              <div style={{ textAlign: "center" }}>
-                <motion.div
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: token.borderRadiusLG,
-                    background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 16,
-                  }}
-                >
-                  <UserPlus size={32} strokeWidth={2} style={{ color: "#fff" }} />
-                </motion.div>
-                <Title
-                  level={1}
-                  style={{
-                    margin: 0,
-                    fontSize: 32,
-                    lineHeight: "40px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Регистрация
-                </Title>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: 14,
-                    lineHeight: "22px",
-                    display: "block",
-                    marginTop: 8,
-                  }}
-                >
-                  {!selectedRole
-                    ? "Выберите роль для начала работы"
-                    : "Создайте аккаунт на платформе"}
-                </Text>
-              </div>
+          <Stack spacing={4}>
+            {/* Header */}
+            <Box sx={{ textAlign: "center" }}>
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: typeof theme.shape.borderRadius === 'number' ? theme.shape.borderRadius * 2 : 16,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <UserPlus size={32} strokeWidth={2} style={{ color: "#fff" }} />
+              </motion.div>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{ fontWeight: 600, mb: 1 }}
+              >
+                Регистрация
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {!selectedRole
+                  ? "Выберите роль для начала работы"
+                  : "Создайте аккаунт на платформе"}
+              </Typography>
+            </Box>
 
-              {/* Role Selection */}
-              {!selectedRole && (
-                <Row gutter={[24, 24]}>
-                  {roles.map((role, index) => {
-                    const Icon = role.icon;
-                    return (
-                      <Col xs={24} md={12} key={role.id}>
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+            {/* Role Selection */}
+            {!selectedRole && (
+              <Grid container spacing={3}>
+                {roles.map((role, index) => {
+                  const Icon = role.icon;
+                  return (
+                    <Grid size={{ xs: 12, md: 6 }} key={role.id}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+                      >
+                        <Card
+                          onClick={() => setSelectedRole(role.id)}
+                          sx={{
+                            borderRadius: 2,
+                            borderColor: theme.palette.divider,
+                            height: "100%",
+                            cursor: "pointer",
+                            transition: "all 0.3s ease",
+                            "&:hover": {
+                              borderColor: theme.palette.primary.main,
+                              boxShadow: `0 4px 12px ${theme.palette.primary.main}33`,
+                            },
+                          }}
                         >
-                          <Card
-                            hoverable
-                            onClick={() => setSelectedRole(role.id)}
-                            style={{
-                              borderRadius: token.borderRadiusLG,
-                              borderColor: token.colorBorder,
-                              height: "100%",
-                              cursor: "pointer",
-                            }}
-                            styles={{
-                              body: { padding: 24 },
-                            }}
-                          >
-                            <Space direction="vertical" size={16} style={{ width: "100%" }}>
-                              <Space align="start" size={16}>
-                                <div
-                                  style={{
+                          <CardContent sx={{ p: 3 }}>
+                            <Stack spacing={2}>
+                              <Stack direction="row" spacing={2} alignItems="flex-start">
+                                <Box
+                                  sx={{
                                     width: 56,
                                     height: 56,
-                                    borderRadius: token.borderRadiusLG,
-                                    background: `${token.colorPrimary}1A`,
+                                    borderRadius: 2,
+                                    background: `${theme.palette.primary.main}1A`,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     flexShrink: 0,
                                   }}
                                 >
-                                  <Icon size={28} style={{ color: token.colorPrimary }} />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                  <Title
-                                    level={3}
-                                    style={{
-                                      margin: 0,
-                                      fontSize: 20,
-                                      lineHeight: "28px",
-                                      fontWeight: 600,
-                                    }}
+                                  <Icon size={28} style={{ color: theme.palette.primary.main }} />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: 600, mb: 0.5 }}
                                   >
                                     {role.title}
-                                  </Title>
-                                  <Text
-                                    type="secondary"
-                                    style={{
-                                      fontSize: 14,
-                                      lineHeight: "22px",
-                                      display: "block",
-                                      marginTop: 4,
-                                    }}
-                                  >
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
                                     {role.description}
-                                  </Text>
-                                </div>
-                              </Space>
+                                  </Typography>
+                                </Box>
+                              </Stack>
 
-                              <div
-                                style={{
-                                  paddingTop: 16,
-                                  borderTop: `1px solid ${token.colorBorderSecondary}`,
+                              <Box
+                                sx={{
+                                  pt: 2,
+                                  borderTop: `1px solid ${theme.palette.divider}`,
                                 }}
                               >
-                                <Space direction="vertical" size={8}>
+                                <Stack spacing={1}>
                                   {role.features.map((feature, i) => (
-                                    <div
+                                    <Box
                                       key={i}
-                                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
                                     >
                                       <Check
                                         size={16}
                                         style={{
-                                          color: token.colorSuccess,
+                                          color: theme.palette.success.main,
                                           flexShrink: 0,
                                         }}
                                       />
-                                      <Text
-                                        style={{
-                                          fontSize: 14,
-                                          lineHeight: "22px",
-                                          color: token.colorTextSecondary,
-                                        }}
-                                      >
+                                      <Typography variant="body2" color="text.secondary">
                                         {feature}
-                                      </Text>
-                                    </div>
+                                      </Typography>
+                                    </Box>
                                   ))}
-                                </Space>
-                              </div>
-                            </Space>
-                          </Card>
-                        </motion.div>
-                      </Col>
-                    );
-                  })}
-                </Row>
-              )}
+                                </Stack>
+                              </Box>
+                            </Stack>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            )}
 
-              {/* Registration Form */}
-              {selectedRole && (
-                <Card
-                  style={{
-                    borderRadius: token.borderRadiusLG,
-                    borderColor: token.colorBorder,
-                  }}
-                  styles={{
-                    body: { padding: 32 },
-                  }}
-                >
+            {/* Registration Form */}
+            {selectedRole && (
+              <Card
+                sx={{
+                  borderRadius: 2,
+                  borderColor: theme.palette.divider,
+                }}
+              >
+                <CardContent sx={{ p: 4 }}>
                   {/* Selected Role Badge */}
-                  <div
-                    style={{
+                  <Box
+                    sx={{
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      gap: 12,
-                      padding: 16,
-                      marginBottom: 24,
-                      borderRadius: token.borderRadius,
-                      background: `${token.colorPrimary}0D`,
-                      border: `1px solid ${token.colorPrimary}26`,
+                      gap: 1.5,
+                      p: 2,
+                      mb: 3,
+                      borderRadius: 1,
+                      background: `${theme.palette.primary.main}0D`,
+                      border: `1px solid ${theme.palette.primary.main}26`,
                     }}
                   >
-                    <div
-                      style={{
+                    <Box
+                      sx={{
                         width: 40,
                         height: 40,
-                        borderRadius: token.borderRadius,
-                        background: `${token.colorPrimary}1A`,
+                        borderRadius: 1,
+                        background: `${theme.palette.primary.main}1A`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
                       {selectedRole === "client" ? (
-                        <Briefcase size={20} style={{ color: token.colorPrimary }} />
+                        <Briefcase size={20} style={{ color: theme.palette.primary.main }} />
                       ) : (
-                        <Users size={20} style={{ color: token.colorPrimary }} />
+                        <Users size={20} style={{ color: theme.palette.primary.main }} />
                       )}
-                    </div>
-                    <Text strong style={{ fontSize: 14, lineHeight: "22px", flex: 1 }}>
+                    </Box>
+                    <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }}>
                       Регистрация как {selectedRole === "client" ? "Заказчик" : "Фрилансер"}
-                    </Text>
+                    </Typography>
                     <Button
-                      type="text"
+                      variant="text"
                       size="small"
                       onClick={() => setSelectedRole(null)}
-                      style={{ fontSize: 14, lineHeight: "22px" }}
                     >
                       Изменить
                     </Button>
-                  </div>
+                  </Box>
 
-                  <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleSubmit}
-                    size="large"
-                    requiredMark={false}
-                  >
-                    {/* Error Alert */}
-                    {error && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        style={{ marginBottom: 24 }}
-                      >
-                        <Alert
-                          message="Ошибка регистрации"
-                          description={error}
-                          type="error"
-                          showIcon
-                          closable
-                          onClose={() => setError("")}
-                          style={{ borderRadius: token.borderRadius }}
-                        />
-                      </motion.div>
-                    )}
+                  <form onSubmit={handleSubmit}>
+                    <Stack spacing={3}>
+                      {/* Error Alert */}
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          <Alert
+                            severity="error"
+                            onClose={() => setError("")}
+                            sx={{ borderRadius: 1 }}
+                          >
+                            <Typography variant="body2" fontWeight={600}>
+                              Ошибка регистрации
+                            </Typography>
+                            <Typography variant="body2">{error}</Typography>
+                          </Alert>
+                        </motion.div>
+                      )}
 
-                    {/* Email */}
-                    <Form.Item
-                      name="email"
-                      label={<Text strong style={{ fontSize: 14, lineHeight: "22px" }}>Email</Text>}
-                      rules={[
-                        { required: true, message: "Введите email" },
-                        { type: "email", message: "Введите корректный email" },
-                      ]}
-                      style={{ marginBottom: 24 }}
-                    >
-                      <Input
-                        prefix={<Mail size={16} style={{ color: token.colorTextTertiary }} />}
+                      {/* Email Field */}
+                      <TextField
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setEmailError("");
+                        }}
+                        onBlur={() => validateEmail(email)}
+                        error={!!emailError}
+                        helperText={emailError}
+                        disabled={loading}
                         placeholder="your@email.com"
-                        disabled={loading}
-                        style={{ fontSize: 14, lineHeight: "22px", height: 40 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Mail size={16} style={{ color: theme.palette.text.secondary }} />
+                            </InputAdornment>
+                          ),
+                        }}
+                        fullWidth
+                        required
                       />
-                    </Form.Item>
 
-                    {/* Username */}
-                    <Form.Item
-                      name="username"
-                      label={<Text strong style={{ fontSize: 14, lineHeight: "22px" }}>Имя пользователя</Text>}
-                      rules={[
-                        { required: true, message: "Введите имя пользователя" },
-                        { min: 3, message: "Минимум 3 символа" },
-                      ]}
-                      extra={
-                        <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-                          Минимум 3 символа, без пробелов
-                        </Text>
-                      }
-                      style={{ marginBottom: 24 }}
-                    >
-                      <Input
-                        prefix={<User size={16} style={{ color: token.colorTextTertiary }} />}
+                      {/* Username Field */}
+                      <TextField
+                        label="Имя пользователя"
+                        value={username}
+                        onChange={(e) => {
+                          setUsername(e.target.value);
+                          setUsernameError("");
+                        }}
+                        onBlur={() => validateUsername(username)}
+                        error={!!usernameError}
+                        helperText={usernameError || "Минимум 3 символа, без пробелов"}
+                        disabled={loading}
                         placeholder="username"
-                        disabled={loading}
-                        style={{ fontSize: 14, lineHeight: "22px", height: 40 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <User size={16} style={{ color: theme.palette.text.secondary }} />
+                            </InputAdornment>
+                          ),
+                        }}
+                        fullWidth
+                        required
                       />
-                    </Form.Item>
 
-                    {/* Display Name */}
-                    <Form.Item
-                      name="displayName"
-                      label={<Text strong style={{ fontSize: 14, lineHeight: "22px" }}>Отображаемое имя</Text>}
-                      extra={
-                        <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-                          Ваше настоящее имя (опционально)
-                        </Text>
-                      }
-                      style={{ marginBottom: 24 }}
-                    >
-                      <Input
+                      {/* Display Name Field */}
+                      <TextField
+                        label="Отображаемое имя"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        disabled={loading}
                         placeholder="Иван Иванов"
-                        disabled={loading}
-                        style={{ fontSize: 14, lineHeight: "22px", height: 40 }}
+                        helperText="Ваше настоящее имя (опционально)"
+                        fullWidth
                       />
-                    </Form.Item>
 
-                    {/* Password */}
-                    <Form.Item
-                      name="password"
-                      label={<Text strong style={{ fontSize: 14, lineHeight: "22px" }}>Пароль</Text>}
-                      rules={[
-                        { required: true, message: "Введите пароль" },
-                        { min: 6, message: "Минимум 6 символов" },
-                      ]}
-                      extra={
-                        <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-                          Минимум 6 символов
-                        </Text>
-                      }
-                      style={{ marginBottom: 24 }}
-                    >
-                      <Input.Password
-                        prefix={<Lock size={16} style={{ color: token.colorTextTertiary }} />}
+                      {/* Password Field */}
+                      <TextField
+                        label="Пароль"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setPasswordError("");
+                        }}
+                        onBlur={() => validatePassword(password)}
+                        error={!!passwordError}
+                        helperText={passwordError || "Минимум 6 символов"}
+                        disabled={loading}
                         placeholder="••••••••"
-                        disabled={loading}
-                        style={{ fontSize: 14, lineHeight: "22px", height: 40 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Lock size={16} style={{ color: theme.palette.text.secondary }} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={() => setShowPassword(!showPassword)}
+                                edge="end"
+                                size="small"
+                              >
+                                {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                        fullWidth
+                        required
                       />
-                    </Form.Item>
 
-                    {/* Confirm Password */}
-                    <Form.Item
-                      name="confirmPassword"
-                      label={<Text strong style={{ fontSize: 14, lineHeight: "22px" }}>Подтверждение пароля</Text>}
-                      dependencies={["password"]}
-                      rules={[
-                        { required: true, message: "Подтвердите пароль" },
-                        ({ getFieldValue }) => ({
-                          validator(_, value) {
-                            if (!value || getFieldValue("password") === value) {
-                              return Promise.resolve();
-                            }
-                            return Promise.reject(new Error("Пароли не совпадают"));
-                          },
-                        }),
-                      ]}
-                      style={{ marginBottom: 24 }}
-                    >
-                      <Input.Password
-                        prefix={<Lock size={16} style={{ color: token.colorTextTertiary }} />}
+                      {/* Confirm Password Field */}
+                      <TextField
+                        label="Подтверждение пароля"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setConfirmPasswordError("");
+                        }}
+                        onBlur={() => validateConfirmPassword(confirmPassword, password)}
+                        error={!!confirmPasswordError}
+                        helperText={confirmPasswordError}
+                        disabled={loading}
                         placeholder="••••••••"
-                        disabled={loading}
-                        style={{ fontSize: 14, lineHeight: "22px", height: 40 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Lock size={16} style={{ color: theme.palette.text.secondary }} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                edge="end"
+                                size="small"
+                              >
+                                {showConfirmPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                        fullWidth
+                        required
                       />
-                    </Form.Item>
 
-                    {/* Submit Button */}
-                    <Form.Item style={{ marginBottom: 0 }}>
+                      {/* Submit Button */}
                       <Button
-                        type="primary"
-                        htmlType="submit"
-                        icon={<ArrowRight size={20} strokeWidth={2} />}
-                        loading={loading}
-                        block
-                        iconPosition="end"
-                        style={{
+                        type="submit"
+                        variant="contained"
+                        size="large"
+                        disabled={loading}
+                        endIcon={<ArrowRight size={20} strokeWidth={2} />}
+                        fullWidth
+                        sx={{
                           height: 48,
                           fontSize: 16,
-                          lineHeight: "24px",
                           fontWeight: 500,
                         }}
                       >
                         {loading ? "Регистрация..." : "Зарегистрироваться"}
                       </Button>
-                    </Form.Item>
 
-                    {/* Login Link */}
-                    <div
-                      style={{
-                        marginTop: 24,
-                        paddingTop: 24,
-                        borderTop: `1px solid ${token.colorBorderSecondary}`,
-                        textAlign: "center",
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 14, lineHeight: "22px" }}>
-                        Уже есть аккаунт?{" "}
-                        <Link href="/auth/login">
-                          <Text
-                            strong
-                            style={{
-                              fontSize: 14,
-                              lineHeight: "22px",
-                              color: token.colorPrimary,
-                              cursor: "pointer",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.textDecoration = "underline";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.textDecoration = "none";
-                            }}
-                          >
-                            Войти
-                          </Text>
-                        </Link>
-                      </Text>
-                    </div>
-                  </Form>
-                </Card>
-              )}
-
-              {/* Security Info */}
-              {selectedRole && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                  }}
-                >
-                  <Shield size={16} style={{ color: token.colorTextTertiary }} />
-                  <Text type="secondary" style={{ fontSize: 12, lineHeight: "20px" }}>
-                    Регистрируясь, вы соглашаетесь с{" "}
-                    <Link href="/terms">
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          lineHeight: "20px",
-                          color: token.colorPrimary,
-                          cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.textDecoration = "underline";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.textDecoration = "none";
+                      {/* Login Link */}
+                      <Box
+                        sx={{
+                          pt: 3,
+                          borderTop: `1px solid ${theme.palette.divider}`,
+                          textAlign: "center",
                         }}
                       >
-                        условиями использования
-                      </Text>
-                    </Link>
-                  </Text>
-                </div>
-              )}
-            </Space>
-          </motion.div>
-        </div>
-      </Content>
-    </Layout>
+                        <Typography variant="body2" color="text.secondary">
+                          Уже есть аккаунт?{" "}
+                          <Link href="/auth/login" style={{ textDecoration: "none" }}>
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              sx={{
+                                color: theme.palette.primary.main,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                "&:hover": {
+                                  textDecoration: "underline",
+                                },
+                              }}
+                            >
+                              Войти
+                            </Typography>
+                          </Link>
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Security Info */}
+            {selectedRole && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1,
+                }}
+              >
+                <Shield size={16} style={{ color: theme.palette.text.secondary }} />
+                <Typography variant="caption" color="text.secondary">
+                  Регистрируясь, вы соглашаетесь с{" "}
+                  <Link href="/terms" style={{ textDecoration: "none" }}>
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      sx={{
+                        color: theme.palette.primary.main,
+                        cursor: "pointer",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      условиями использования
+                    </Typography>
+                  </Link>
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        </motion.div>
+      </Box>
+    </Box>
   );
 }

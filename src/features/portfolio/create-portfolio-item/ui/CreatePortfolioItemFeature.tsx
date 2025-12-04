@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Typography } from "antd";
+import { Card, Typography } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { useRouter } from "next/navigation";
 import { CreatePortfolioItemForm } from "./CreatePortfolioItemForm";
 import { createPortfolioItem } from "@/src/shared/api/portfolio";
 import type { CreatePortfolioItemRequest } from "@/src/entities/portfolio/model/types";
-
-const { Title } = Typography;
 
 export function CreatePortfolioItemFeature() {
   const router = useRouter();
@@ -33,10 +31,10 @@ export function CreatePortfolioItemFeature() {
   };
 
   return (
-    <Card>
-      <Title level={2} style={{ marginBottom: 24 }}>
+    <Card sx={{ p: 3 }}>
+      <Typography variant="h4" sx={{ mb: 3 }}>
         Добавить работу в портфолио
-      </Title>
+      </Typography>
       <CreatePortfolioItemForm
         onSubmit={handleSubmit}
         onCancel={handleCancel}

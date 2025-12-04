@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Typography, Form, Space, Button, Card, Divider } from "antd";
+import { Typography, Button, Box, Paper, IconButton, Divider } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { ArrowLeft, Sparkles, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -16,7 +16,15 @@ import { useRequireAuth } from "@/src/shared/lib/hooks";
 import type { CreateOrderRequest } from "@/src/entities/order/model/types";
 import dayjs from "dayjs";
 
-const { Title, Text } = Typography;
+interface CreateOrderFormData {
+  title: string;
+  description: string;
+  skills: string[];
+  budget_min?: number;
+  budget_max?: number;
+  deadline?: dayjs.Dayjs | null;
+  category_id?: string;
+}
 
 interface CreateOrderFeatureProps {
   initialTitle?: string;
@@ -30,17 +38,24 @@ export function CreateOrderFeature({
   aiMode = false,
 }: CreateOrderFeatureProps) {
   const router = useRouter();
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [skills, setSkills] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [aiModalOpen, setAiModalOpen] = useState(false);
-  
+  const [formData, setFormData] = useState<CreateOrderFormData>({
+    title: initialTitle || '',
+    description: initialDescription || '',
+    skills: [],
+    budget_min: undefined,
+    budget_max: undefined,
+    deadline: null,
+    category_id: undefined,
+  });
+
   const {
     aiGenerating,
     aiSuggestions,
     generateAISuggestions,
-    setAiSuggestions,
   } = useAISuggestions();
 
   useRequireAuth();
@@ -52,20 +67,16 @@ export function CreateOrderFeature({
       return;
     }
 
-    // Заполняем начальные значения
-    if (initialTitle) form.setFieldValue("title", initialTitle);
-    if (initialDescription) form.setFieldValue("description", initialDescription);
-
     // Если режим AI, запускаем генерацию предложений
     if (aiMode && initialTitle) {
       setAiModalOpen(true);
       generateAISuggestions(
         initialTitle,
         initialDescription || "",
-        (description) => form.setFieldValue("description", description)
+        (description) => setFormData(prev => ({ ...prev, description }))
       );
     }
-  }, [router, initialTitle, initialDescription, aiMode, form]);
+  }, [router, initialTitle, initialDescription, aiMode]);
 
   // Открываем модалку когда предложения готовы
   useEffect(() => {
@@ -83,51 +94,31 @@ export function CreateOrderFeature({
 
     console.log("Applying AI suggestions:", finalSuggestions);
 
+    // Применяем данные
+    setFormData(prev => ({
+      ...prev,
+      budget_min: finalSuggestions.budget_min,
+      budget_max: finalSuggestions.budget_max,
+      deadline: finalSuggestions.deadline ? dayjs(finalSuggestions.deadline) : null,
+    }));
+
     // Применяем навыки
     if (finalSuggestions.skills && finalSuggestions.skills.length > 0) {
-      console.log("Applying skills:", finalSuggestions.skills);
       setSkills(finalSuggestions.skills);
-      form.setFieldValue("skills", finalSuggestions.skills);
     }
-    
-    // Применяем бюджет
-    if (finalSuggestions.budget_min !== undefined) {
-      console.log("Applying budget_min:", finalSuggestions.budget_min);
-      form.setFieldValue("budget_min", finalSuggestions.budget_min);
-    }
-    if (finalSuggestions.budget_max !== undefined) {
-      console.log("Applying budget_max:", finalSuggestions.budget_max);
-      form.setFieldValue("budget_max", finalSuggestions.budget_max);
-    }
-    
-    // Применяем срок
-    if (finalSuggestions.deadline) {
-      console.log("Applying deadline:", finalSuggestions.deadline);
-      const deadlineDate = dayjs(finalSuggestions.deadline);
-      form.setFieldValue("deadline", deadlineDate);
-      console.log("Deadline date object:", deadlineDate);
-    }
-
-    // Проверяем, что все применилось
-    const formValues = form.getFieldsValue();
-    console.log("Form values after applying:", formValues);
 
     toastService.success("Предложения AI применены!");
     setAiModalOpen(false);
   };
 
-  const handleToggleSkill = (skill: string) => {
-    const newSkills = skills.includes(skill)
-      ? skills.filter((s) => s !== skill)
-      : [...skills, skill];
-    setSkills(newSkills);
-    form.setFieldValue("skills", newSkills);
+  const handleFormDataChange = (data: Partial<CreateOrderFormData>) => {
+    setFormData(prev => ({ ...prev, ...data }));
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: CreateOrderFormData) => {
     setLoading(true);
     try {
-      const requirements = skills.length > 0 
+      const requirements = skills.length > 0
         ? skills.map((skill) => ({
             skill,
             level: "middle" as const,
@@ -150,6 +141,9 @@ export function CreateOrderFeature({
       if (values.deadline) {
         orderData.deadline_at = values.deadline.toISOString();
       }
+      if (values.category_id) {
+        orderData.category_id = values.category_id;
+      }
 
       const order = await createOrder(orderData);
       toastService.success("Заказ успешно создан!");
@@ -162,133 +156,89 @@ export function CreateOrderFeature({
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
+    <Box sx={{ maxWidth: 900, margin: '0 auto', p: { xs: 2, sm: 3 } }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
         {/* Header */}
-        <Space direction="vertical" size={8} style={{ width: '100%', marginBottom: 32 }}>
-          <Button
-            type="text"
-            icon={<ArrowLeft size={16} />}
+        <Box mb={4}>
+          <IconButton
             onClick={() => router.back()}
-            style={{ padding: 0, marginBottom: 8 }}
+            sx={{ mb: 1, ml: -1 }}
           >
-            Назад
-          </Button>
-          <Space align="center" size={8}>
-            {aiMode && <Sparkles size={18} style={{ color: 'var(--primary)' }} />}
-            <Title level={1} style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>
+            <ArrowLeft size={20} />
+          </IconButton>
+          <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+            {aiMode && <Sparkles size={18} color="var(--primary)" />}
+            <Typography variant="h4" fontWeight={600}>
               Создать новый заказ
-            </Title>
-          </Space>
+            </Typography>
+          </Box>
           {aiMode && (
-            <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginTop: 4 }}>
+            <Typography variant="body2" color="text.secondary">
               AI поможет заполнить форму автоматически
-            </Text>
+            </Typography>
           )}
-        </Space>
+        </Box>
 
         {/* Форма */}
-        <Card 
-          style={{ 
-            borderRadius: '8px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            background: 'rgba(17, 26, 21, 0.5)',
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            p: { xs: 2, sm: 3, md: 4 },
           }}
-          bodyStyle={{ padding: '32px' }}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            size="large"
-            requiredMark={false}
-          >
-            <CreateOrderForm
-              form={form}
-              skills={skills}
-              onSkillsChange={setSkills}
-              onSubmit={handleSubmit}
-              loading={loading}
-              aiMode={aiMode}
-              onGenerateAll={async () => {
-                const title = form.getFieldValue("title");
-                const description = form.getFieldValue("description");
-                if (!title || title.trim().length < 3) {
-                  toastService.warning("Сначала введите название заказа (минимум 3 символа)");
-                  return;
-                }
-                // Открываем модальное окно сразу для показа загрузки
+          <CreateOrderForm
+            formData={formData}
+            onFormDataChange={handleFormDataChange}
+            skills={skills}
+            onSkillsChange={setSkills}
+            onSubmit={handleSubmit}
+            loading={loading}
+            aiMode={aiMode}
+            onGenerateAll={async () => {
+              if (!formData.title || formData.title.trim().length < 3) {
+                toastService.warning("Сначала введите название заказа (минимум 3 символа)");
+                return;
+              }
+              setAiModalOpen(true);
+              await generateAISuggestions(
+                formData.title,
+                formData.description || "",
+                (desc) => setFormData(prev => ({ ...prev, description: desc }))
+              );
+            }}
+            onTitleChange={(title) => {
+              if (aiMode && title && !formData.description) {
                 setAiModalOpen(true);
-                // Генерируем предложения - модальное окно обновится автоматически когда предложения будут готовы
-                await generateAISuggestions(
+                generateAISuggestions(
                   title,
-                  description || "",
-                  (desc) => form.setFieldValue("description", desc)
+                  "",
+                  (description) => setFormData(prev => ({ ...prev, description }))
                 );
-              }}
-              onTitleChange={(title) => {
-                if (aiMode && title && !form.getFieldValue("description")) {
-                  setAiModalOpen(true);
-                  generateAISuggestions(
-                    title,
-                    "",
-                    (description) => form.setFieldValue("description", description)
-                  );
-                }
-              }}
+              }
+            }}
+          />
+
+          {/* Секция: Дополнительные файлы */}
+          <Box mt={4}>
+            <Typography variant="h6" fontWeight={600} mb={3}>
+              Дополнительные материалы
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              Прикрепите файлы: изображения, документы, техническое задание, примеры работ
+            </Typography>
+            <CreateOrderFileUpload
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
             />
-
-
-            {/* Секция 4: Дополнительные файлы */}
-            <div style={{ marginTop: 32 }}>
-              <Title level={4} style={{ margin: '0 0 24px 0', fontSize: '16px', fontWeight: 600 }}>
-                Дополнительные материалы
-              </Title>
-              <Form.Item 
-                help={
-                  <Text type="secondary" style={{ fontSize: '13px' }}>
-                    Прикрепите файлы: изображения, документы, техническое задание, примеры работ
-                  </Text>
-                }
-                style={{ marginBottom: 0 }}
-              >
-                <CreateOrderFileUpload
-                  attachments={attachments}
-                  onAttachmentsChange={setAttachments}
-                />
-              </Form.Item>
-            </div>
-
-            <Divider style={{ margin: '40px 0 32px' }} />
-
-            {/* Кнопки действий */}
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Space size={12} style={{ width: '100%', justifyContent: 'flex-end' }}>
-                <Button 
-                  onClick={() => router.back()}
-                  size="large"
-                  style={{ minWidth: 120 }}
-                >
-                  Отмена
-                </Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  size="large"
-                  icon={<CheckCircle2 size={16} />}
-                  style={{ minWidth: 200 }}
-                >
-                  Создать заказ
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Card>
+          </Box>
+        </Paper>
 
         {/* AI Suggestions Modal */}
         <CreateOrderAISuggestions
@@ -299,10 +249,9 @@ export function CreateOrderFeature({
           open={aiModalOpen}
           onClose={() => {
             setAiModalOpen(false);
-            // Не очищаем предложения, чтобы можно было открыть снова
           }}
         />
       </motion.div>
-    </div>
+    </Box>
   );
 }

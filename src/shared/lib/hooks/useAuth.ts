@@ -1,11 +1,12 @@
 /**
  * Хук для работы с авторизацией
+ * Использует AuthContext если доступен, иначе fallback на localStorage
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext, createContext } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "../auth/auth.service";
-import type { User, Profile } from "@/src/entities/user/model/types";
+import type { User, Profile, UserRole } from "@/src/entities/user/model/types";
 
 interface UseAuthOptions {
   redirectTo?: string;
@@ -15,7 +16,7 @@ interface UseAuthOptions {
 interface UseAuthReturn {
   user: User | null;
   profile: Profile | null;
-  userRole: "client" | "freelancer" | null;
+  userRole: UserRole | null;
   isAuthenticated: boolean;
   loading: boolean;
 }
@@ -56,7 +57,7 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     checkAuth();
   }, [router, redirectTo, requireAuth]);
 
-  const userRole = (user?.role === "admin" ? "client" : user?.role) as "client" | "freelancer" | null;
+  const userRole = (user?.role === "admin" ? "client" : user?.role) as UserRole | null;
 
   return {
     user,
@@ -66,4 +67,3 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     loading,
   };
 }
-

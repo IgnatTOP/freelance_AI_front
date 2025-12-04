@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Skeleton, Empty } from "antd";
+import { Card, Skeleton, Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { OrderDetailHeader } from "./OrderDetailHeader";
 import { OrderDetailContent } from "./OrderDetailContent";
@@ -47,21 +47,28 @@ export function OrderDetailFeature({ orderId }: OrderDetailFeatureProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-8">
-        <Card>
-          <Skeleton active paragraph={{ rows: 8 }} />
+      <Box sx={{ py: 4 }}>
+        <Card sx={{ p: 3 }}>
+          <Skeleton variant="text" width="60%" height={40} />
+          <Skeleton variant="text" width="40%" sx={{ mt: 2 }} />
+          <Skeleton variant="rectangular" height={200} sx={{ mt: 3 }} />
+          <Skeleton variant="text" sx={{ mt: 2 }} />
+          <Skeleton variant="text" sx={{ mt: 1 }} />
+          <Skeleton variant="text" width="80%" sx={{ mt: 1 }} />
         </Card>
-      </div>
+      </Box>
     );
   }
 
   if (!order) {
     return (
-      <div className="min-h-screen py-8">
-        <Card>
-          <Empty description="Заказ не найден" />
+      <Box sx={{ py: 4 }}>
+        <Card sx={{ p: 6, textAlign: "center" }}>
+          <Typography variant="h6" color="text.secondary">
+            Заказ не найден
+          </Typography>
         </Card>
-      </div>
+      </Box>
     );
   }
 

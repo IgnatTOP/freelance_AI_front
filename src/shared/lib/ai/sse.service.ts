@@ -168,14 +168,20 @@ export class SSEService {
 
         if (!response.ok) {
           // Пытаемся прочитать сообщение об ошибке из ответа
+          let errorMessage = `HTTP error! status: ${response.status}`;
           try {
-            const errorData = await response.json();
-            const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
-            throw new Error(errorMessage);
+            const errorText = await response.text();
+            console.error("SSE POST error response:", errorText);
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch {
+              errorMessage = errorText || errorMessage;
+            }
           } catch (e) {
-            // Если не удалось прочитать JSON, используем стандартное сообщение
-            throw new Error(`HTTP error! status: ${response.status}`);
+            console.error("Failed to read error response:", e);
           }
+          throw new Error(errorMessage);
         }
 
         const reader = response.body?.getReader();

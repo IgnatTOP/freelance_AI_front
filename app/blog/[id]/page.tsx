@@ -1,15 +1,11 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { Layout, Typography, Card, Space, Button } from "antd";
+import { Box, Container, Typography, Card, Button, Stack, Chip } from "@mui/material";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import Link from "next/link";
-import { Container } from "@/src/shared/ui/Container";
 import { StructuredData } from "@/src/shared/ui/StructuredData";
 import { generateArticleSchema, generateBreadcrumbSchema } from "@/src/shared/lib/seo/generateStructuredData";
-
-const { Content } = Layout;
-const { Title, Paragraph } = Typography;
 
 const posts: Record<number, any> = {
   1: {
@@ -20,10 +16,10 @@ const posts: Record<number, any> = {
     readTime: "5 мин",
     content: `
       <p>Мы рады представить инновационную фриланс-биржу с искусственным интеллектом, которая изменит подход к работе с фрилансерами.</p>
-      
+
       <h2>Что нового?</h2>
       <p>Наша платформа объединяет лучшие практики современных фриланс-бирж с передовыми технологиями искусственного интеллекта. Теперь создание технического задания, поиск подходящих исполнителей и управление проектами стали проще и эффективнее.</p>
-      
+
       <h2>ИИ-ассистент</h2>
       <p>Главная особенность нашей платформы - умный ИИ-ассистент, который помогает:</p>
       <ul>
@@ -32,7 +28,7 @@ const posts: Record<number, any> = {
         <li>Оценивать качество заказов</li>
         <li>Предлагать оптимальные цены и сроки</li>
       </ul>
-      
+
       <h2>Будущее фриланса</h2>
       <p>Мы верим, что искусственный интеллект может значительно улучшить процесс взаимодействия между заказчиками и исполнителями, делая его более прозрачным, быстрым и эффективным.</p>
     `,
@@ -45,10 +41,10 @@ const posts: Record<number, any> = {
     readTime: "7 мин",
     content: `
       <p>Искусственный интеллект анализирует ваши требования и задает уточняющие вопросы для создания детального технического задания.</p>
-      
+
       <h2>Процесс создания ТЗ с ИИ</h2>
       <p>Наш ИИ-ассистент использует продвинутые алгоритмы для анализа ваших требований и автоматического создания структурированного технического задания.</p>
-      
+
       <h2>Преимущества</h2>
       <ul>
         <li>Экономия времени на составление ТЗ</li>
@@ -66,19 +62,19 @@ const posts: Record<number, any> = {
     readTime: "10 мин",
     content: `
       <p>Собрали лучшие практики от опытных фрилансеров платформы. Узнайте, как выделиться среди конкурентов.</p>
-      
+
       <h2>1. Создайте качественное портфолио</h2>
       <p>Ваше портфолио - это ваше лицо. Добавьте лучшие работы с подробными описаниями.</p>
-      
+
       <h2>2. Заполните профиль полностью</h2>
       <p>Детальный профиль повышает доверие заказчиков и улучшает поисковую выдачу.</p>
-      
+
       <h2>3. Быстро отвечайте на сообщения</h2>
       <p>Оперативность - ключ к успеху. Отвечайте на сообщения в течение нескольких часов.</p>
-      
+
       <h2>4. Используйте ИИ-рекомендации</h2>
       <p>Наша платформа предлагает заказы, которые подходят именно вам.</p>
-      
+
       <h2>5. Собирайте отзывы</h2>
       <p>Положительные отзывы значительно повышают ваш рейтинг и привлекательность.</p>
     `,
@@ -91,7 +87,7 @@ const posts: Record<number, any> = {
     readTime: "4 мин",
     content: `
       <p>Представляем обновленную версию ИИ-ассистента с расширенными возможностями анализа и подбора.</p>
-      
+
       <h2>Новые возможности</h2>
       <ul>
         <li>Улучшенный анализ заказов</li>
@@ -109,10 +105,10 @@ const posts: Record<number, any> = {
     readTime: "6 мин",
     content: `
       <p>Подробное руководство по системе защиты платежей и гарантиям для клиентов и фрилансеров.</p>
-      
+
       <h2>Что такое эскроу?</h2>
       <p>Эскроу - это система безопасных платежей, где средства замораживаются до выполнения работы.</p>
-      
+
       <h2>Как это работает?</h2>
       <ol>
         <li>Заказчик создает заказ и резервирует средства</li>
@@ -129,10 +125,10 @@ const posts: Record<number, any> = {
     readTime: "8 мин",
     content: `
       <p>Интервью с одним из наших успешных фрилансеров о пути развития на платформе.</p>
-      
+
       <h2>Начало пути</h2>
       <p>Все начинается с первого заказа. Наш герой начал с небольших проектов и постепенно наращивал опыт.</p>
-      
+
       <h2>Ключевые моменты</h2>
       <ul>
         <li>Качественное выполнение каждого проекта</li>
@@ -151,23 +147,23 @@ export default function BlogPostPage() {
 
   if (!post) {
     return (
-      <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-        <Content style={{ padding: "24px" }}>
-          <Container>
-            <Card>
-              <Title level={2}>Пост не найден</Title>
-              <Link href="/blog">
-                <Button type="primary">Вернуться к блогу</Button>
-              </Link>
-            </Card>
-          </Container>
-        </Content>
-      </Layout>
+      <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
+        <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+          <Card sx={{ p: { xs: 3, md: 4 } }}>
+            <Typography variant="h4" gutterBottom>
+              Пост не найден
+            </Typography>
+            <Link href="/blog">
+              <Button variant="contained">Вернуться к блогу</Button>
+            </Link>
+          </Card>
+        </Container>
+      </Box>
     );
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com';
-  
+
   const articleSchema = generateArticleSchema({
     headline: post.title,
     description: post.content.replace(/<[^>]*>/g, '').substring(0, 200),
@@ -187,66 +183,99 @@ export default function BlogPostPage() {
   });
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "transparent" }}>
       <StructuredData data={[articleSchema, breadcrumbSchema]} />
-      <Content style={{ padding: "24px" }}>
-        <Container>
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+        <Stack spacing={{ xs: 3, md: 4 }}>
+          <Link href="/blog">
+            <Button
+              startIcon={<ArrowLeft size={16} />}
+              sx={{ p: 0, minWidth: 0, minHeight: 44 }}
+            >
+              Назад к блогу
+            </Button>
+          </Link>
+
+          <Card sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack spacing={3}>
+              <Box>
+                <Chip
+                  label={post.category}
+                  size="small"
+                  color="primary"
+                  sx={{ mb: 2, fontWeight: 500 }}
+                />
+                <Typography
+                  variant="h3"
+                  component="h1"
+                  gutterBottom
+                  sx={{
+                    fontSize: { xs: "1.75rem", md: "2.5rem" },
+                    fontWeight: 600
+                  }}
+                >
+                  {post.title}
+                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{
+                    flexWrap: "wrap",
+                    gap: 1
+                  }}
+                >
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Calendar size={16} />
+                    <Typography variant="body2">
+                      {new Date(post.date).toLocaleDateString("ru-RU")}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Clock size={16} />
+                    <Typography variant="body2">{post.readTime}</Typography>
+                  </Stack>
+                </Stack>
+              </Box>
+
+              <Box
+                dangerouslySetInnerHTML={{ __html: post.content }}
+                sx={{
+                  fontSize: 16,
+                  lineHeight: 1.8,
+                  "& h2": {
+                    fontSize: { xs: "1.25rem", md: "1.5rem" },
+                    fontWeight: 600,
+                    mt: 3,
+                    mb: 1.5,
+                  },
+                  "& p": {
+                    mb: 2,
+                  },
+                  "& ul, & ol": {
+                    pl: 3,
+                    mb: 2,
+                  },
+                  "& li": {
+                    mb: 0.5,
+                  },
+                }}
+              />
+            </Stack>
+          </Card>
+
+          <Box sx={{ textAlign: "center" }}>
             <Link href="/blog">
-              <Button type="link" icon={<ArrowLeft size={16} />} style={{ padding: 0 }}>
-                Назад к блогу
+              <Button
+                variant="contained"
+                size="large"
+                sx={{ minHeight: 44 }}
+              >
+                Вернуться к блогу
               </Button>
             </Link>
-
-            <Card>
-              <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "4px 12px",
-                      borderRadius: "16px",
-                      fontSize: 12,
-                      fontWeight: 500,
-                      background: "var(--primary-06)",
-                      color: "var(--primary)",
-                      marginBottom: 16,
-                    }}
-                  >
-                    {post.category}
-                  </span>
-                  <Title level={1}>{post.title}</Title>
-                  <Space>
-                    <Space size="small">
-                      <Calendar size={16} />
-                      <span>{new Date(post.date).toLocaleDateString("ru-RU")}</span>
-                    </Space>
-                    <Space size="small">
-                      <Clock size={16} />
-                      <span>{post.readTime}</span>
-                    </Space>
-                  </Space>
-                </div>
-
-                <div
-                  dangerouslySetInnerHTML={{ __html: post.content }}
-                  style={{
-                    fontSize: 16,
-                    lineHeight: 1.8,
-                  }}
-                />
-              </Space>
-            </Card>
-
-            <div style={{ textAlign: "center" }}>
-              <Link href="/blog">
-                <Button type="primary">Вернуться к блогу</Button>
-              </Link>
-            </div>
-          </Space>
-        </Container>
-      </Content>
-    </Layout>
+          </Box>
+        </Stack>
+      </Container>
+    </Box>
   );
 }
-

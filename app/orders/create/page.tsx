@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Container } from "@/src/shared/ui/Container";
+import { Box, Container } from "@mui/material";
 import { CreateOrderFeature } from "@/src/features/orders/create-order";
 
 function CreateOrderPageContent() {
@@ -12,26 +12,26 @@ function CreateOrderPageContent() {
   const description = searchParams.get("description") || undefined;
 
   return (
-    <div className="min-h-screen py-8 relative">
-      <Container>
+    <Box sx={{ minHeight: 'auto', py: 8, position: 'relative' }}>
+      <Container maxWidth="lg">
         <CreateOrderFeature
           initialTitle={title}
           initialDescription={description}
           aiMode={isAIMode}
         />
       </Container>
-    </div>
+    </Box>
   );
 }
 
 export default function CreateOrderPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen py-8 relative">
-        <Container>
-          <div>Загрузка...</div>
+      <Box sx={{ minHeight: 'auto', py: 8, position: 'relative' }}>
+        <Container maxWidth="lg">
+          <Box>Загрузка...</Box>
         </Container>
-      </div>
+      </Box>
     }>
       <CreateOrderPageContent />
     </Suspense>

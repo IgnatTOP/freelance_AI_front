@@ -87,9 +87,9 @@ export interface AIAssistantResponse {
 }
 
 export interface AIProfileImproveRequest {
-  current_bio?: string;
+  current_bio?: string;  // internal field, mapped to 'bio' in API call
   skills?: string[];
-  experience_level?: string;
+  experience_level?: string;  // internal field, mapped to 'level' in API call
 }
 
 export interface AIProfileImproveResponse {
@@ -568,7 +568,11 @@ class AIService {
   ): Promise<AIProfileImproveResponse> {
     const response = await api.post<AIProfileImproveResponse>(
       "/ai/profile/improve",
-      data
+      {
+        bio: data.current_bio || "",
+        skills: data.skills || [],
+        level: data.experience_level || "",
+      }
     );
     return response.data;
   }
@@ -670,6 +674,137 @@ class AIService {
         },
       }
     );
+  }
+
+  // Генерация предложений для создания заказа (навыки, бюджет, сроки и т.д.)
+  async generateOrderSuggestions(data: {
+    title: string;
+    description: string;
+  }): Promise<{
+    skills?: string[];
+    budget_min?: number;
+    budget_max?: number;
+    deadline_days?: number;
+    needs_attachments?: boolean;
+    attachment_description?: string;
+  }> {
+    const response = await api.post(
+      "/ai/orders/suggestions",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация предложений для создания заказа (стриминг)
+  async generateOrderSuggestionsStream(
+    data: {
+      title: string;
+      description: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/orders/suggestions/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Order suggestions stream error:", error);
+      },
+    });
+  }
+
+  // Генерация списка навыков для заказа
+  // API возвращает skills с уровнями: [{ skill: string, level: "junior" | "middle" | "senior" }]
+  async generateOrderSkills(data: {
+    title: string;
+    description: string;
+  }): Promise<{ skills: Array<{ skill: string; level: "junior" | "middle" | "senior" }> }> {
+    const response = await api.post<{ skills: Array<{ skill: string; level: "junior" | "middle" | "senior" }> }>(
+      "/ai/orders/skills",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация списка навыков для заказа (стриминг)
+  async generateOrderSkillsStream(
+    data: {
+      title: string;
+      description: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/orders/skills/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Order skills stream error:", error);
+      },
+    });
+  }
+
+  // Генерация бюджета для заказа
+  // API возвращает budget_min, budget_max и explanation
+  async generateOrderBudget(data: {
+    title: string;
+    description: string;
+    requirements?: Array<{ skill: string; level: string }>;
+  }): Promise<{
+    budget_min?: number;
+    budget_max?: number;
+    explanation?: string;
+  }> {
+    const response = await api.post<{
+      budget_min?: number;
+      budget_max?: number;
+      explanation?: string;
+    }>(
+      "/ai/orders/budget",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация бюджета для заказа (стриминг)
+  async generateOrderBudgetStream(
+    data: {
+      title: string;
+      description: string;
+      requirements?: Array<{ skill: string; level: string }>;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/orders/budget/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Order budget stream error:", error);
+      },
+    });
+  }
+
+  // Генерация приветственного сообщения для чата
+  async generateWelcomeMessage(data: {
+    order_id: string;
+    freelancer_id: string;
+  }): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>(
+      "/ai/welcome-message",
+      data
+    );
+    return response.data;
+  }
+
+  // Генерация приветственного сообщения (стриминг)
+  async generateWelcomeMessageStream(
+    data: {
+      order_id: string;
+      freelancer_id: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    return sseService.streamPost("/ai/welcome-message/stream", data, {
+      onMessage: onChunk,
+      onError: (error) => {
+        console.error("Welcome message stream error:", error);
+      },
+    });
   }
 }
 

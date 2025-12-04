@@ -59,12 +59,18 @@ export function RegisterForm() {
     }
     if (!formData.username || formData.username.length < 3) {
       newErrors.username = 'Минимум 3 символа';
+    } else if (formData.username.length > 30) {
+      newErrors.username = 'Максимум 30 символов';
+    } else if (!/^[a-z0-9_]+$/i.test(formData.username)) {
+      newErrors.username = 'Только буквы, цифры и _';
     }
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Неверный формат email';
     }
-    if (!formData.password || formData.password.length < 6) {
-      newErrors.password = 'Минимум 6 символов';
+    if (!formData.password || formData.password.length < 8) {
+      newErrors.password = 'Минимум 8 символов';
+    } else if (!/[a-zA-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+      newErrors.password = 'Пароль должен содержать буквы и цифры';
     }
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Пароли не совпадают';

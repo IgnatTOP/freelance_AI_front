@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MuiProvider } from "@/src/app/providers";
+import { MuiProvider, AuthProvider } from "@/src/app/providers";
 import { AppShell } from "@/src/widgets/AppShell";
 import {
   PageLoader,
@@ -35,7 +35,6 @@ export const metadata: Metadata = {
     "биржа фриланса",
     "найти исполнителя",
     "заработать онлайн",
-    "удаленная работа",
     "фриланс платформа",
     "IT фриланс",
     "дизайн фриланс",
@@ -90,10 +89,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteUrl,
   },
-  other: {
-    "font-inter": "Inter",
-    "font-display": "Space Grotesk",
-  },
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -116,11 +111,13 @@ export default function RootLayout({
         <LenisScroll />
         <ProgressBar />
         <MuiProvider>
-          <ToastProvider>
-            <AppShell>{children}</AppShell>
-            <ScrollToTop />
-            <OnboardingProvider />
-          </ToastProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <AppShell>{children}</AppShell>
+              <ScrollToTop />
+              <OnboardingProvider />
+            </ToastProvider>
+          </AuthProvider>
         </MuiProvider>
       </body>
     </html>

@@ -2,76 +2,82 @@
  * Типы данных для сущности Order
  */
 
-export type OrderStatus = "draft" | "published" | "in_progress" | "completed" | "cancelled";
+export type OrderStatus = "draft" | "published" | "in_progress" | "pending_completion" | "completed" | "cancelled";
 
 export type SkillLevel = "junior" | "middle" | "senior";
 
 export interface OrderRequirement {
+  id?: string;
   skill: string;
   level: SkillLevel;
 }
 
 export interface OrderAttachment {
   id: string;
-  url?: string;
-  type?: string;
-  filename?: string;
   media_id?: string;
   media?: {
     id: string;
-    file_path: string;
-    file_type: string;
+    url?: string;
+    file_path?: string;
+    filename?: string;
+    file_type?: string;
   };
 }
 
 export interface Order {
   id: string;
+  client_id: string;
+  freelancer_id?: string;
+  category_id?: string;
   title: string;
   description: string;
   budget_min?: number;
   budget_max?: number;
+  final_amount?: number;
   status: OrderStatus;
   deadline_at?: string;
+  ai_summary?: string;
+  best_recommendation_proposal_id?: string;
+  best_recommendation_justification?: string;
   created_at: string;
   updated_at: string;
-  client_id: number | string;
   proposals_count?: number;
   requirements?: OrderRequirement[];
   attachments?: OrderAttachment[];
-  attachment_ids?: string[];
-  summary?: string;
-  ai_summary?: string; // Альтернативное название для summary
 }
 
 export interface CreateOrderRequest {
   title: string;
   description: string;
+  category_id?: string;
   budget_min?: number;
   budget_max?: number;
   deadline_at?: string;
-  requirements?: OrderRequirement[];
+  requirements?: Array<{ skill: string; level: SkillLevel }>;
   attachment_ids?: string[];
 }
 
 export interface UpdateOrderRequest {
   title?: string;
   description?: string;
+  category_id?: string;
   budget_min?: number;
   budget_max?: number;
   deadline_at?: string;
   status?: OrderStatus;
-  requirements?: OrderRequirement[];
+  requirements?: Array<{ skill: string; level: SkillLevel }>;
   attachment_ids?: string[];
 }
 
 export interface OrderListParams {
-  search?: string;
   status?: OrderStatus;
-  skills?: string | string[]; // Навыки через запятую или массив
+  category_id?: string;
+  search?: string;
+  skills?: string;
   budget_min?: number;
   budget_max?: number;
-  sort_by?: string; // Поле сортировки (default: created_at)
-  sort_order?: "asc" | "desc"; // Порядок сортировки (default: desc)
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }
@@ -82,11 +88,11 @@ export interface OrderListResponse {
     total: number;
     limit: number;
     offset: number;
+    has_more?: boolean;
   };
 }
 
 export interface MyOrdersResponse {
-  as_client: Order[];
-  as_freelancer: Order[];
+  as_client?: Order[];
+  as_freelancer?: Order[];
 }
-

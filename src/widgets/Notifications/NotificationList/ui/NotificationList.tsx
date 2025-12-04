@@ -1,23 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { List, Empty, Button, Typography, Space } from "antd";
-import { Notification } from "@/src/shared/lib/notifications";
-import { notificationService } from "@/src/shared/lib/notifications";
+import { List, ListItem, ListItemAvatar, ListItemText, IconButton, Box, Typography, Avatar } from "@mui/material";
+import { Notification, notificationService } from "@/src/shared/lib/notifications";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import {
-  Check,
-  Trash2,
-  Briefcase,
-  MessageSquare,
-  User,
-  FileText,
-  Sparkles,
-} from "lucide-react";
-import { motion } from "framer-motion";
-
-const { Text, Paragraph } = Typography;
+import { Check, Trash2, Briefcase, MessageSquare, User, FileText, Sparkles } from "lucide-react";
 
 interface NotificationListProps {
   notifications: Notification[];
@@ -25,7 +13,7 @@ interface NotificationListProps {
   onDelete: (id: string) => void;
 }
 
-const getNotificationIcon = (event: string) => {
+const getIcon = (event: string) => {
   if (event.includes("orders")) return Briefcase;
   if (event.includes("proposals")) return FileText;
   if (event.includes("chat") || event.includes("message")) return MessageSquare;
@@ -33,127 +21,91 @@ const getNotificationIcon = (event: string) => {
   return Sparkles;
 };
 
-export function NotificationList({
-  notifications,
-  onMarkAsRead,
-  onDelete,
-}: NotificationListProps) {
+const getTypeColor = (type: string) => {
+  switch (type) {
+    case "success": return "#10b981";
+    case "error": return "#ef4444";
+    case "warning": return "#f59e0b";
+    default: return "var(--primary)";
+  }
+};
+
+export function NotificationList({ notifications, onMarkAsRead, onDelete }: NotificationListProps) {
   const router = useRouter();
 
-  // Защита от null/undefined
   if (!notifications || notifications.length === 0) {
     return (
-      <Empty
-        description="Нет уведомлений"
-        className="py-8"
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-      />
+      <Box sx={{ py: 8, textAlign: "center" }}>
+        <Typography variant="body2" sx={{ color: "var(--foreground-muted)" }}>Нет уведомлений</Typography>
+      </Box>
     );
   }
 
-  const handleNotificationClick = (item: Notification, e: React.MouseEvent) => {
-    // Если клик был на кнопку действия, не обрабатываем
-    if ((e.target as HTMLElement).closest('button')) {
-      return;
-    }
-
+  const handleClick = (item: Notification, e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
     const url = notificationService.getNotificationUrl(item);
     if (url) {
       router.push(url);
-      // Отмечаем как прочитанное при переходе
-      if (!item.is_read) {
-        onMarkAsRead(item.id);
-      }
+      if (!item.is_read) onMarkAsRead(item.id);
     }
   };
 
   return (
-    <List
-      dataSource={notifications || []}
-      renderItem={(item) => {
+    <List sx={{ p: 0 }}>
+      {notifications.map((item) => {
         const message = notificationService.getNotificationMessage(item);
         const type = notificationService.getNotificationType(item);
-        const Icon = getNotificationIcon(item.payload?.event || 'notification');
+        const Icon = getIcon(item.payload?.event || "notification");
         const isUnread = !item.is_read;
         const url = notificationService.getNotificationUrl(item);
+        const color = getTypeColor(type);
 
         return (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
+          <ListItem
+            key={item.id}
+            onClick={url ? (e) => handleClick(item, e) : undefined}
+            sx={{
+              borderBottom: "1px solid var(--border)",
+              bgcolor: isUnread ? "var(--primary-05)" : "transparent",
+              cursor: url ? "pointer" : "default",
+              "&:hover": url ? { bgcolor: "var(--primary-10)" } : {},
+            }}
+            secondaryAction={
+              <Box sx={{ display: "flex", gap: 0.5 }}>
+                {isUnread && (
+                  <IconButton size="small" onClick={() => onMarkAsRead(item.id)} title="Прочитано">
+                    <Check size={16} />
+                  </IconButton>
+                )}
+                <IconButton size="small" onClick={() => onDelete(item.id)} color="error" title="Удалить">
+                  <Trash2 size={16} />
+                </IconButton>
+              </Box>
+            }
           >
-            <List.Item
-              onClick={url ? (e) => handleNotificationClick(item, e) : undefined}
-              className={`px-4 py-3 border-b border-border/30 hover:bg-primary/5 transition-colors ${
-                isUnread ? "bg-primary/5" : ""
-              } ${url ? "cursor-pointer" : ""}`}
-              actions={[
-                <Space key="actions" size="small">
-                  {isUnread && (
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<Check size={14} />}
-                      onClick={() => onMarkAsRead(item.id)}
-                      className="text-primary"
-                      title="Отметить как прочитанное"
-                    />
-                  )}
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<Trash2 size={14} />}
-                    onClick={() => onDelete(item.id)}
-                    className="text-red-400 hover:text-red-500"
-                    title="Удалить"
-                  />
-                </Space>,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      type === "success"
-                        ? "bg-green-500/10 text-green-400"
-                        : type === "error"
-                        ? "bg-red-500/10 text-red-400"
-                        : type === "warning"
-                        ? "bg-yellow-500/10 text-yellow-400"
-                        : "bg-primary/10 text-primary"
-                    }`}
-                  >
-                    <Icon size={18} />
-                  </div>
-                }
-                title={
-                  <div className="flex items-center gap-2">
-                    <Text
-                      strong={isUnread}
-                      className={isUnread ? "text-foreground" : "text-foreground-secondary"}
-                    >
-                      {message}
-                    </Text>
-                    {isUnread && (
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                    )}
-                  </div>
-                }
-                description={
-                  <Text type="secondary" className="text-xs">
-                    {formatDistanceToNow(new Date(item.created_at), {
-                      addSuffix: true,
-                      locale: ru,
-                    })}
-                  </Text>
-                }
-              />
-            </List.Item>
-          </motion.div>
+            <ListItemAvatar>
+              <Avatar sx={{ bgcolor: `${color}15`, color, width: 40, height: 40 }}>
+                <Icon size={18} />
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography variant="body2" fontWeight={isUnread ? 600 : 400} sx={{ color: isUnread ? "var(--foreground)" : "var(--foreground-secondary)" }}>
+                    {message}
+                  </Typography>
+                  {isUnread && <Box sx={{ width: 8, height: 8, bgcolor: "var(--primary)", borderRadius: "50%" }} />}
+                </Box>
+              }
+              secondary={
+                <Typography variant="caption" sx={{ color: "var(--foreground-muted)" }}>
+                  {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ru })}
+                </Typography>
+              }
+            />
+          </ListItem>
         );
-      }}
-    />
+      })}
+    </List>
   );
 }
-

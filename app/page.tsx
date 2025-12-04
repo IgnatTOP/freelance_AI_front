@@ -1,8 +1,14 @@
 import { Metadata } from 'next';
 import { Hero } from '@/src/widgets/Hero';
+import { Stats } from '@/src/widgets/Stats';
 import { Features } from '@/src/widgets/Features';
+import { AIShowcase } from '@/src/widgets/AIShowcase';
+import { Categories } from '@/src/widgets/Categories';
 import { HowItWorks } from '@/src/widgets/HowItWorks';
+import { Security } from '@/src/widgets/Security';
+import { Testimonials } from '@/src/widgets/Testimonials';
 import { Pricing } from '@/src/widgets/Pricing';
+import { CTA } from '@/src/widgets/CTA';
 import { StructuredData } from '@/src/shared/ui/StructuredData';
 import { generateFreelancePlatformSchema, generateOrganizationSchema } from '@/src/shared/lib/seo/generateStructuredData';
 
@@ -10,7 +16,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com';
 
 export const metadata: Metadata = {
   title: 'Главная',
-  description: 'Умная фриланс-биржа с ИИ-ассистентом. Найдите идеального исполнителя для вашего проекта или начните зарабатывать как фрилансер. Тысячи проектов и профессиональных исполнителей.',
+  description: 'Умная фриланс-биржа с ИИ-ассистентом. Найдите идеального исполнителя для вашего проекта или начните зарабатывать как фрилансер. Эскроу-платежи, умный подбор, автоматизация ТЗ.',
   openGraph: {
     title: 'Modern Freelance - Умная фриланс-биржа с ИИ-ассистентом',
     description: 'Умная фриланс-биржа с ИИ-ассистентом. Найдите идеального исполнителя для вашего проекта или начните зарабатывать как фрилансер.',
@@ -44,9 +50,7 @@ export default function Home() {
     url: siteUrl,
     description: 'Умная фриланс-биржа с ИИ-ассистентом',
     logo: `${siteUrl}/logo.png`,
-    sameAs: [
-      // Добавьте ссылки на социальные сети, если есть
-    ],
+    sameAs: [],
   });
 
   const websiteSchema = generateFreelancePlatformSchema(siteUrl);
@@ -54,11 +58,17 @@ export default function Home() {
   return (
     <>
       <StructuredData data={[organizationSchema, websiteSchema]} />
-      <main className="min-h-screen">
+      <main style={{ minHeight: '100vh' }}>
         <Hero />
+        <Stats />
         <Features />
+        <AIShowcase />
+        <Categories />
         <HowItWorks />
+        <Security />
+        <Testimonials />
         <Pricing />
+        <CTA />
       </main>
     </>
   );

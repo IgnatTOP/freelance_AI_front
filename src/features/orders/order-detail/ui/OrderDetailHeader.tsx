@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography, Tag, Space, Button as AntButton } from "antd";
+import { Typography, Chip, Stack, Button, Box } from "@mui/material";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
@@ -12,8 +12,6 @@ import { getOrderStatusColor, getOrderStatusLabel } from "@/src/shared/lib/order
 dayjs.extend(relativeTime);
 dayjs.locale("ru");
 
-const { Title, Text } = Typography;
-
 interface OrderDetailHeaderProps {
   order: Order;
 }
@@ -22,38 +20,46 @@ export function OrderDetailHeader({ order }: OrderDetailHeaderProps) {
   const router = useRouter();
 
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <AntButton
-        icon={<ArrowLeft size={18} />}
+    <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ mb: 3 }}>
+      <Button
+        startIcon={<ArrowLeft size={18} />}
         onClick={() => router.back()}
+        variant="outlined"
       >
         Назад
-      </AntButton>
-      <div className="flex-1">
-        <div className="flex items-center gap-3 mb-2">
-          <Title level={2} className="mb-0">
+      </Button>
+      <Box sx={{ flex: 1 }}>
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+          <Typography variant="h4" component="h1">
             {order.title}
-          </Title>
-          <Tag color={getOrderStatusColor(order.status)}>
-            {getOrderStatusLabel(order.status)}
-          </Tag>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-foreground-tertiary">
-          <div className="flex items-center gap-1">
+          </Typography>
+          <Chip
+            label={getOrderStatusLabel(order.status)}
+            color={getOrderStatusColor(order.status) as any}
+            size="medium"
+          />
+        </Stack>
+        <Stack
+          direction="row"
+          spacing={3}
+          flexWrap="wrap"
+          sx={{ color: 'text.secondary', fontSize: '0.875rem' }}
+        >
+          <Stack direction="row" spacing={0.5} alignItems="center">
             <Clock size={14} />
             <span>Создан {dayjs(order.created_at).fromNow()}</span>
-          </div>
+          </Stack>
           {order.deadline_at && (
-            <div className="flex items-center gap-1">
+            <Stack direction="row" spacing={0.5} alignItems="center">
               <Calendar size={14} />
               <span>
                 Срок: {dayjs(order.deadline_at).format("DD MMMM YYYY")}
               </span>
-            </div>
+            </Stack>
           )}
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Box>
+    </Stack>
   );
 }
 

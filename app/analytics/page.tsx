@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Layout, Card, Row, Col, Typography, Space, Skeleton, Statistic } from "antd";
-import { toastService } from "@/src/shared/lib/toast";
-import { TrendingUp, TrendingDown, DollarSign, FileText, Clock, CheckCircle2 } from "lucide-react";
+import { Grid, Typography, Stack, Box } from "@mui/material";
+import { TrendingUp, DollarSign, FileText, Clock, CheckCircle2 } from "lucide-react";
+import { PageContainer, StyledCard, StatCard, LoadingState } from "@/src/shared/ui";
 import { useAuth } from "@/src/shared/lib/hooks";
 import { getStats } from "@/src/shared/api/stats";
-
-const { Content } = Layout;
-const { Title, Text } = Typography;
+import { toastService } from "@/src/shared/lib/toast";
 
 export default function AnalyticsPage() {
   const { userRole, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
+
+  const isClient = userRole === "client" || userRole === "admin";
 
   useEffect(() => {
     if (authLoading) return;
@@ -21,10 +21,9 @@ export default function AnalyticsPage() {
     const loadStats = async () => {
       try {
         setLoading(true);
-        const statsData = await getStats();
-        setStats(statsData);
-      } catch (error: any) {
-        console.error("Failed to load stats:", error);
+        const data = await getStats();
+        setStats(data);
+      } catch {
         toastService.error("Не удалось загрузить статистику");
       } finally {
         setLoading(false);
@@ -34,79 +33,74 @@ export default function AnalyticsPage() {
     loadStats();
   }, [authLoading]);
 
-  if (authLoading || loading) {
-    return (
-      <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-        <Content style={{ padding: "24px" }}>
-          <Skeleton active paragraph={{ rows: 8 }} />
-        </Content>
-      </Layout>
-    );
-  }
+  const statsConfig = isClient
+    ? [
+        { label: "Всего заказов", value: stats?.orders?.total || 0, icon: FileText },
+        { label: "В работе", value: stats?.orders?.in_progress || 0, icon: Clock },
+        { label: "Завершено", value: stats?.orders?.completed || 0, icon: CheckCircle2 },
+        { label: "Потрачено", value: stats?.balance ? `${(stats.balance / 1000).toFixed(0)}K ₽` : "0 ₽", icon: DollarSign },
+      ]
+    : [
+        { label: "Откликов", value: stats?.proposals?.total || 0, icon: FileText },
+        { label: "Ожидают", value: stats?.proposals?.pending || 0, icon: Clock },
+        { label: "Принято", value: stats?.proposals?.accepted || 0, icon: CheckCircle2 },
+        { label: "Заработано", value: stats?.balance ? `${(stats.balance / 1000).toFixed(0)}K ₽` : "0 ₽", icon: DollarSign },
+      ];
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div>
-            <Title level={2}>Аналитика</Title>
-            <Text type="secondary">Статистика и отчеты по вашей активности</Text>
-          </div>
+    <PageContainer
+      title="Аналитика"
+      subtitle={isClient ? "Статистика ваших проектов" : "Статистика вашей работы"}
+      loading={authLoading || loading}
+    >
+      {loading ? (
+        <LoadingState type="cards" count={4} height={120} />
+      ) : (
+        <Stack spacing={3}>
+          {/* Main Stats */}
+          <Grid container spacing={2}>
+            {statsConfig.map((stat, index) => (
+              <Grid size={{ xs: 6, md: 3 }} key={index}>
+                <StatCard icon={stat.icon} label={stat.label} value={stat.value} />
+              </Grid>
+            ))}
+          </Grid>
 
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={6}>
-              <Card>
-                <Statistic
-                  title={userRole === "client" ? "Всего проектов" : "Всего откликов"}
-                  value={userRole === "client" ? stats?.orders?.total || 0 : stats?.proposals?.total || 0}
-                  prefix={<FileText size={20} />}
-                  valueStyle={{ color: "#1890ff" }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card>
-                <Statistic
-                  title="Активных"
-                  value={userRole === "client" ? stats?.orders?.in_progress || 0 : stats?.proposals?.pending || 0}
-                  prefix={<Clock size={20} />}
-                  valueStyle={{ color: "#52c41a" }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card>
-                <Statistic
-                  title="Завершено"
-                  value={userRole === "client" ? stats?.orders?.completed || 0 : stats?.proposals?.accepted || 0}
-                  prefix={<CheckCircle2 size={20} />}
-                  valueStyle={{ color: "#722ed1" }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card>
-                <Statistic
-                  title={userRole === "client" ? "Потрачено" : "Заработано"}
-                  value={stats?.balance || 0}
-                  prefix={<DollarSign size={20} />}
-                  suffix="₽"
-                  valueStyle={{ color: "#fa8c16" }}
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          <Card title="Детальная статистика">
-            <Space direction="vertical" size="large" style={{ width: "100%" }}>
-              <Text type="secondary">
-                Детальная аналитика будет доступна в следующих версиях приложения.
-              </Text>
-            </Space>
-          </Card>
-        </Space>
-      </Content>
-    </Layout>
+          {/* Additional Stats */}
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <StyledCard>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  Рейтинг
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="baseline">
+                  <Typography variant="h3" fontWeight={700}>
+                    {stats?.average_rating?.toFixed(1) || "0.0"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "var(--text-muted)" }}>
+                    из 5.0 ({stats?.total_reviews || 0} отзывов)
+                  </Typography>
+                </Stack>
+              </StyledCard>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <StyledCard>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  Выполнение
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="baseline">
+                  <Typography variant="h3" fontWeight={700}>
+                    {Math.round(stats?.completion_rate || 0)}%
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "var(--text-muted)" }}>
+                    успешно завершённых проектов
+                  </Typography>
+                </Stack>
+              </StyledCard>
+            </Grid>
+          </Grid>
+        </Stack>
+      )}
+    </PageContainer>
   );
 }
-

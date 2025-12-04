@@ -1,292 +1,136 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card, CardContent, Button, Skeleton, Stack, Typography, Box, Chip, LinearProgress, useTheme } from "@mui/material";
-import Grid from "@mui/material/Grid";
-import { getMyOrders, getOrders } from "@/src/shared/api/orders";
-import {
-  Briefcase,
-  Clock,
-  Wallet,
-  ArrowRight,
-  Calendar,
-  User,
-  MessageSquare,
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { formatDate as formatDateUtil } from "@/src/shared/lib/utils/date-utils";
+import { Button, Stack, Typography, Box, Chip, LinearProgress, Grid } from "@mui/material";
+import { Briefcase, Clock, Wallet, ArrowRight, Calendar, User } from "lucide-react";
+import { formatDate } from "@/src/shared/lib/utils/date-utils";
 import Link from "next/link";
 import { formatPriceRange } from "@/src/shared/lib/utils";
-
-interface Order {
-  id: string;
-  title: string;
-  description: string;
-  budget_min?: number;
-  budget_max?: number;
-  status: "draft" | "published" | "in_progress" | "completed" | "cancelled";
-  deadline_at?: string;
-  ai_summary?: string;
-  created_at: string;
-  proposals_count?: number;
-  progress?: number;
-}
+import { useDashboardData } from "@/src/features/dashboard/context";
+import { StyledCard, SectionHeader, IconBox, MetaItem, LoadingState } from "@/src/shared/ui";
+import { orderStatusConfig } from "@/src/shared/lib/constants/design";
 
 interface ProjectsCardsProps {
   userRole: "client" | "freelancer" | null;
 }
 
-const statusConfig = {
-  draft: { label: "Черновик", color: "default" as const },
-  published: { label: "Опубликован", color: "info" as const },
-  in_progress: { label: "В работе", color: "warning" as const },
-  completed: { label: "Завершён", color: "success" as const },
-  cancelled: { label: "Отменён", color: "error" as const },
-};
-
 export function ProjectsCards({ userRole }: ProjectsCardsProps) {
-  const theme = useTheme();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading } = useDashboardData();
+  const orders = data?.recent_orders?.slice(0, 3) || [];
 
-  useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        if (userRole === "client") {
-          const response = await getMyOrders();
-          const myOrders = response.as_client || [];
-          setOrders(myOrders.slice(0, 3));
-        } else {
-          const response = await getOrders({
-            status: "published",
-            limit: 3,
-            sort_by: "created_at",
-            sort_order: "desc",
-          });
-          setOrders(response.data || []);
-        }
-      } catch (error) {
-        console.error("Error loading orders:", error);
-        setOrders([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (userRole) {
-      loadOrders();
-    }
-  }, [userRole]);
-
-  const formatDate = (dateString: string) =>
-    formatDateUtil(dateString, { includeYear: true });
+  const title = userRole === "client" ? "Мои проекты" : "Доступные заказы";
 
   if (loading) {
     return (
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2 }}>
-            <Briefcase size={20} />
-            <Typography variant="h6">{userRole === "client" ? "Мои проекты" : "Доступные заказы"}</Typography>
-          </Box>
-          <Skeleton variant="rectangular" height={120} />
-          <Skeleton variant="rectangular" height={120} sx={{ mt: 2 }} />
-          <Skeleton variant="rectangular" height={120} sx={{ mt: 2 }} />
-        </CardContent>
-      </Card>
+      <StyledCard>
+        <SectionHeader icon={Briefcase} title={title} />
+        <Box sx={{ mt: 2 }}>
+          <LoadingState type="list" count={2} height={100} />
+        </Box>
+      </StyledCard>
     );
   }
 
   return (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Briefcase size={20} style={{ color: theme.palette.primary.main }} />
-            <Typography variant="h6">{userRole === "client" ? "Мои проекты" : "Доступные заказы"}</Typography>
-          </Box>
-          <Link href="/orders" style={{ textDecoration: 'none' }}>
-            <Button variant="text" endIcon={<ArrowRight size={16} />}>
+    <StyledCard>
+      <SectionHeader
+        icon={Briefcase}
+        title={title}
+        action={
+          <Link href="/orders" style={{ textDecoration: "none" }}>
+            <Button size="small" endIcon={<ArrowRight size={14} />} sx={{ fontSize: 13 }}>
               Все
             </Button>
           </Link>
+        }
+      />
+
+      {orders.length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 4 }}>
+          <Typography variant="body2" sx={{ color: "var(--text-muted)", fontSize: 13 }}>
+            {userRole === "client" ? "Нет проектов" : "Нет доступных заказов"}
+          </Typography>
         </Box>
+      ) : (
+        <Stack spacing={1.5} sx={{ mt: 2 }}>
+          {orders.map((order) => {
+            const statusInfo = orderStatusConfig[order.status as keyof typeof orderStatusConfig] || orderStatusConfig.draft;
+            const progress = order.status === "in_progress" ? 50 : order.status === "completed" ? 100 : 0;
 
-        {orders.length === 0 ? (
-          <Box textAlign="center" py={4}>
-            <Typography variant="body2" color="text.secondary">
-              {userRole === "client" ? "Нет проектов" : "Нет доступных заказов"}
-            </Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={2}>
-            {orders.map((order, index) => {
-              const statusInfo = statusConfig[order.status];
-              const progress = order.status === "in_progress"
-                ? 50
-                : order.status === "completed"
-                ? 100
-                : 0;
+            return (
+              <Link key={order.id} href={`/orders/${order.id}`} style={{ textDecoration: "none" }}>
+                <StyledCard interactive>
+                  <Stack spacing={1.5}>
+                    {/* Header */}
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <IconBox icon={Briefcase} size="lg" />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 14 }}>
+                          {order.title}
+                        </Typography>
+                        <Chip label={statusInfo.label} color={statusInfo.color} size="small" sx={{ mt: 0.5, height: 20, fontSize: 11 }} />
+                      </Box>
+                    </Stack>
 
-              return (
-                <Grid size={{ xs: 12 }} key={order.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                  >
-                    <Link href={`/orders/${order.id}`} style={{ textDecoration: 'none' }}>
-                      <Card
+                    {/* Description */}
+                    {order.ai_summary && (
+                      <Typography
+                        variant="body2"
                         sx={{
-                          cursor: 'pointer',
-                          '&:hover': {
-                            boxShadow: 2,
-                          }
+                          color: "var(--text-muted)",
+                          fontSize: 13,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
                         }}
                       >
-                        <CardContent>
-                          <Stack spacing={2}>
-                            {/* Header */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                                <Box
-                                  sx={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 1,
-                                    bgcolor: `${theme.palette.primary.main}15`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                  }}
-                                >
-                                  <Briefcase size={20} style={{ color: theme.palette.primary.main }} />
-                                </Box>
-                                <Box>
-                                  <Typography variant="body1" fontWeight="bold">
-                                    {order.title}
-                                  </Typography>
-                                  <Chip label={statusInfo.label} color={statusInfo.color} size="small" sx={{ mt: 0.5 }} />
-                                </Box>
-                              </Box>
-                            </Box>
+                        {order.ai_summary}
+                      </Typography>
+                    )}
 
-                            {/* Description */}
-                            {order.ai_summary && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                {order.ai_summary}
-                              </Typography>
-                            )}
+                    {/* Progress */}
+                    {progress > 0 && (
+                      <Box>
+                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ color: "var(--text-muted)", fontSize: 11 }}>
+                            Прогресс
+                          </Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600, fontSize: 11 }}>
+                            {progress}%
+                          </Typography>
+                        </Stack>
+                        <LinearProgress variant="determinate" value={progress} sx={{ height: 4, borderRadius: 2 }} />
+                      </Box>
+                    )}
 
-                            {/* Progress Bar */}
-                            {progress > 0 && (
-                              <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Прогресс
-                                  </Typography>
-                                  <Typography variant="caption" fontWeight="bold">
-                                    {progress}%
-                                  </Typography>
-                                </Box>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={progress}
-                                  sx={{
-                                    height: 6,
-                                    borderRadius: 1,
-                                    bgcolor: theme.palette.background.default,
-                                  }}
-                                />
-                              </Box>
-                            )}
+                    {/* Meta */}
+                    <Grid container spacing={1}>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <MetaItem icon={Wallet}>{formatPriceRange(order.budget_min, order.budget_max)}</MetaItem>
+                      </Grid>
+                      {order.deadline_at && (
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <MetaItem icon={Calendar}>{formatDate(order.deadline_at)}</MetaItem>
+                        </Grid>
+                      )}
+                      {order.proposals_count !== undefined && order.proposals_count > 0 && (
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <MetaItem icon={User}>{order.proposals_count} откликов</MetaItem>
+                        </Grid>
+                      )}
+                    </Grid>
 
-                            {/* Meta Info */}
-                            <Grid container spacing={1}>
-                              <Grid size={{ xs: 12, sm: 4 }}>
-                                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                                  <Wallet size={14} style={{ color: theme.palette.text.secondary }} />
-                                  <Typography variant="caption" color="text.secondary">
-                                    {formatPriceRange(order.budget_min, order.budget_max)}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                              {order.deadline_at && (
-                                <Grid size={{ xs: 12, sm: 4 }}>
-                                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                                    <Calendar size={14} style={{ color: theme.palette.text.secondary }} />
-                                    <Typography variant="caption" color="text.secondary">
-                                      {formatDate(order.deadline_at)}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
-                              )}
-                              {order.proposals_count !== undefined && order.proposals_count > 0 && (
-                                <Grid size={{ xs: 12, sm: 4 }}>
-                                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                                    <User size={14} style={{ color: theme.palette.text.secondary }} />
-                                    <Typography variant="caption" color="text.secondary">
-                                      {order.proposals_count} откликов
-                                    </Typography>
-                                  </Box>
-                                </Grid>
-                              )}
-                            </Grid>
-
-                            {/* Footer Actions */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: `1px solid ${theme.palette.divider}` }}>
-                              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                                <Clock size={14} style={{ color: theme.palette.text.secondary }} />
-                                <Typography variant="caption" color="text.secondary">
-                                  {formatDate(order.created_at)}
-                                </Typography>
-                              </Box>
-                              {userRole === "client" && (
-                                <Button
-                                  variant="text"
-                                  size="small"
-                                  startIcon={<MessageSquare size={14} />}
-                                  sx={{ fontSize: '0.75rem' }}
-                                >
-                                  Сообщения
-                                </Button>
-                              )}
-                            </Box>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  </motion.div>
-                </Grid>
-              );
-            })}
-          </Grid>
-        )}
-
-        {/* View All Button */}
-        {orders.length > 0 && (
-          <Link href="/orders" style={{ textDecoration: 'none' }}>
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              endIcon={<ArrowRight size={16} />}
-              sx={{ mt: 2 }}
-            >
-              {userRole === "client" ? "Все проекты" : "Все заказы"}
-            </Button>
-          </Link>
-        )}
-      </CardContent>
-    </Card>
+                    {/* Footer */}
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 1.5, borderTop: "1px solid var(--border)" }}>
+                      <MetaItem icon={Clock}>{formatDate(order.created_at)}</MetaItem>
+                    </Stack>
+                  </Stack>
+                </StyledCard>
+              </Link>
+            );
+          })}
+        </Stack>
+      )}
+    </StyledCard>
   );
 }

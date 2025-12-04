@@ -26,7 +26,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-2xl border transition-all duration-300',
+        'rounded-2xl border transition-all duration-300 flex flex-col',
         glass ? 'glass' : 'bg-background-elevated border-border',
         hover && 'hover:shadow-glow hover:border-border-hover hover:scale-[1.02]',
         paddingStyles[padding],

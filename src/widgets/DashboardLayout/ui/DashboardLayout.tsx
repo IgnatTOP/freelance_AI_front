@@ -17,8 +17,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <Box
       component="main"
       sx={{
-        minHeight: "100vh",
+        // Убираем minHeight для предотвращения ненужного скролла
+        // Контент сам определит нужную высоту
         backgroundColor: "transparent",
+        pb: 2, // Небольшой padding снизу для красоты
       }}
     >
       {children}

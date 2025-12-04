@@ -1,26 +1,32 @@
 /**
- * Обертка для message из Ant Design
- * Использует App.useApp() для правильного применения стилей темы
+ * Deprecated: This file is kept for backward compatibility
+ * Use toastService from '@/src/shared/lib/toast' instead
  */
 
-import { App } from 'antd';
+import { toastService } from './toast';
 
 /**
- * Хелпер для использования message с правильными стилями
- * Используйте этот хук в компонентах вместо статического message
- * 
- * @example
- * const { message } = useMessage();
- * message.success('Успешно!');
+ * @deprecated Use toastService instead
  */
 export function useMessage() {
-  return App.useApp();
+  return {
+    message: {
+      success: toastService.success,
+      error: toastService.error,
+      warning: toastService.warning,
+      info: toastService.info,
+    },
+  };
 }
 
 /**
- * Для использования вне компонентов React, используйте статический message
- * Но он будет использовать стили из ConfigProvider
+ * @deprecated Use toastService instead
  */
-export { message } from 'antd';
+export const message = {
+  success: toastService.success,
+  error: toastService.error,
+  warning: toastService.warning,
+  info: toastService.info,
+};
 
 

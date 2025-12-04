@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Card, Typography, Tag, Button as AntButton, Space } from "antd";
+import { Card, Typography, Chip, Button, Stack, Box } from "@mui/material";
 import { Wallet } from "lucide-react";
 import dayjs from "dayjs";
 import type { Order } from "@/src/entities/order/model/types";
 import { formatPriceRange } from "@/src/shared/lib/utils";
 import { getOrderStatusColor, getOrderStatusLabel } from "@/src/shared/lib/order-utils";
-
-const { Title, Text } = Typography;
 
 interface OrderDetailSidebarProps {
   order: Order;
@@ -24,70 +22,92 @@ export function OrderDetailSidebar({
   orderId,
 }: OrderDetailSidebarProps) {
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       {/* Budget */}
       {(order.budget_min || order.budget_max) && (
-        <Card>
-          <div className="flex items-center gap-2 mb-3">
-            <Wallet size={20} className="text-primary" />
-            <Title level={5} className="mb-0">Бюджет</Title>
-          </div>
-          <Text className="text-2xl font-bold">
+        <Card sx={{ p: 3 }}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+            <Wallet size={20} />
+            <Typography variant="h6">Бюджет</Typography>
+          </Stack>
+          <Typography variant="h4" fontWeight="bold">
             {formatPriceRange(order.budget_min, order.budget_max)}
-          </Text>
+          </Typography>
         </Card>
       )}
 
       {/* Actions */}
-      <Card>
-        <Title level={5} className="mb-4">Действия</Title>
-        <Space direction="vertical" className="w-full">
+      <Card sx={{ p: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Действия
+        </Typography>
+        <Stack spacing={1.5}>
           {userRole === "freelancer" && order.status === "published" && (
-            <Link href={`/orders/${orderId}/proposal`} className="block w-full">
-              <AntButton type="primary" block>
+            <Link href={`/orders/${orderId}/proposal`} style={{ textDecoration: 'none' }}>
+              <Button variant="contained" fullWidth>
                 Откликнуться на заказ
-              </AntButton>
+              </Button>
             </Link>
           )}
           {isOwner && (
             <>
-              <Link href={`/orders/${orderId}/edit`} className="block w-full">
-                <AntButton block>Редактировать заказ</AntButton>
+              <Link href={`/orders/${orderId}/edit`} style={{ textDecoration: 'none' }}>
+                <Button variant="outlined" fullWidth>
+                  Редактировать заказ
+                </Button>
               </Link>
-              <Link href={`/orders/${orderId}/proposals`} className="block w-full">
-                <AntButton block>Просмотреть отклики</AntButton>
+              <Link href={`/orders/${orderId}/proposals`} style={{ textDecoration: 'none' }}>
+                <Button variant="outlined" fullWidth>
+                  Просмотреть отклики
+                </Button>
               </Link>
             </>
           )}
-          <Link href={`/orders/${orderId}/chat`} className="block w-full">
-            <AntButton block>Открыть чат</AntButton>
+          <Link href={`/orders/${orderId}/chat`} style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" fullWidth>
+              Открыть чат
+            </Button>
           </Link>
-        </Space>
+        </Stack>
       </Card>
 
       {/* Info */}
-      <Card>
-        <Title level={5} className="mb-4">Информация</Title>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <Text className="text-foreground-tertiary">Статус:</Text>
-            <Tag color={getOrderStatusColor(order.status)}>
-              {getOrderStatusLabel(order.status)}
-            </Tag>
-          </div>
-          <div className="flex justify-between">
-            <Text className="text-foreground-tertiary">Создан:</Text>
-            <Text>{dayjs(order.created_at).format("DD.MM.YYYY HH:mm")}</Text>
-          </div>
+      <Card sx={{ p: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Информация
+        </Typography>
+        <Stack spacing={1.5}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Статус:
+            </Typography>
+            <Chip
+              label={getOrderStatusLabel(order.status)}
+              color={getOrderStatusColor(order.status) as any}
+              size="small"
+            />
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2" color="text.secondary">
+              Создан:
+            </Typography>
+            <Typography variant="body2">
+              {dayjs(order.created_at).format("DD.MM.YYYY HH:mm")}
+            </Typography>
+          </Box>
           {order.deadline_at && (
-            <div className="flex justify-between">
-              <Text className="text-foreground-tertiary">Срок:</Text>
-              <Text>{dayjs(order.deadline_at).format("DD.MM.YYYY")}</Text>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Срок:
+              </Typography>
+              <Typography variant="body2">
+                {dayjs(order.deadline_at).format("DD.MM.YYYY")}
+              </Typography>
+            </Box>
           )}
-        </div>
+        </Stack>
       </Card>
-    </div>
+    </Stack>
   );
 }
 

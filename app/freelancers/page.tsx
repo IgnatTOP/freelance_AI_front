@@ -2,39 +2,127 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Layout, Card, Row, Col, Input, Avatar, Typography, Space, Button, Skeleton, Empty } from "antd";
+import { Grid, TextField, Avatar, Typography, Stack, Button, Chip, InputAdornment, Box, Select, MenuItem, FormControl, InputLabel, Slider } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { Search, User, Star, Briefcase, MapPin } from "lucide-react";
+import { Search, User, Star, Briefcase, MapPin, Filter } from "lucide-react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
-import api from "@/src/shared/lib/api/axios";
+import { searchFreelancers, type FreelancerSearchResult, type FreelancerSearchParams } from "@/src/shared/api/freelancers";
+import { PageContainer, StyledCard, EmptyState, LoadingState, MetaItem } from "@/src/shared/ui";
+import { getMediaUrl } from "@/src/shared/lib/api/axios";
 
-const { Content } = Layout;
-const { Title, Text } = Typography;
+function FreelancerCard({ freelancer }: { freelancer: FreelancerSearchResult }) {
+  const photoUrl = freelancer.photo_id ? getMediaUrl(freelancer.photo_id) : null;
+  
+  return (
+    <Link href={`/users/${freelancer.id}`} style={{ textDecoration: "none" }}>
+      <StyledCard interactive sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <Stack spacing={2} sx={{ flexGrow: 1 }}>
+          <Box sx={{ textAlign: "center" }}>
+            <Avatar
+              src={photoUrl || undefined}
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: "var(--primary-10)",
+                color: "var(--primary)",
+                fontSize: 24,
+                fontWeight: 600,
+                mx: "auto",
+              }}
+            >
+              {(freelancer.display_name || freelancer.username)?.charAt(0).toUpperCase()}
+            </Avatar>
+            <Typography variant="h6" sx={{ mt: 1.5, mb: 0.5, fontSize: { xs: "1rem", md: "1.25rem" } }}>
+              {freelancer.display_name || freelancer.username}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "var(--text-muted)" }}>
+              @{freelancer.username}
+            </Typography>
+          </Box>
 
-interface Freelancer {
-  id: string;
-  username: string;
-  display_name?: string;
-  email: string;
-  role: string;
-  profile?: {
-    display_name?: string;
-    bio?: string;
-    experience_level?: string;
-    skills?: string[];
-    location?: string;
-    rating?: number;
-    completed_orders?: number;
-  };
+          {freelancer.bio && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: "var(--text-muted)",
+                fontSize: 12,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {freelancer.bio}
+            </Typography>
+          )}
+
+          <Stack spacing={0.5}>
+            {freelancer.experience_level && (
+              <MetaItem icon={Briefcase}>{freelancer.experience_level}</MetaItem>
+            )}
+            {freelancer.location && (
+              <MetaItem icon={MapPin}>{freelancer.location}</MetaItem>
+            )}
+            {freelancer.avg_rating > 0 && (
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Star size={14} fill="#ffc107" color="#ffc107" />
+                <Typography variant="body2" sx={{ fontSize: 12 }}>
+                  {freelancer.avg_rating.toFixed(1)} ({freelancer.review_count})
+                </Typography>
+              </Stack>
+            )}
+            {freelancer.hourly_rate && (
+              <Typography variant="body2" sx={{ fontSize: 12, color: "var(--primary)", fontWeight: 600 }}>
+                {freelancer.hourly_rate.toLocaleString()} ₽/час
+              </Typography>
+            )}
+          </Stack>
+
+          {freelancer.skills && freelancer.skills.length > 0 && (
+            <Box>
+              {freelancer.skills.slice(0, 3).map((skill, idx) => (
+                <Chip
+                  key={idx}
+                  label={skill}
+                  size="small"
+                  sx={{
+                    m: 0.25,
+                    height: "auto",
+                    py: 0.25,
+                    fontSize: 11,
+                    bgcolor: "var(--primary-10)",
+                    color: "var(--primary)",
+                  }}
+                />
+              ))}
+              {freelancer.skills.length > 3 && (
+                <Typography variant="caption" sx={{ color: "var(--text-muted)", ml: 0.5, fontSize: 11 }}>
+                  +{freelancer.skills.length - 3}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Stack>
+
+        <Button fullWidth variant="text" sx={{ mt: 2 }}>
+          Посмотреть профиль
+        </Button>
+      </StyledCard>
+    </Link>
+  );
 }
 
 function FreelancersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
-  const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
-  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [freelancers, setFreelancers] = useState<FreelancerSearchResult[]>([]);
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [skills, setSkills] = useState(searchParams.get("skills") || "");
+  const [experienceLevel, setExperienceLevel] = useState(searchParams.get("experience_level") || "");
+  const [minRating, setMinRating] = useState<number>(0);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
@@ -42,60 +130,22 @@ function FreelancersPageContent() {
       router.push("/auth/login");
       return;
     }
-
     loadFreelancers();
   }, [router]);
 
-  const loadFreelancers = async () => {
+  const loadFreelancers = async (params?: FreelancerSearchParams) => {
     try {
       setLoading(true);
-      // Получаем список заказов и извлекаем фрилансеров из предложений
-      // В реальном приложении здесь должен быть отдельный endpoint для списка фрилансеров
-      const { getOrders } = await import("@/src/shared/api/orders");
-      const response = await getOrders({ limit: 100 });
-      const orders = response.data || [];
-      
-      // Собираем уникальных фрилансеров из предложений
-      const freelancerIds = new Set<string>();
-      const freelancersMap = new Map<string, Freelancer>();
-
-      // Получаем proposals для каждого заказа отдельно
-      const { getOrderProposals } = await import("@/src/shared/api/proposals");
-      
-      for (const order of orders) {
-        try {
-          // Получаем proposals для заказа
-          const proposalsResponse = await getOrderProposals(order.id);
-          const proposals = proposalsResponse.proposals || [];
-          
-          for (const proposal of proposals) {
-            if (proposal.freelancer_id && !freelancerIds.has(proposal.freelancer_id)) {
-              freelancerIds.add(proposal.freelancer_id);
-              try {
-                const userResponse = await api.get(`/users/${proposal.freelancer_id}`);
-                const user = userResponse.data.user;
-                if (user && user.role === "freelancer") {
-                  freelancersMap.set(user.id, {
-                    id: user.id,
-                    username: user.username,
-                    display_name: user.display_name,
-                    email: user.email,
-                    role: user.role,
-                    profile: userResponse.data.profile,
-                  });
-                }
-              } catch (err) {
-                console.error(`Failed to load user ${proposal.freelancer_id}:`, err);
-              }
-            }
-          }
-        } catch (err) {
-          // Игнорируем ошибки получения proposals для отдельных заказов
-          console.error(`Failed to load proposals for order ${order.id}:`, err);
-        }
-      }
-
-      setFreelancers(Array.from(freelancersMap.values()));
+      const searchParams: FreelancerSearchParams = {
+        q: search || undefined,
+        skills: skills || undefined,
+        experience_level: experienceLevel || undefined,
+        min_rating: minRating > 0 ? minRating : undefined,
+        limit: 50,
+        ...params,
+      };
+      const result = await searchFreelancers(searchParams);
+      setFreelancers(result);
     } catch (error: any) {
       console.error("Failed to load freelancers:", error);
       toastService.error("Не удалось загрузить список фрилансеров");
@@ -104,185 +154,108 @@ function FreelancersPageContent() {
     }
   };
 
-  const filteredFreelancers = freelancers.filter((f) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      f.username?.toLowerCase().includes(searchLower) ||
-      f.display_name?.toLowerCase().includes(searchLower) ||
-      f.profile?.bio?.toLowerCase().includes(searchLower) ||
-      f.profile?.skills?.some((s) => s.toLowerCase().includes(searchLower))
-    );
-  });
+  const handleSearch = () => {
+    loadFreelancers();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div>
-            <Title level={2}>Фрилансеры</Title>
-            <Text type="secondary">Найдите подходящего исполнителя для вашего проекта</Text>
-          </div>
-
-          <Input
-            size="large"
-            placeholder="Поиск по имени, навыкам или описанию..."
-            prefix={<Search size={18} />}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ maxWidth: "600px" }}
-          />
-
-          {loading ? (
-            <Row gutter={[16, 16]}>
-              {[1, 2, 3, 4].map((i) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={i}>
-                  <Card>
-                    <Skeleton active avatar paragraph={{ rows: 2 }} />
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          ) : filteredFreelancers.length === 0 ? (
-            <Empty
-              description="Фрилансеры не найдены"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
+    <PageContainer title="Фрилансеры" subtitle="Найдите подходящего исполнителя для вашего проекта">
+      <StyledCard sx={{ mb: 3 }}>
+        <Stack spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              fullWidth
+              placeholder="Поиск по имени или описанию..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyPress={handleKeyPress}
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><Search size={18} /></InputAdornment>,
+              }}
+              size="small"
             />
-          ) : (
-            <Row gutter={[16, 16]}>
-              {filteredFreelancers.map((freelancer) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={freelancer.id}>
-                  <Link href={`/users/${freelancer.id}`}>
-                    <Card
-                      hoverable
-                      style={{ height: "100%" }}
-                      actions={[
-                        <Button type="link" key="view">
-                          Посмотреть профиль
-                        </Button>,
-                      ]}
-                    >
-                      <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                        <div style={{ textAlign: "center" }}>
-                          <Avatar
-                            size={64}
-                            style={{
-                              background: "var(--primary-06)",
-                              color: "var(--primary)",
-                              fontSize: 24,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {(freelancer.display_name || freelancer.username)?.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Title level={4} style={{ marginTop: 12, marginBottom: 4 }}>
-                            {freelancer.display_name || freelancer.username}
-                          </Title>
-                          <Text type="secondary">@{freelancer.username}</Text>
-                        </div>
+            <TextField
+              fullWidth
+              placeholder="Навыки (через запятую)"
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
+              onKeyPress={handleKeyPress}
+              size="small"
+              sx={{ maxWidth: { sm: 250 } }}
+            />
+            <Button variant="outlined" onClick={() => setShowFilters(!showFilters)} startIcon={<Filter size={16} />}>
+              Фильтры
+            </Button>
+            <Button variant="contained" onClick={handleSearch}>
+              Найти
+            </Button>
+          </Stack>
 
-                        {freelancer.profile?.bio && (
-                          <Text
-                            type="secondary"
-                            ellipsis
-                            style={{ 
-                              fontSize: 12, 
-                              display: "-webkit-box", 
-                              WebkitLineClamp: 2, 
-                              WebkitBoxOrient: "vertical", 
-                              overflow: "hidden",
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word"
-                            }}
-                          >
-                            {freelancer.profile.bio}
-                          </Text>
-                        )}
-
-                        <Space direction="vertical" size="small" style={{ width: "100%" }}>
-                          {freelancer.profile?.experience_level && (
-                            <Space size="small">
-                              <Briefcase size={14} />
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {freelancer.profile.experience_level}
-                              </Text>
-                            </Space>
-                          )}
-                          {freelancer.profile?.location && (
-                            <Space size="small">
-                              <MapPin size={14} />
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {freelancer.profile.location}
-                              </Text>
-                            </Space>
-                          )}
-                          {freelancer.profile?.rating && (
-                            <Space size="small">
-                              <Star size={14} fill="#ffc107" color="#ffc107" />
-                              <Text style={{ fontSize: 12 }}>
-                                {freelancer.profile.rating.toFixed(1)}
-                              </Text>
-                            </Space>
-                          )}
-                        </Space>
-
-                        {freelancer.profile?.skills && freelancer.profile.skills.length > 0 && (
-                          <div>
-                            {freelancer.profile.skills.slice(0, 3).map((skill, idx) => (
-                              <span
-                                key={idx}
-                                style={{
-                                  display: "inline-block",
-                                  padding: "2px 8px",
-                                  margin: "2px",
-                                  background: "var(--primary-06)",
-                                  borderRadius: "4px",
-                                  fontSize: 11,
-                                  color: "var(--primary)",
-                                }}
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                            {freelancer.profile.skills.length > 3 && (
-                              <Text type="secondary" style={{ fontSize: 11 }}>
-                                +{freelancer.profile.skills.length - 3}
-                              </Text>
-                            )}
-                          </div>
-                        )}
-                      </Space>
-                    </Card>
-                  </Link>
-                </Col>
-              ))}
-            </Row>
+          {showFilters && (
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ pt: 1 }}>
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Уровень</InputLabel>
+                <Select
+                  value={experienceLevel}
+                  label="Уровень"
+                  onChange={(e) => setExperienceLevel(e.target.value)}
+                >
+                  <MenuItem value="">Все</MenuItem>
+                  <MenuItem value="junior">Junior</MenuItem>
+                  <MenuItem value="middle">Middle</MenuItem>
+                  <MenuItem value="senior">Senior</MenuItem>
+                </Select>
+              </FormControl>
+              <Box sx={{ minWidth: 200 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontSize: 12 }}>
+                  Минимальный рейтинг: {minRating > 0 ? minRating : "Любой"}
+                </Typography>
+                <Slider
+                  value={minRating}
+                  onChange={(_, value) => setMinRating(value as number)}
+                  min={0}
+                  max={5}
+                  step={0.5}
+                  marks
+                  size="small"
+                />
+              </Box>
+            </Stack>
           )}
-        </Space>
-      </Content>
-    </Layout>
+        </Stack>
+      </StyledCard>
+
+      {loading ? (
+        <LoadingState type="cards" count={4} height={280} />
+      ) : freelancers.length === 0 ? (
+        <EmptyState icon={User} title="Фрилансеры не найдены" description="Попробуйте изменить параметры поиска" />
+      ) : (
+        <Grid container spacing={2}>
+          {freelancers.map((freelancer) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={freelancer.id}>
+              <FreelancerCard freelancer={freelancer} />
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </PageContainer>
   );
 }
 
 export default function FreelancersPage() {
   return (
     <Suspense fallback={
-      <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-        <Content style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-          <Row gutter={[16, 16]}>
-            {[1, 2, 3, 4].map((i) => (
-              <Col xs={24} sm={12} md={8} lg={6} key={i}>
-                <Card>
-                  <Skeleton active avatar paragraph={{ rows: 2 }} />
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </Content>
-      </Layout>
+      <PageContainer title="Фрилансеры">
+        <LoadingState type="cards" count={4} height={280} />
+      </PageContainer>
     }>
       <FreelancersPageContent />
     </Suspense>
   );
 }
-

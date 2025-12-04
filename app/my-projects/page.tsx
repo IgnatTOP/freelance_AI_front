@@ -2,16 +2,76 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Layout, Card, Row, Col, Typography, Space, Empty, Tag, Button } from "antd";
+import { Grid, Typography, Stack, Chip, Button, CardActions } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { FileText, Clock, CheckCircle2, MessageSquare, DollarSign } from "lucide-react";
+import { Clock, MessageSquare, DollarSign, Briefcase } from "lucide-react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
 import type { Order } from "@/src/entities/order/model/types";
 import { formatPriceRange } from "@/src/shared/lib/utils";
+import { PageContainer, StyledCard, EmptyState, LoadingState, MetaItem } from "@/src/shared/ui";
 
-const { Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
+function ProjectCard({ order }: { order: Order }) {
+  const getStatusColor = (status: string): "info" | "success" | "default" => {
+    switch (status) {
+      case "in_progress": return "info";
+      case "completed": return "success";
+      default: return "default";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "in_progress": return "В работе";
+      case "completed": return "Завершен";
+      default: return status;
+    }
+  };
+
+  return (
+    <StyledCard noPadding sx={{ height: "100%" }}>
+      <Stack spacing={2} sx={{ p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+          <Typography variant="h6" sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
+            {order.title}
+          </Typography>
+          <Chip label={getStatusText(order.status)} color={getStatusColor(order.status)} size="small" />
+        </Stack>
+
+        <Typography
+          variant="body2"
+          sx={{
+            color: "var(--text-muted)",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {order.description}
+        </Typography>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {(order.budget_min || order.budget_max) && (
+            <MetaItem icon={DollarSign} size="md">{formatPriceRange(order.budget_min || 0, order.budget_max || 0)}</MetaItem>
+          )}
+          {order.deadline_at && (
+            <MetaItem icon={Clock} size="md">До {new Date(order.deadline_at).toLocaleDateString("ru-RU")}</MetaItem>
+          )}
+        </Stack>
+      </Stack>
+
+      <CardActions sx={{ px: 2, pb: 2, gap: 1, flexWrap: "wrap" }}>
+        <Link href={`/orders/${order.id}`} style={{ textDecoration: "none" }}>
+          <Button variant="text">Открыть</Button>
+        </Link>
+        <Link href={`/messages?order=${order.id}`} style={{ textDecoration: "none" }}>
+          <Button variant="text" startIcon={<MessageSquare size={16} />}>Чат</Button>
+        </Link>
+      </CardActions>
+    </StyledCard>
+  );
+}
 
 export default function MyProjectsPage() {
   const router = useRouter();
@@ -38,14 +98,9 @@ export default function MyProjectsPage() {
   const loadMyProjects = async () => {
     try {
       setLoading(true);
-      // Получаем предложения фрилансера
       const { getMyProposals } = await import("@/src/shared/api/proposals");
       const proposals = await getMyProposals();
-
-      // Фильтруем только принятые предложения (активные проекты)
       const acceptedProposals = proposals.filter((p: any) => p.status === "accepted");
-
-      // Получаем заказы для принятых предложений
       const orderIds = acceptedProposals.map((p: any) => p.order_id);
       const ordersData: Order[] = [];
 
@@ -70,117 +125,26 @@ export default function MyProjectsPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "in_progress":
-        return "processing";
-      case "completed":
-        return "success";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "in_progress":
-        return "В работе";
-      case "completed":
-        return "Завершен";
-      default:
-        return status;
-    }
-  };
-
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div>
-            <Title level={2}>Мои проекты</Title>
-            <Text type="secondary">Активные заказы, над которыми вы работаете</Text>
-          </div>
-
-          {loading ? (
-            <Card>
-              <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                <Text>Загрузка...</Text>
-              </Space>
-            </Card>
-          ) : orders.length === 0 ? (
-            <Empty
-              description="У вас пока нет активных проектов"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            >
-              <Link href="/orders">
-                <Button type="primary">Найти заказы</Button>
-              </Link>
-            </Empty>
-          ) : (
-            <Row gutter={[16, 16]}>
-              {orders.map((order) => (
-                <Col xs={24} key={order.id}>
-                  <Link href={`/orders/${order.id}`}>
-                    <Card
-                      hoverable
-                      actions={[
-                        <Link key="view" href={`/orders/${order.id}`}>
-                          <Button type="link">Открыть</Button>
-                        </Link>,
-                        <Link key="chat" href={`/messages?order=${order.id}`}>
-                          <Button type="link" icon={<MessageSquare size={16} />}>
-                            Чат
-                          </Button>
-                        </Link>,
-                      ]}
-                    >
-                      <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                          <div style={{ flex: 1 }}>
-                            <Title level={4} style={{ marginBottom: 8 }}>
-                              {order.title}
-                            </Title>
-                            <Paragraph
-                              ellipsis={{ rows: 2, expandable: false }}
-                              type="secondary"
-                              style={{ margin: 0 }}
-                            >
-                              {order.description}
-                            </Paragraph>
-                          </div>
-                          <Tag color={getStatusColor(order.status)}>
-                            {getStatusText(order.status)}
-                          </Tag>
-                        </div>
-
-                        <Space>
-                          {(order.budget_min || order.budget_max) && (
-                            <Space size="small">
-                              <DollarSign size={16} />
-                              <Text strong>
-                                {formatPriceRange(order.budget_min || 0, order.budget_max || 0)}
-                              </Text>
-                            </Space>
-                          )}
-                          {order.deadline_at && (
-                            <Space size="small">
-                              <Clock size={16} />
-                              <Text type="secondary">
-                                До {new Date(order.deadline_at).toLocaleDateString("ru-RU")}
-                              </Text>
-                            </Space>
-                          )}
-                        </Space>
-                      </Space>
-                    </Card>
-                  </Link>
-                </Col>
-              ))}
-            </Row>
-          )}
-        </Space>
-      </Content>
-    </Layout>
+    <PageContainer title="Мои проекты" subtitle="Активные заказы, над которыми вы работаете">
+      {loading ? (
+        <LoadingState type="list" count={3} height={150} />
+      ) : orders.length === 0 ? (
+        <EmptyState
+          icon={Briefcase}
+          title="У вас пока нет активных проектов"
+          description="Откликайтесь на заказы, чтобы начать работу"
+          action={{ label: "Найти заказы", href: "/orders" }}
+        />
+      ) : (
+        <Grid container spacing={2}>
+          {orders.map((order) => (
+            <Grid size={{ xs: 12 }} key={order.id}>
+              <ProjectCard order={order} />
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </PageContainer>
   );
 }
-

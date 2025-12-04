@@ -10,14 +10,14 @@ interface AIAssistantInlineProps {
   onImprove: (onChunk: (chunk: string) => void) => Promise<void>;
   onApply: (text: string) => void;
   disabled?: boolean;
-  size?: "small" | "middle" | "large";
+  size?: "small" | "medium" | "large";
 }
 
 export function AIAssistantInline({
   onImprove,
   onApply,
   disabled = false,
-  size = "middle",
+  size = "medium",
 }: AIAssistantInlineProps) {
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
@@ -69,7 +69,7 @@ export function AIAssistantInline({
         onClick={handleImprove}
         disabled={disabled || loading}
         sx={{
-          color: "var(--primary)",
+          color: theme.palette.primary.main,
           padding: buttonPadding,
           height: "auto",
           fontSize: fontSize,
@@ -87,19 +87,21 @@ export function AIAssistantInline({
             exit={{ opacity: 0, height: 0, marginTop: 0 }}
             transition={{ duration: 0.3 }}
             style={{
-              background: "linear-gradient(135deg, var(--primary-05) 0%, rgba(var(--primary-rgb), 0.02) 100%)",
-              border: "1px solid var(--primary-15)",
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(24, 144, 255, 0.05) 0%, rgba(24, 144, 255, 0.02) 100%)'
+                : 'linear-gradient(135deg, rgba(24, 144, 255, 0.03) 0%, rgba(24, 144, 255, 0.01) 100%)',
+              border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(24, 144, 255, 0.15)' : 'rgba(24, 144, 255, 0.1)'}`,
               borderRadius: 8,
               padding: 16,
               marginTop: 12,
-              boxShadow: "0 4px 12px var(--primary-08)",
+              boxShadow: theme.palette.mode === 'dark' ? '0 4px 12px rgba(24, 144, 255, 0.08)' : '0 4px 12px rgba(24, 144, 255, 0.05)',
             }}
           >
             <Stack spacing={1.5} sx={{ width: "100%" }}>
               <Box display="flex" justifyContent="space-between" alignItems="flex-start">
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Sparkles size={16} style={{ color: "var(--primary)" }} />
-                  <Typography variant="body2" fontWeight="bold" sx={{ fontSize: 13, color: "var(--primary)" }}>
+                  <Sparkles size={16} style={{ color: theme.palette.primary.main }} />
+                  <Typography variant="body2" fontWeight="bold" sx={{ fontSize: 13, color: theme.palette.primary.main }}>
                     AI улучшил текст
                   </Typography>
                 </Stack>
@@ -137,7 +139,7 @@ export function AIAssistantInline({
                     <motion.span
                       animate={{ opacity: [1, 0.3, 1] }}
                       transition={{ repeat: Infinity, duration: 0.8 }}
-                      style={{ color: "var(--primary)", marginLeft: 2 }}
+                      style={{ color: theme.palette.primary.main, marginLeft: 2 }}
                     >
                       ▊
                     </motion.span>
@@ -159,12 +161,8 @@ export function AIAssistantInline({
                   startIcon={<Check size={12} />}
                   onClick={handleApply}
                   sx={{
-                    background: "var(--primary)",
                     fontSize: 12,
                     textTransform: "none",
-                    "&:hover": {
-                      background: "var(--primary-dark)",
-                    },
                   }}
                 >
                   Применить

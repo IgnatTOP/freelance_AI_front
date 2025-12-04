@@ -225,7 +225,7 @@ export function CreateOrderAISuggestions({
                   <Typography sx={{ fontSize: '14px', fontWeight: 600 }}>Рекомендуемый бюджет</Typography>
                 </Box>
                 <Grid container spacing={1.5}>
-                  <Grid xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       label="Бюджет от (₽)"
                       type="number"
@@ -236,7 +236,7 @@ export function CreateOrderAISuggestions({
                       fullWidth
                     />
                   </Grid>
-                  <Grid xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       label="Бюджет до (₽)"
                       type="number"

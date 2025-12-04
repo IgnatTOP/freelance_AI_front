@@ -1,24 +1,32 @@
 "use client";
 
-import { Layout } from "antd";
 import { useRouter } from "next/navigation";
+import { Button } from "@mui/material";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { PageContainer } from "@/src/shared/ui";
 import { PortfolioList } from "@/src/features/portfolio/portfolio-list/ui/PortfolioList";
-
-const { Content } = Layout;
 
 export default function PortfolioPage() {
   const router = useRouter();
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "transparent" }}>
-      <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
-        <PortfolioList
-          onCreateNew={() => router.push("/portfolio/create")}
-          onEdit={(id) => router.push(`/portfolio/${id}/edit`)}
-        />
-      </Content>
-    </Layout>
+    <PageContainer
+      title="Портфолио"
+      subtitle="Покажите свои лучшие работы потенциальным заказчикам"
+      maxWidth="lg"
+      actions={
+        <Link href="/portfolio/create" style={{ textDecoration: "none" }}>
+          <Button variant="contained" startIcon={<Plus size={18} />}>
+            Добавить работу
+          </Button>
+        </Link>
+      }
+    >
+      <PortfolioList
+        onCreateNew={() => router.push("/portfolio/create")}
+        onEdit={(id) => router.push(`/portfolio/${id}/edit`)}
+      />
+    </PageContainer>
   );
 }
-
-

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 // Predetermined positions for consistent SSR rendering
 const particles = [
@@ -40,6 +41,92 @@ const geometricShapes = [
 ];
 
 export function AnimatedBackground() {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    // Check if device is mobile or has reduced motion preference
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768 ||
+                     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setIsMobile(mobile);
+    };
+
+    // Check theme
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+
+    checkMobile();
+    checkTheme();
+
+    window.addEventListener('resize', checkMobile);
+
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      observer.disconnect();
+    };
+  }, []);
+
+  // Simplified static background for mobile devices
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        {/* Base Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background-secondary to-background" />
+
+        {/* Static subtle pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: `
+              linear-gradient(var(--primary-06) 1px, transparent 1px),
+              linear-gradient(90deg, var(--primary-06) 1px, transparent 1px)
+            `,
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        {/* Simple static gradient orbs */}
+        <div
+          className="absolute w-[400px] h-[400px] rounded-full blur-3xl opacity-30"
+          style={{
+            background: "var(--gradient-orb-1)",
+            top: "10%",
+            left: "10%",
+          }}
+        />
+
+        <div
+          className="absolute w-[400px] h-[400px] rounded-full blur-3xl opacity-30"
+          style={{
+            background: "var(--gradient-orb-2)",
+            bottom: "10%",
+            right: "10%",
+          }}
+        />
+
+        {/* Radial Vignette Overlay */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: isDark
+              ? "radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 15, 13, 0.6) 100%)"
+              : "radial-gradient(circle at 50% 50%, transparent 0%, rgba(248, 250, 252, 0.4) 100%)",
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Full animated background for desktop
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
       {/* Base Gradient Background */}
@@ -167,12 +254,13 @@ export function AnimatedBackground() {
       {geometricShapes.map((shape, i) => (
         <motion.div
           key={`shape-${i}`}
-          className="absolute border-2 border-primary/10"
+          className="absolute border-2"
           style={{
             left: `${shape.left}%`,
             top: `${shape.top}%`,
             width: `${shape.size}px`,
             height: `${shape.size}px`,
+            borderColor: isDark ? 'rgba(20, 184, 166, 0.25)' : 'rgba(20, 184, 166, 0.35)',
             borderRadius:
               shape.type === "circle"
                 ? "50%"
@@ -187,7 +275,7 @@ export function AnimatedBackground() {
           animate={{
             rotate: [shape.rotation, shape.rotation + 360],
             scale: [1, 1.1, 1],
-            opacity: [0.3, 0.15, 0.3],
+            opacity: isDark ? [0.5, 0.25, 0.5] : [0.6, 0.35, 0.6],
           }}
           transition={{
             duration: shape.duration,
@@ -260,8 +348,9 @@ export function AnimatedBackground() {
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 15, 13, 0.6) 100%)",
+          background: isDark
+            ? "radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 15, 13, 0.6) 100%)"
+            : "radial-gradient(circle at 50% 50%, transparent 0%, rgba(248, 250, 252, 0.4) 100%)",
         }}
       />
 

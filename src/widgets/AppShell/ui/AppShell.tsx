@@ -32,7 +32,8 @@ export function AppShell({ children }: AppShellProps) {
       return <DashboardLayout>{children}</DashboardLayout>;
     }
 
-    const mainClassName = isAuth ? "" : "pt-4 lg:pt-24";
+    // Убираем лишний padding-top, так как у хедера уже есть spacer
+    const mainClassName = isAuth ? "" : "";
     return <main className={mainClassName}>{children}</main>;
   };
 

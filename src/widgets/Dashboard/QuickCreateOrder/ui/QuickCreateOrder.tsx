@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, Button, TextField, Dialog, DialogTitle, DialogContent, Typography, CircularProgress, Stack, Box, Alert, Divider, useTheme } from "@mui/material";
-import { Sparkles, Wand2, X, Check, Bot, ArrowRight, FileText } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, Button, TextField, Dialog, DialogTitle, DialogContent, Typography, CircularProgress, Stack, Box, Alert, Divider } from "@mui/material";
+import { Sparkles, Wand2, Bot, ArrowRight, FileText, Check } from "lucide-react";
 import { aiService } from "@/src/shared/lib/ai";
 import { useRouter } from "next/navigation";
 
@@ -13,283 +12,147 @@ interface QuickCreateOrderProps {
 
 export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
   const router = useRouter();
-  const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [aiDescription, setAiDescription] = useState("");
-  const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
+
+  if (userRole !== "client") return null;
 
   const handleGenerate = async () => {
     if (!title.trim()) return;
 
     setStreaming(true);
     setAiDescription("");
-
     let fullDescription = "";
 
     try {
       await aiService.generateOrderDescriptionStream(
-        {
-          title: title.trim(),
-          description: description.trim() || "Создайте подробное описание проекта",
-          skills: [],
-        },
+        { title: title.trim(), description: description.trim() || "Создайте подробное описание", skills: [] },
         (chunk) => {
           fullDescription += chunk;
           setAiDescription((prev) => prev + chunk);
         }
       );
-      
-      // После завершения генерации автоматически перенаправляем на полную форму
-      const finalDescription = fullDescription.trim() || description.trim();
-      const params = new URLSearchParams({
-        ai: "true",
-        title: title.trim(),
-      });
-      if (finalDescription) {
-        params.append("description", finalDescription);
-      }
-      
-      // Небольшая задержка для показа финального результата пользователю
+
       setTimeout(() => {
+        const params = new URLSearchParams({ ai: "true", title: title.trim() });
+        if (fullDescription.trim()) params.append("description", fullDescription.trim());
         router.push(`/orders/create?${params.toString()}`);
         handleReset();
       }, 500);
-    } catch (error) {
-      console.error("Error generating description:", error);
+    } catch {
       setStreaming(false);
-      // Ошибка обрабатывается, пользователь может повторить попытку
     }
   };
-
-  const handleUseAI = () => {
-    // Эта функция больше не нужна, так как переход происходит автоматически
-    handleCreateWithAI();
-  };
-
-  if (userRole !== "client") return null;
 
   const handleReset = () => {
     setTitle("");
     setDescription("");
     setAiDescription("");
     setIsOpen(false);
+    setStreaming(false);
   };
 
-  const handleCreateWithAI = () => {
-    if (!title.trim()) return;
-    // Если есть сгенерированное описание, используем его
-    const finalDescription = aiDescription.trim() || description.trim();
-    const params = new URLSearchParams({
-      ai: "true",
-      title: title.trim(),
-    });
-    if (finalDescription) {
-      params.append("description", finalDescription);
-    }
+  const handleCreateManual = () => {
+    const params = new URLSearchParams({ ai: "true", title: title.trim() });
+    if (description.trim()) params.append("description", description.trim());
     router.push(`/orders/create?${params.toString()}`);
     handleReset();
   };
 
   return (
     <>
-      {/* Компактная карточка-триггер */}
-      <Card
-        onClick={() => setIsOpen(true)}
-        sx={{
-          minWidth: 160,
-          bgcolor: 'var(--primary-08)',
-          borderColor: 'var(--primary-25)',
-          cursor: 'pointer',
-          '&:hover': {
-            boxShadow: 2,
-          }
-        }}
-      >
-        <CardContent>
-          <Stack spacing={1.5} alignItems="center" textAlign="center">
-            <div className="relative">
-              <Box sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 1.25,
-                background: 'linear-gradient(135deg, var(--primary-12) 0%, rgba(139, 92, 246, 0.12) 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Sparkles size={18} style={{ color: 'var(--primary)' }} />
+      <Card onClick={() => setIsOpen(true)} sx={{ minWidth: 140, cursor: "pointer", bgcolor: "var(--primary-10)", border: "1px solid var(--primary-30)", "&:hover": { boxShadow: "var(--shadow-md)" } }}>
+        <CardContent sx={{ p: 1.5 }}>
+          <Stack spacing={1} alignItems="center" textAlign="center">
+            <Box sx={{ position: "relative" }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 1, background: "linear-gradient(135deg, var(--primary-15) 0%, rgba(139,92,246,0.15) 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Sparkles size={16} style={{ color: "var(--primary)" }} />
               </Box>
-              <motion.div
-                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [1, 0.7, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            </div>
+              <Box sx={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: "50%", bgcolor: "var(--primary)" }} />
+            </Box>
             <Box>
-              <Typography variant="body2" fontWeight="bold">
-                Быстрое создание
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Название → AI описание
-              </Typography>
+              <Typography variant="caption" fontWeight={600}>Быстрое создание</Typography>
+              <Typography variant="caption" sx={{ color: "var(--foreground-muted)", fontSize: 10, display: "block" }}>Название → AI</Typography>
             </Box>
           </Stack>
         </CardContent>
       </Card>
 
-      {/* Модальное окно */}
-      <Dialog
-        open={isOpen}
-        onClose={handleReset}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={isOpen} onClose={handleReset} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Sparkles size={18} style={{ color: 'var(--primary)' }} />
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Sparkles size={18} style={{ color: "var(--primary)" }} />
             <span>Быстрое создание заказа</span>
-          </Box>
+          </Stack>
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            {/* Название */}
             <TextField
               label="Название заказа"
               placeholder="Например: Разработка веб-приложения"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && title.trim() && !streaming) {
-                  handleGenerate();
-                }
-              }}
-              helperText="Укажите краткое название вашего проекта"
+              onKeyPress={(e) => e.key === "Enter" && title.trim() && !streaming && handleGenerate()}
+              helperText="Краткое название проекта"
               required
               fullWidth
-              InputProps={{
-                startAdornment: <FileText size={16} style={{ marginRight: 8 }} />,
-              }}
+              InputProps={{ startAdornment: <FileText size={16} style={{ marginRight: 8, color: "var(--foreground-muted)" }} /> }}
             />
 
-            {/* Кнопка генерации */}
-            <Button
-              variant="contained"
-              startIcon={streaming ? <CircularProgress size={16} /> : <Wand2 size={16} />}
-              onClick={handleGenerate}
-              disabled={!title.trim() || streaming}
-              fullWidth
-              size="large"
-            >
-              {streaming ? 'Генерирую описание...' : 'Сгенерировать описание с AI'}
+            <Button variant="contained" startIcon={streaming ? <CircularProgress size={16} /> : <Wand2 size={16} />} onClick={handleGenerate} disabled={!title.trim() || streaming} fullWidth size="large">
+              {streaming ? "Генерирую описание..." : "Сгенерировать с AI"}
             </Button>
 
-            {/* Сгенерированное описание */}
-            <AnimatePresence>
-              {(aiDescription || streaming) && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  <Alert
-                    severity="success"
-                    icon={<Bot size={16} style={{ color: 'var(--primary)' }} />}
-                    sx={{
-                      bgcolor: 'var(--primary-08)',
-                      borderColor: 'var(--primary-25)',
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight="bold">
-                      {streaming ? 'Генерирую описание...' : 'Описание готово'}
-                    </Typography>
-                    <Stack spacing={1.5} sx={{ mt: 1.5 }}>
-                      {streaming && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <CircularProgress size={16} />
-                          <Typography variant="body2" color="text.secondary">
-                            AI создает подробное описание заказа...
-                          </Typography>
-                        </Box>
-                      )}
-                      {aiDescription && (
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            whiteSpace: 'pre-wrap',
-                            lineHeight: 1.6,
-                            color: 'rgba(255, 255, 255, 0.85)',
-                          }}
-                        >
-                          {aiDescription}
-                          {streaming && (
-                            <motion.span
-                              animate={{ opacity: [1, 0.5, 1] }}
-                              transition={{ duration: 1, repeat: Infinity }}
-                            >
-                              ▋
-                            </motion.span>
-                          )}
-                        </Typography>
-                      )}
-                      {!streaming && aiDescription && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Check size={16} style={{ color: 'var(--primary)' }} />
-                          <Typography variant="caption" color="text.secondary">
-                            Перенаправление на форму создания заказа...
-                          </Typography>
-                        </Box>
-                      )}
+            {(aiDescription || streaming) && (
+              <Alert severity="success" icon={<Bot size={16} style={{ color: "var(--primary)" }} />} sx={{ bgcolor: "var(--primary-05)", borderColor: "var(--primary-15)" }}>
+                <Typography variant="body2" fontWeight={600}>{streaming ? "Генерирую..." : "Описание готово"}</Typography>
+                <Stack spacing={1} sx={{ mt: 1 }}>
+                  {streaming && (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <CircularProgress size={14} />
+                      <Typography variant="caption" sx={{ color: "var(--foreground-muted)" }}>AI создает описание...</Typography>
                     </Stack>
-                  </Alert>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Опциональное поле для ручного описания */}
-            {!aiDescription && !streaming && (
-              <TextField
-                label="Или опишите вручную (опционально)"
-                placeholder="Опишите основные требования к проекту..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                helperText="Можете добавить дополнительные детали, которые AI учтет при генерации"
-                multiline
-                rows={3}
-                fullWidth
-                inputProps={{ maxLength: 500 }}
-              />
+                  )}
+                  {aiDescription && (
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                      {aiDescription}
+                      {streaming && <span style={{ animation: "blink 1s infinite" }}>▋</span>}
+                    </Typography>
+                  )}
+                  {!streaming && aiDescription && (
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Check size={14} style={{ color: "var(--primary)" }} />
+                      <Typography variant="caption" sx={{ color: "var(--foreground-muted)" }}>Перенаправление...</Typography>
+                    </Stack>
+                  )}
+                </Stack>
+              </Alert>
             )}
 
-            {!streaming && !aiDescription && (
-              <Divider sx={{ my: 2 }} />
-            )}
-
-            {/* Действия */}
             {!aiDescription && !streaming && (
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                <Button onClick={handleReset}>
-                  Отмена
-                </Button>
-                <Button
-                  variant="contained"
-                  endIcon={<ArrowRight size={16} />}
-                  onClick={handleCreateWithAI}
-                  disabled={!title.trim()}
-                  size="large"
-                >
-                  Перейти к созданию заказа
-                </Button>
-              </Box>
+              <>
+                <TextField
+                  label="Или опишите вручную (опционально)"
+                  placeholder="Основные требования..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  helperText="Дополнительные детали для AI"
+                  multiline
+                  rows={3}
+                  fullWidth
+                  inputProps={{ maxLength: 500 }}
+                />
+                <Divider />
+                <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                  <Button onClick={handleReset}>Отмена</Button>
+                  <Button variant="contained" endIcon={<ArrowRight size={16} />} onClick={handleCreateManual} disabled={!title.trim()}>
+                    Перейти к созданию
+                  </Button>
+                </Stack>
+              </>
             )}
           </Stack>
         </DialogContent>
@@ -297,4 +160,3 @@ export function QuickCreateOrder({ userRole }: QuickCreateOrderProps) {
     </>
   );
 }
-

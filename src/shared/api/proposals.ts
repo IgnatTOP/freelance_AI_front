@@ -4,16 +4,30 @@
 
 import api from "../lib/api/axios";
 
+export type ProposalStatus = "pending" | "accepted" | "rejected" | "withdrawn";
+
 export interface Proposal {
   id: string;
   order_id: string;
   freelancer_id: string;
   cover_letter: string;
   proposed_amount?: number;
-  status: "pending" | "shortlisted" | "accepted" | "rejected";
+  status: ProposalStatus;
   ai_feedback?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  freelancer?: {
+    display_name?: string;
+    skills?: string[];
+    experience_level?: string;
+    photo_id?: string;
+  };
+  order?: {
+    id: string;
+    title: string;
+    status: string;
+    client_id: string;
+  };
 }
 
 export interface CreateProposalRequest {
@@ -23,14 +37,29 @@ export interface CreateProposalRequest {
 
 export interface ProposalListResponse {
   proposals: Proposal[];
+  best_recommendation_proposal_id?: string;
+  recommendation_justification?: string;
+  // Legacy field for backward compatibility
   best_recommendation?: {
     proposal_id: string;
     justification: string;
   };
 }
 
-// Для обратной совместимости - если приходит массив напрямую
-export type ProposalsResponse = ProposalListResponse | Proposal[];
+export interface UpdateProposalStatusResponse {
+  proposal: Proposal;
+  conversation?: {
+    id: string;
+    order_id: string;
+    client_id: string;
+    freelancer_id: string;
+  };
+  order?: {
+    id: string;
+    title: string;
+    status: string;
+  };
+}
 
 /**
  * Создать предложение на заказ
@@ -45,8 +74,6 @@ export const createProposal = async (
 
 /**
  * Получить предложения на заказ
- * Для заказчика возвращает ProposalListResponse с best_recommendation
- * Для фрилансера возвращает массив Proposal[]
  */
 export const getOrderProposals = async (
   orderId: string
@@ -54,14 +81,11 @@ export const getOrderProposals = async (
   const response = await api.get<ProposalListResponse | Proposal[]>(`/orders/${orderId}/proposals`);
   const data = response.data;
   
-  // Если пришел массив (для фрилансера), оборачиваем в ProposalListResponse
+  // Если пришел массив, оборачиваем в ProposalListResponse
   if (Array.isArray(data)) {
-    return {
-      proposals: data,
-    };
+    return { proposals: data };
   }
   
-  // Если пришел объект (для заказчика), возвращаем как есть
   return data;
 };
 
@@ -87,23 +111,11 @@ export const getMyProposals = async (): Promise<Proposal[]> => {
 export const updateProposalStatus = async (
   orderId: string,
   proposalId: string,
-  status: "pending" | "shortlisted" | "accepted" | "rejected"
-): Promise<{
-  proposal: Proposal;
-  conversation?: {
-    id: string;
-    order_id: string;
-    client_id: string;
-    freelancer_id: string;
-  };
-  order?: {
-    id: string;
-    title: string;
-  };
-}> => {
-  const response = await api.put(`/orders/${orderId}/proposals/${proposalId}/status`, {
-    status,
-  });
+  status: "accepted" | "rejected" | "withdrawn"
+): Promise<UpdateProposalStatusResponse> => {
+  const response = await api.put<UpdateProposalStatusResponse>(
+    `/orders/${orderId}/proposals/${proposalId}/status`,
+    { status }
+  );
   return response.data;
 };
-

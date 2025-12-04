@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Input, Typography, theme, Card, Button, Space, Alert } from "antd";
+import {
+  TextField,
+  Typography,
+  Card,
+  Button,
+  Stack,
+  Alert,
+  Box,
+} from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
 import { Sparkles, Wand2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { aiService } from "@/src/shared/lib/ai";
 import { COMMON_SKILLS } from "@/src/shared/lib/utils";
-
-const { TextArea } = Input;
-const { Title, Text, Paragraph } = Typography;
-const { useToken } = theme;
 
 interface QuickCreateModeProps {
   onGenerated: (data: GeneratedOrderData) => void;
@@ -27,7 +31,6 @@ export interface GeneratedOrderData {
 }
 
 export function QuickCreateMode({ onGenerated, onSwitchMode }: QuickCreateModeProps) {
-  const { token } = useToken();
   const [idea, setIdea] = useState("");
   const [generating, setGenerating] = useState(false);
 
@@ -123,167 +126,96 @@ export function QuickCreateMode({ onGenerated, onSwitchMode }: QuickCreateModePr
   };
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto" }}>
-      <Card
-        style={{
-          borderRadius: token.borderRadiusLG,
-          borderColor: token.colorBorder,
-        }}
-        styles={{
-          body: { padding: token.paddingXL }
-        }}
-      >
-        <Space direction="vertical" size={24} style={{ width: "100%" }}>
+    <Box sx={{ maxWidth: 720, mx: "auto" }}>
+      <Card sx={{ p: 4, borderRadius: 2 }}>
+        <Stack spacing={3}>
           {/* Заголовок */}
-          <div>
-            <Space align="center" size={16} style={{ marginBottom: 8 }}>
-              <div
-                style={{
+          <Box>
+            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+              <Box
+                sx={{
                   width: 56,
                   height: 56,
-                  borderRadius: token.borderRadiusLG,
-                  background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
+                  borderRadius: 2,
+                  background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  flexShrink: 0,
                 }}
               >
                 <Sparkles size={28} strokeWidth={2} style={{ color: "#fff" }} />
-              </div>
-              <div>
-                <Title
-                  level={2}
-                  style={{
-                    margin: 0,
-                    fontSize: 24,
-                    lineHeight: "32px",
-                    fontWeight: 600,
-                  }}
-                >
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={600}>
                   Быстрое создание с AI
-                </Title>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: 14,
-                    lineHeight: "22px",
-                    display: "block",
-                    marginTop: 4,
-                  }}
-                >
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                   Опишите идею — AI создаст полный заказ
-                </Text>
-              </div>
-            </Space>
+                </Typography>
+              </Box>
+            </Stack>
 
             <Button
-              type="text"
+              variant="text"
               size="small"
               onClick={onSwitchMode}
-              style={{
-                padding: "4px 0",
-                height: "auto",
-                fontSize: 14,
-                color: token.colorTextSecondary,
-              }}
+              sx={{ p: 0.5, minWidth: 'auto', fontSize: 14, color: 'text.secondary' }}
             >
               Переключиться на обычное создание
             </Button>
-          </div>
+          </Box>
 
           {/* Инфо блок */}
           <Alert
-            message={
-              <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                Как это работает?
-              </Text>
-            }
-            description={
-              <Paragraph
-                style={{
-                  margin: "8px 0 0 0",
-                  fontSize: 14,
-                  lineHeight: "22px",
-                  color: token.colorTextSecondary,
-                }}
-              >
-                Опишите вашу идею в свободной форме. AI автоматически создаст название,
-                подробное описание, оценит бюджет, определит срок и подберёт необходимые навыки.
-                Вы сможете отредактировать всё перед публикацией.
-              </Paragraph>
-            }
-            type="info"
-            showIcon
+            severity="info"
             icon={<Sparkles size={16} />}
-            style={{
-              borderRadius: token.borderRadius,
-            }}
-          />
+            sx={{ borderRadius: 1 }}
+          >
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+              Как это работает?
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Опишите вашу идею в свободной форме. AI автоматически создаст название,
+              подробное описание, оценит бюджет, определит срок и подберёт необходимые навыки.
+              Вы сможете отредактировать всё перед публикацией.
+            </Typography>
+          </Alert>
 
           {/* Поле ввода */}
-          <div>
-            <label style={{ display: "block", marginBottom: 8 }}>
-              <Text strong style={{ fontSize: 14, lineHeight: "22px" }}>
-                Опишите вашу идею проекта
-              </Text>
-              <Text
-                type="danger"
-                style={{ marginLeft: 4, fontSize: 14 }}
-              >
+          <Box>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+              Опишите вашу идею проекта
+              <Typography component="span" color="error" sx={{ ml: 0.5 }}>
                 *
-              </Text>
-            </label>
-            <TextArea
+              </Typography>
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
               placeholder="Например: Нужен лендинг для кофейни с онлайн-меню и системой заказа. Должен быть современный дизайн, адаптивная вёрстка, интеграция с картами и формой обратной связи..."
-              rows={6}
-              maxLength={1000}
-              showCount
+              inputProps={{ maxLength: 1000 }}
               disabled={generating}
-              style={{
-                fontSize: 14,
-                lineHeight: "22px",
-                borderRadius: token.borderRadius,
-                resize: "none",
-              }}
+              helperText={`${idea.length}/1000 • Минимум 20 символов. Чем подробнее опишете, тем точнее будет результат.`}
             />
-            <Text
-              type="secondary"
-              style={{
-                fontSize: 12,
-                lineHeight: "20px",
-                display: "block",
-                marginTop: 8,
-              }}
-            >
-              Минимум 20 символов. Чем подробнее опишете, тем точнее будет результат.
-            </Text>
-          </div>
+          </Box>
 
           {/* Кнопка генерации */}
           <Button
-            type="primary"
+            variant="contained"
             size="large"
-            icon={generating ? null : <Wand2 size={20} strokeWidth={2} />}
+            startIcon={generating ? null : <Wand2 size={20} strokeWidth={2} />}
             onClick={handleGenerate}
             disabled={!idea.trim() || idea.trim().length < 20 || generating}
-            loading={generating}
-            block
-            style={{
-              height: 48,
-              fontSize: 16,
-              lineHeight: "24px",
-              fontWeight: 500,
-              borderRadius: token.borderRadius,
-              marginTop: 8,
-            }}
+            fullWidth
+            sx={{ height: 48, fontSize: 16, fontWeight: 500, mt: 1 }}
           >
             {generating ? "Генерирую заказ..." : "Создать заказ с помощью AI"}
           </Button>
-        </Space>
+        </Stack>
       </Card>
-    </div>
+    </Box>
   );
 }
