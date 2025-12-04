@@ -5,14 +5,19 @@
 /**
  * Форматирует число с разделителями тысяч (пробелы)
  * @param value - число для форматирования
+ * @param showZero - показывать ли 0 как "0" (по умолчанию true)
  * @returns отформатированная строка или пустая строка
  */
-export function formatNumber(value: number | string | undefined | null): string {
+export function formatNumber(value: number | string | undefined | null, showZero: boolean = true): string {
   if (value === undefined || value === null || value === '') {
     return '';
   }
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(numValue)) {
+    return '';
+  }
+  // Если showZero = false и значение 0, возвращаем пустую строку
+  if (!showZero && numValue === 0) {
     return '';
   }
   return `${numValue}`.replace(/\B(?=(\d{3})+(?!\d))/g, " ");

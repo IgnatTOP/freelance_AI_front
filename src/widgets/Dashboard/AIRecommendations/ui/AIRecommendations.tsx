@@ -58,6 +58,8 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
         // Получаем AI рекомендации заказов через стриминг
         let recommendedOrderIds: string[] = [];
         let cleanExplanation = "";
+        // Локальная переменная для хранения match_score (не используем состояние, т.к. оно не обновляется синхронно)
+        let localOrdersMatchScores = new Map<string, { matchScore: number; explanation: string }>();
 
         await aiService.getRecommendedOrdersStream(
           10,
@@ -70,24 +72,23 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
             // Очищаем объяснение от UUID, JSON и технических деталей
             if (explanation) {
               cleanExplanation = cleanExplanationText(explanation);
-              
+
               // Увеличиваем лимит для объяснения, чтобы текст не обрезался слишком быстро
               if (cleanExplanation.length > 500) {
                 cleanExplanation = cleanExplanation.substring(0, 500) + "...";
               }
             }
-            
+
             // Сохраняем match_score и explanation для каждого заказа
-            const ordersMap = new Map<string, { matchScore: number; explanation: string }>();
             if (recommendedOrders && recommendedOrders.length > 0) {
               recommendedOrders.forEach(ro => {
-                ordersMap.set(ro.order_id, {
+                localOrdersMatchScores.set(ro.order_id, {
                   matchScore: ro.match_score,
                   explanation: ro.explanation || "",
                 });
               });
             }
-            setOrdersMatchScores(ordersMap);
+            setOrdersMatchScores(localOrdersMatchScores);
           }
         );
 
@@ -136,13 +137,13 @@ export function AIRecommendations({ userRole, embedded = false }: AIRecommendati
           const title = order.title.length > 60 ? order.title.substring(0, 60) + "..." : order.title;
           // Обрезаем описание
           const description = (order.ai_summary || order.description || "Описание заказа").substring(0, 120);
-          
-          // Получаем match_score и explanation из ordersMatchScores
-          const orderMatch = ordersMatchScores.get(order.id);
+
+          // Получаем match_score и explanation из локальной переменной (не из состояния!)
+          const orderMatch = localOrdersMatchScores.get(order.id);
           // Бэкенд возвращает match_score от 0 до 10, фронтенд ожидает от 0 до 1
           const matchScore = orderMatch ? orderMatch.matchScore / 10 : Math.min(Math.max(0.85 - index * 0.05, 0.7), 1.0);
           const reason = orderMatch?.explanation || "";
-          
+
           return {
             id: order.id,
             title,

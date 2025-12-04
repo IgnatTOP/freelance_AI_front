@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Layout, Card, Row, Col, Typography, Space, Skeleton, Statistic } from "antd";
 import { toastService } from "@/src/shared/lib/toast";
-import { TrendingUp, TrendingDown, DollarSign, FileText, Clock, CheckCircle2 } from "lucide-react";
+import { TrendingUp, TrendingDown, RussianRuble, FileText, Clock, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/src/shared/lib/hooks";
 import { getStats } from "@/src/shared/api/stats";
 
@@ -89,7 +89,7 @@ export default function AnalyticsPage() {
                 <Statistic
                   title={userRole === "client" ? "Потрачено" : "Заработано"}
                   value={stats?.balance || 0}
-                  prefix={<DollarSign size={20} />}
+                  prefix={<RussianRuble size={20} />}
                   suffix="₽"
                   valueStyle={{ color: "#fa8c16" }}
                 />

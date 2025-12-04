@@ -66,6 +66,11 @@ class NotificationService {
     await api.delete(`/notifications/${id}`);
   }
 
+  // Удалить все уведомления
+  async deleteAllNotifications(): Promise<void> {
+    await api.delete("/notifications/all");
+  }
+
   // Получить текст уведомления из payload
   getNotificationMessage(notification: Notification): string {
     // Поддержка разных форматов payload

@@ -17,7 +17,7 @@ import {
 import { toastService } from "@/src/shared/lib/toast";
 import { motion } from "framer-motion";
 import { authService } from "@/src/shared/lib/auth/auth.service";
-import { LogIn, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
+import { LogIn, Mail, Lock, ArrowRight, ShieldCheck, ArrowLeft } from "lucide-react";
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -78,6 +78,25 @@ export default function LoginPage() {
             style={{ width: "100%", maxWidth: 480 }}
           >
             <Space direction="vertical" size={32} style={{ width: "100%" }}>
+              {/* Back Button */}
+              <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeft size={20} />}
+                  onClick={() => router.push("/")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 12px",
+                    height: "auto",
+                    color: token.colorTextSecondary,
+                  }}
+                >
+                  На главную
+                </Button>
+              </div>
+
               {/* Header */}
               <div style={{ textAlign: "center" }}>
                 <motion.div

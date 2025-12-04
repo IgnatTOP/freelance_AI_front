@@ -25,6 +25,7 @@ interface DesktopDockProps {
   actions: ReactNode;
   topOffset?: string;
   showScrollEffect?: boolean;
+  activeSection?: string | null;
   onNavItemClick?: (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
@@ -35,6 +36,7 @@ export function DesktopDock({
   actions,
   topOffset = "1.5rem",
   showScrollEffect = false,
+  activeSection = null,
   onNavItemClick,
 }: DesktopDockProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -69,10 +71,19 @@ export function DesktopDock({
           <div className="flex items-end gap-1 px-1">
             {navItems.map((item, index) => {
               const isHovered = hoveredIndex === index;
-              const isActive =
-                pathname === item.href ||
-                (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
-                (item.href === "/" && pathname === "/");
+              // Check if this nav item corresponds to the active section
+              const isAnchorLink = item.href.startsWith("#");
+              const anchorId = isAnchorLink ? item.href.slice(1) : null;
+              const isSectionActive = anchorId && activeSection === anchorId;
+
+              // Determine if item is active based on section or path
+              const isActive = isSectionActive || (
+                !activeSection && (
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" && item.href !== "/" && pathname.startsWith(item.href)) ||
+                  (item.href === "/" && pathname === "/" && !isAnchorLink)
+                )
+              );
               const scale = calculateDockScale(hoveredIndex, index);
 
               return (

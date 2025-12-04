@@ -227,6 +227,10 @@ export default function OrderProposalsPage() {
     ? proposals.find((p) => p.id === bestRecommendation.proposal_id)
     : null;
 
+  // Проверяем, есть ли уже принятый отклик или заказ в работе
+  const hasAcceptedProposal = proposals.some((p) => p.status === "accepted");
+  const isOrderInProgress = order?.status === "in_progress" || order?.status === "completed";
+
   return (
     <Layout style={{ minHeight: "100vh", background: "transparent" }}>
       <Content>
@@ -286,8 +290,8 @@ export default function OrderProposalsPage() {
                 </Col>
               </Row>
 
-              {/* AI Recommendation */}
-              {recommendedProposal && bestRecommendation && (
+              {/* AI Recommendation - показываем только если нет принятого отклика */}
+              {recommendedProposal && bestRecommendation && !hasAcceptedProposal && !isOrderInProgress && (
                 <Alert
                   message={
                     <Space>
@@ -465,7 +469,8 @@ export default function OrderProposalsPage() {
 
                               <Col xs={24} md={6}>
                                 <Space direction="vertical" size={8} style={{ width: "100%" }}>
-                                  {proposal.status === "pending" && (
+                                  {/* Показываем кнопки только если нет принятого отклика и заказ не в работе */}
+                                  {proposal.status === "pending" && !hasAcceptedProposal && !isOrderInProgress && (
                                     <>
                                       <Button
                                         type="primary"
@@ -495,7 +500,7 @@ export default function OrderProposalsPage() {
                                       </Button>
                                     </>
                                   )}
-                                  {proposal.status === "shortlisted" && (
+                                  {proposal.status === "shortlisted" && !hasAcceptedProposal && !isOrderInProgress && (
                                     <>
                                       <Button
                                         type="primary"

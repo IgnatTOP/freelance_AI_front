@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Input, Select, Button, Typography, InputNumber, Space, Tag, Divider, theme } from "antd";
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, DollarSign, Tag as TagIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, RussianRuble, Tag as TagIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 import { formatNumber, parseFormattedNumber, COMMON_SKILLS } from "@/src/shared/lib/utils";
 
@@ -396,7 +396,7 @@ export function OrderFilters({
                     letterSpacing: "0.5px",
                   }}
                 >
-                  <DollarSign size={12} style={{ color: token.colorTextTertiary, flexShrink: 0 }} />
+                  <RussianRuble size={12} style={{ color: token.colorTextTertiary, flexShrink: 0 }} />
                   <Text
                     strong
                     style={{

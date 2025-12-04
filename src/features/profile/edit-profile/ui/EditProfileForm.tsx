@@ -5,7 +5,7 @@ import { toastService } from "@/src/shared/lib/toast";
 import {
   User,
   MapPin,
-  DollarSign,
+  RussianRuble,
   Briefcase,
   FileText,
   Code,
@@ -238,7 +238,7 @@ export function EditProfileForm({
           style={{ marginBottom: 24 }}
         >
           <InputNumber
-            prefix={<DollarSign size={16} style={{ color: token.colorTextTertiary }} />}
+            prefix={<RussianRuble size={16} style={{ color: token.colorTextTertiary }} />}
             placeholder="1000"
             min={0}
             max={100000}
@@ -248,7 +248,7 @@ export function EditProfileForm({
               fontSize: 14,
               height: 40,
             }}
-            formatter={(value) => formatNumber(value)}
+            formatter={(value) => formatNumber(value, false)}
             parser={(value) => {
               const parsed = value ? Number(parseFormattedNumber(value)) : 0;
               return Math.max(0, Math.min(100000, parsed)) as 0 | 100000;

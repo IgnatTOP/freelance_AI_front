@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { DesktopDock, AuthButtons, MobileAuthButtons, MobileMenu, DockLogo } from "@/src/shared/ui";
-import { useMobileMenu, useAuth } from "@/src/shared/lib/hooks";
+import { useMobileMenu, useAuth, useActiveSection } from "@/src/shared/lib/hooks";
 import { createAnchorClickHandler } from "@/src/shared/lib/utils/navigation";
 import {
   Home,
@@ -29,6 +29,14 @@ export function DockHeader() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
+  // Track active section on homepage
+  const isHomePage = pathname === "/";
+  const activeSection = useActiveSection({
+    sections: ["features", "pricing"],
+    offset: 150,
+    enabled: isHomePage,
+  });
+
   // Prevent hydration mismatch by only showing auth-dependent content after mount
   useEffect(() => {
     setMounted(true);
@@ -50,6 +58,7 @@ export function DockHeader() {
         logoHref="/"
         navItems={navLinks}
         pathname={pathname}
+        activeSection={activeSection}
         showScrollEffect
         onNavItemClick={handleNavClick}
         actions={

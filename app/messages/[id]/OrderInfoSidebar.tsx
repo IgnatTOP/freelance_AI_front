@@ -2,7 +2,7 @@
 
 import { Card, Typography, Space, Button, Tag, Divider, App, Spin, Empty, Tooltip, theme, Modal } from "antd";
 import { toastService } from "@/src/shared/lib/toast";
-import { Calendar, DollarSign, CheckCircle, XCircle, FileText, Briefcase, ExternalLink, AlertCircle, TrendingUp } from "lucide-react";
+import { Calendar, RussianRuble, CheckCircle, XCircle, FileText, Briefcase, ExternalLink, AlertCircle, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
@@ -296,7 +296,7 @@ export function OrderInfoSidebar({ order, conversation, currentUserId, onOrderUp
                 justifyContent: "center",
                 flexShrink: 0,
               }}>
-                <DollarSign size={16} style={{ color: token.colorPrimary }} />
+                <RussianRuble size={16} style={{ color: token.colorPrimary }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Text 

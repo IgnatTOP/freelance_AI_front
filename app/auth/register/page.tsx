@@ -29,6 +29,7 @@ import {
   ArrowRight,
   Check,
   Shield,
+  ArrowLeft,
 } from "lucide-react";
 
 const { Content } = Layout;
@@ -129,6 +130,25 @@ export default function RegisterPage() {
             style={{ width: "100%", maxWidth: selectedRole ? 480 : 960 }}
           >
             <Space direction="vertical" size={32} style={{ width: "100%" }}>
+              {/* Back Button */}
+              <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeft size={20} />}
+                  onClick={() => router.push("/")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 12px",
+                    height: "auto",
+                    color: token.colorTextSecondary,
+                  }}
+                >
+                  На главную
+                </Button>
+              </div>
+
               {/* Header */}
               <div style={{ textAlign: "center" }}>
                 <motion.div

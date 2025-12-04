@@ -2,7 +2,7 @@
 
 import { Card, CardContent, Chip, Box, Typography, LinearProgress } from "@mui/material";
 import { Tag, Typography as AntTypography, Progress, theme as antTheme } from "antd";
-import { Calendar, DollarSign, Clock, Code, MessageSquare, User, Sparkles } from "lucide-react";
+import { Calendar, RussianRuble, Clock, Code, MessageSquare, User, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@mui/material/styles";
 import type { Order } from "@/src/entities/order/model/types";
@@ -200,7 +200,7 @@ export function OrderCard({ order, matchScore, matchExplanation }: OrderCardProp
                   gap: 6,
                 }}
               >
-                <DollarSign
+                <RussianRuble
                   size={15}
                   style={{
                     color: token.colorSuccess,

@@ -26,7 +26,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Calendar,
-  DollarSign,
+  RussianRuble,
   Code,
   Clock,
   User,
@@ -982,7 +982,7 @@ export default function OrderDetailPage() {
                         {order.budget_min && (
                           <div>
                             <Space size={8} style={{ marginBottom: 4 }}>
-                              <DollarSign
+                              <RussianRuble
                                 size={18}
                                 style={{ color: token.colorSuccess }}
                               />

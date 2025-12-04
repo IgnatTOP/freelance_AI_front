@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Layout, Card, Row, Col, Typography, Space, Empty, Tag, Button } from "antd";
 import { toastService } from "@/src/shared/lib/toast";
-import { FileText, Clock, CheckCircle2, MessageSquare, DollarSign } from "lucide-react";
+import { FileText, Clock, CheckCircle2, MessageSquare, RussianRuble } from "lucide-react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
 import type { Order } from "@/src/entities/order/model/types";
@@ -156,7 +156,7 @@ export default function MyProjectsPage() {
                         <Space>
                           {(order.budget_min || order.budget_max) && (
                             <Space size="small">
-                              <DollarSign size={16} />
+                              <RussianRuble size={16} />
                               <Text strong>
                                 {formatPriceRange(order.budget_min || 0, order.budget_max || 0)}
                               </Text>

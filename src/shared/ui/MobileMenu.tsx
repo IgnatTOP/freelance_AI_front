@@ -51,37 +51,57 @@ export function MobileMenu({
           </div>
 
           <motion.button
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="p-2 text-foreground hover:text-primary transition-colors"
             onClick={onToggle}
             aria-label="Toggle menu"
           >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={isOpen ? "close" : "menu"}
+                initial={{ opacity: 0, rotate: -90 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: 90 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+              </motion.div>
+            </AnimatePresence>
           </motion.button>
         </nav>
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {isOpen && (
             <motion.div
               {...mobileMenuAnimations}
-              className="py-4 border-t"
+              className="py-4 border-t overflow-hidden"
               style={{
                 borderColor: headerStyles.border.color,
               }}
             >
-              <div className="flex flex-col space-y-4">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1], delay: 0.05 }}
+                className="flex flex-col space-y-4"
+              >
                 {menuItems}
                 {actions && (
-                  <div
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2, delay: 0.1 }}
                     className="flex flex-col space-y-2 pt-4 border-t"
                     style={{
                       borderColor: headerStyles.border.color,
                     }}
                   >
                     {actions}
-                  </div>
+                  </motion.div>
                 )}
-              </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

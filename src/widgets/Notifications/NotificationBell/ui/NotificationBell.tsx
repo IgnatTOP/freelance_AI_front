@@ -206,6 +206,17 @@ export function NotificationBell() {
     }
   };
 
+  // Удалить все уведомления
+  const handleDeleteAll = async () => {
+    try {
+      await notificationService.deleteAllNotifications();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error deleting all notifications:", error);
+    }
+  };
+
   // Обновить список при открытии popover
   const handlePopoverOpenChange = (open: boolean) => {
     setPopoverOpen(open);
@@ -218,17 +229,30 @@ export function NotificationBell() {
     <div className="w-80 max-h-96 overflow-y-auto">
       <div className="flex items-center justify-between p-3 border-b border-border/50">
         <h3 className="font-semibold text-foreground">Уведомления</h3>
-        {unreadCount > 0 && (
-          <Button
-            type="link"
-            size="small"
-            onClick={handleMarkAllAsRead}
-            className="text-primary"
-          >
-            <Check size={14} className="mr-1" />
-            Прочитать все
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {unreadCount > 0 && (
+            <Button
+              type="link"
+              size="small"
+              onClick={handleMarkAllAsRead}
+              className="text-primary"
+            >
+              <Check size={14} className="mr-1" />
+              Прочитать
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button
+              type="link"
+              size="small"
+              onClick={handleDeleteAll}
+              className="text-red-400 hover:text-red-500"
+            >
+              <Trash2 size={14} className="mr-1" />
+              Удалить все
+            </Button>
+          )}
+        </div>
       </div>
 
       {loading ? (

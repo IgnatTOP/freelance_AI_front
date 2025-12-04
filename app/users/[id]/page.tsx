@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Layout, Card, Row, Col, Typography, Space, Avatar, Tag, Button, Skeleton, Empty, Tabs } from "antd";
 import { toastService } from "@/src/shared/lib/toast";
-import { User, Briefcase, Star, MapPin, Mail, Calendar, FileText, ExternalLink, Image as ImageIcon, DollarSign } from "lucide-react";
+import { User, Briefcase, Star, MapPin, Mail, Calendar, FileText, ExternalLink, Image as ImageIcon, RussianRuble } from "lucide-react";
 import { useAuth } from "@/src/shared/lib/hooks";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
@@ -190,7 +190,7 @@ export default function UserProfilePage() {
                     {userProfile.profile?.hourly_rate !== undefined && userProfile.profile.hourly_rate !== null && (
                       <Col xs={24} sm={12}>
                         <Space>
-                          <DollarSign size={18} />
+                          <RussianRuble size={18} />
                           <Text>
                             <strong>Ставка в час:</strong> {typeof userProfile.profile.hourly_rate === 'number' 
                               ? `${userProfile.profile.hourly_rate.toLocaleString("ru-RU")} ₽`

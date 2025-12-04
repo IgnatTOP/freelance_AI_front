@@ -35,6 +35,7 @@ function FreelancersPageContent() {
   const [loading, setLoading] = useState(true);
   const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
   const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
@@ -49,37 +50,50 @@ function FreelancersPageContent() {
   const loadFreelancers = async () => {
     try {
       setLoading(true);
+      setError(null);
+
       // Получаем список заказов и извлекаем фрилансеров из предложений
       // В реальном приложении здесь должен быть отдельный endpoint для списка фрилансеров
       const { getOrders } = await import("@/src/shared/api/orders");
       const response = await getOrders({ limit: 100 });
-      const orders = response.data || [];
-      
+      const orders = response?.data || [];
+
+      // Если заказов нет, просто показываем пустой список
+      if (!Array.isArray(orders) || orders.length === 0) {
+        setFreelancers([]);
+        setLoading(false);
+        return;
+      }
+
       // Собираем уникальных фрилансеров из предложений
       const freelancerIds = new Set<string>();
       const freelancersMap = new Map<string, Freelancer>();
 
       // Получаем proposals для каждого заказа отдельно
       const { getOrderProposals } = await import("@/src/shared/api/proposals");
-      
+
       for (const order of orders) {
+        if (!order?.id) continue;
+
         try {
           // Получаем proposals для заказа
           const proposalsResponse = await getOrderProposals(order.id);
-          const proposals = proposalsResponse.proposals || [];
-          
+          const proposals = proposalsResponse?.proposals || [];
+
+          if (!Array.isArray(proposals)) continue;
+
           for (const proposal of proposals) {
-            if (proposal.freelancer_id && !freelancerIds.has(proposal.freelancer_id)) {
+            if (proposal?.freelancer_id && !freelancerIds.has(proposal.freelancer_id)) {
               freelancerIds.add(proposal.freelancer_id);
               try {
                 const userResponse = await api.get(`/users/${proposal.freelancer_id}`);
-                const user = userResponse.data.user;
+                const user = userResponse?.data?.user;
                 if (user && user.role === "freelancer") {
                   freelancersMap.set(user.id, {
                     id: user.id,
-                    username: user.username,
+                    username: user.username || "",
                     display_name: user.display_name,
-                    email: user.email,
+                    email: user.email || "",
                     role: user.role,
                     profile: userResponse.data.profile,
                   });
@@ -98,20 +112,22 @@ function FreelancersPageContent() {
       setFreelancers(Array.from(freelancersMap.values()));
     } catch (error: any) {
       console.error("Failed to load freelancers:", error);
-      toastService.error("Не удалось загрузить список фрилансеров");
+      setError("Не удалось загрузить список фрилансеров");
+      setFreelancers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredFreelancers = freelancers.filter((f) => {
+  const filteredFreelancers = (freelancers || []).filter((f) => {
+    if (!f) return false;
     if (!search) return true;
     const searchLower = search.toLowerCase();
     return (
       f.username?.toLowerCase().includes(searchLower) ||
       f.display_name?.toLowerCase().includes(searchLower) ||
       f.profile?.bio?.toLowerCase().includes(searchLower) ||
-      f.profile?.skills?.some((s) => s.toLowerCase().includes(searchLower))
+      f.profile?.skills?.some((s) => s?.toLowerCase().includes(searchLower))
     );
   });
 
@@ -143,9 +159,18 @@ function FreelancersPageContent() {
                 </Col>
               ))}
             </Row>
+          ) : error ? (
+            <Empty
+              description={error}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button type="primary" onClick={loadFreelancers}>
+                Попробовать снова
+              </Button>
+            </Empty>
           ) : filteredFreelancers.length === 0 ? (
             <Empty
-              description="Фрилансеры не найдены"
+              description={search ? "По вашему запросу фрилансеры не найдены" : "Фрилансеры пока не зарегистрированы на платформе"}
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
           ) : (

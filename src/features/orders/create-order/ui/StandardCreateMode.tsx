@@ -20,7 +20,7 @@ import {
 } from "antd";
 import {
   FileText,
-  DollarSign,
+  RussianRuble,
   Calendar as CalendarIcon,
   Code,
   Sparkles,
@@ -227,7 +227,7 @@ export function StandardCreateMode({
           {/* Секция 2: Бюджет и сроки */}
           <div style={{ marginBottom: 32 }}>
             <Space align="center" size={12} style={{ marginBottom: 16 }}>
-              <DollarSign size={20} style={{ color: token.colorSuccess }} />
+              <RussianRuble size={20} style={{ color: token.colorSuccess }} />
               <Title
                 level={4}
                 style={{
