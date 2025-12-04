@@ -19,7 +19,7 @@ import {
   alpha,
 } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { Calendar, DollarSign, CheckCircle, XCircle, FileText, Briefcase, ExternalLink, AlertCircle, TrendingUp } from "lucide-react";
+import { Calendar, Banknote, CheckCircle, XCircle, FileText, Briefcase, ExternalLink, AlertCircle, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
@@ -327,7 +327,7 @@ export function OrderInfoSidebar({ order, conversation, currentUserId, onOrderUp
                     border: `2px solid ${alpha(theme.palette.success.main, 0.2)}`,
                   }}
                 >
-                  <DollarSign size={24} style={{ color: theme.palette.success.main }} />
+                  <Banknote size={24} style={{ color: theme.palette.success.main }} />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography

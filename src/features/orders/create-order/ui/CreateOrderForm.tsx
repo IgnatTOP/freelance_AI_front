@@ -286,8 +286,7 @@ export function CreateOrderForm({
                 color="secondary"
                 startIcon={<Sparkles size={16} />}
                 onClick={onGenerateAll}
-                sx={{ flexShrink: 0 }}
-                fullWidth
+                sx={{ flexShrink: 0, width: { xs: '100%', sm: 'auto' } }}
               >
                 AI заполнить всё
               </Button>

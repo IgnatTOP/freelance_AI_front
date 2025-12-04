@@ -323,6 +323,9 @@ export default function OrderProposalsPage() {
     ? proposals.find((p) => p.id === bestRecommendation.proposal_id)
     : null;
 
+  // Check if any proposal is already accepted - hide action buttons for others
+  const hasAcceptedProposal = proposals.some((p) => p.status === "accepted");
+
   return (
     <Box sx={{ minHeight: 'auto', background: "transparent" }}>
       <Container maxWidth="lg" sx={{ py: 5 }}>
@@ -503,7 +506,7 @@ export default function OrderProposalsPage() {
 
                               <Grid size={{ xs: 12, md: 3 }}>
                                 <Stack spacing={1}>
-                                  {proposal.status === "pending" && (
+                                  {proposal.status === "pending" && !hasAcceptedProposal && (
                                     <>
                                       <Button
                                         variant="contained"

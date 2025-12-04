@@ -50,7 +50,7 @@ export function MessageReactions({
   const myReaction = reactions.find((r) => r.user_id === currentUserId);
 
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", mt: 1 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", mt: 1, position: "relative" }}>
       <AnimatePresence>
         {/* Отображение существующих реакций */}
         {Object.entries(groupedReactions).map(([emoji, reactionsList]) => {
@@ -160,21 +160,26 @@ export function MessageReactions({
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
         onClose={handleClosePicker}
+        disablePortal
         anchorOrigin={{
           vertical: "top",
-          horizontal: "left",
+          horizontal: "center",
         }}
         transformOrigin={{
           vertical: "bottom",
-          horizontal: "left",
+          horizontal: "center",
         }}
-        PaperProps={{
-          elevation: 12,
-          sx: {
-            borderRadius: 3,
-            boxShadow: `0 12px 48px ${alpha('#000', 0.15)}, 0 4px 16px ${alpha('#000', 0.1)}`,
-            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-            mt: 1,
+        slotProps={{
+          paper: {
+            elevation: 12,
+            sx: {
+              borderRadius: 3,
+              boxShadow: `0 12px 48px ${alpha('#000', 0.15)}, 0 4px 16px ${alpha('#000', 0.1)}`,
+              border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+              mb: 1,
+              position: "relative",
+              zIndex: 1300,
+            },
           },
         }}
       >

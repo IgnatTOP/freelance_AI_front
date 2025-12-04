@@ -30,7 +30,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Calendar,
-  DollarSign,
+  Banknote,
   Code,
   Clock,
   User,
@@ -1215,7 +1215,7 @@ export default function OrderDetailPage() {
                         {order.budget_min && (
                           <Box>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                              <DollarSign size={18} style={{ color: theme.palette.success.main }} />
+                              <Banknote size={18} style={{ color: theme.palette.success.main }} />
                               <Typography variant="body2" fontWeight={600}>
                                 Бюджет
                               </Typography>

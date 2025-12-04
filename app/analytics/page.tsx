@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Grid, Typography, Stack, Box } from "@mui/material";
-import { TrendingUp, DollarSign, FileText, Clock, CheckCircle2 } from "lucide-react";
+import { TrendingUp, Banknote, FileText, Clock, CheckCircle2 } from "lucide-react";
 import { PageContainer, StyledCard, StatCard, LoadingState } from "@/src/shared/ui";
 import { useAuth } from "@/src/shared/lib/hooks";
 import { getStats } from "@/src/shared/api/stats";
@@ -38,13 +38,13 @@ export default function AnalyticsPage() {
         { label: "Всего заказов", value: stats?.orders?.total || 0, icon: FileText },
         { label: "В работе", value: stats?.orders?.in_progress || 0, icon: Clock },
         { label: "Завершено", value: stats?.orders?.completed || 0, icon: CheckCircle2 },
-        { label: "Потрачено", value: stats?.balance ? `${(stats.balance / 1000).toFixed(0)}K ₽` : "0 ₽", icon: DollarSign },
+        { label: "Потрачено", value: stats?.balance ? `${(stats.balance / 1000).toFixed(0)}K ₽` : "0 ₽", icon: Banknote },
       ]
     : [
         { label: "Откликов", value: stats?.proposals?.total || 0, icon: FileText },
         { label: "Ожидают", value: stats?.proposals?.pending || 0, icon: Clock },
         { label: "Принято", value: stats?.proposals?.accepted || 0, icon: CheckCircle2 },
-        { label: "Заработано", value: stats?.balance ? `${(stats.balance / 1000).toFixed(0)}K ₽` : "0 ₽", icon: DollarSign },
+        { label: "Заработано", value: stats?.balance ? `${(stats.balance / 1000).toFixed(0)}K ₽` : "0 ₽", icon: Banknote },
       ];
 
   return (

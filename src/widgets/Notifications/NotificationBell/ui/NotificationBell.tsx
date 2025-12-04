@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Badge, Popover, IconButton, Box, Typography, Button, CircularProgress } from "@mui/material";
-import { Bell, Check } from "lucide-react";
+import { Bell, Check, Trash2 } from "lucide-react";
 import { notificationService, Notification } from "@/src/shared/lib/notifications";
 import { websocketService } from "@/src/shared/lib/notifications/websocket.service";
 import { authService } from "@/src/shared/lib/auth/auth.service";
@@ -158,6 +158,19 @@ export function NotificationBell() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      // Delete all notifications one by one
+      await Promise.all(notifications.map((n) => notificationService.deleteNotification(n.id)));
+      setNotifications([]);
+      setUnreadCount(0);
+      toastService.success("Все уведомления удалены");
+    } catch (error) {
+      console.error("Error deleting all:", error);
+      toastService.error("Ошибка удаления уведомлений");
+    }
+  };
+
   return (
     <>
       <Box sx={{ position: "relative" }}>
@@ -181,9 +194,14 @@ export function NotificationBell() {
         <Box sx={{ width: 320, maxHeight: 400, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider" }}>
             <Typography variant="subtitle1" fontWeight={600}>Уведомления</Typography>
-            {unreadCount > 0 && (
-              <Button size="small" startIcon={<Check size={14} />} onClick={handleMarkAllAsRead}>Прочитать все</Button>
-            )}
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              {unreadCount > 0 && (
+                <Button size="small" startIcon={<Check size={14} />} onClick={handleMarkAllAsRead}>Прочитать все</Button>
+              )}
+              {notifications.length > 0 && (
+                <Button size="small" color="error" startIcon={<Trash2 size={14} />} onClick={handleDeleteAll}>Удалить все</Button>
+              )}
+            </Box>
           </Box>
 
           <Box sx={{ overflowY: "auto", flex: 1, minHeight: 0 }}>

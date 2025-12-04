@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Grid, Typography, Stack, Chip, Button, CardActions } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { Clock, MessageSquare, DollarSign, Briefcase } from "lucide-react";
+import { Clock, MessageSquare, Banknote, Briefcase } from "lucide-react";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
 import type { Order } from "@/src/entities/order/model/types";
@@ -53,7 +53,7 @@ function ProjectCard({ order }: { order: Order }) {
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           {(order.budget_min || order.budget_max) && (
-            <MetaItem icon={DollarSign} size="md">{formatPriceRange(order.budget_min || 0, order.budget_max || 0)}</MetaItem>
+            <MetaItem icon={Banknote} size="md">{formatPriceRange(order.budget_min || 0, order.budget_max || 0)}</MetaItem>
           )}
           {order.deadline_at && (
             <MetaItem icon={Clock} size="md">До {new Date(order.deadline_at).toLocaleDateString("ru-RU")}</MetaItem>

@@ -63,8 +63,11 @@ export function MobileMenu({
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              {...mobileMenuAnimations}
-              className="py-4 border-t"
+              initial={mobileMenuAnimations.initial}
+              animate={mobileMenuAnimations.animate}
+              exit={mobileMenuAnimations.exit}
+              transition={mobileMenuAnimations.transition}
+              className="py-4 border-t overflow-hidden"
               style={{
                 borderColor: headerStyles.border.color,
               }}

@@ -22,7 +22,7 @@ import {
   IconButton,
 } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { User, Briefcase, Star, MapPin, Mail, Calendar, FileText, ExternalLink, Image as ImageIcon, DollarSign, Heart, HeartOff, MessageSquare } from "lucide-react";
+import { User, Briefcase, Star, MapPin, Mail, Calendar, FileText, ExternalLink, Image as ImageIcon, Banknote, Heart, HeartOff, MessageSquare } from "lucide-react";
 import { useAuth } from "@/src/shared/lib/hooks";
 import { authService } from "@/src/shared/lib/auth/auth.service";
 import Link from "next/link";
@@ -317,7 +317,7 @@ export default function UserProfilePage() {
                       {userProfile.profile?.hourly_rate !== undefined && userProfile.profile.hourly_rate !== null && (
                         <Grid size={{ xs: 12, sm: 6 }}>
                           <Stack direction="row" spacing={1} alignItems="center">
-                            <DollarSign size={18} style={{ color: theme.palette.text.secondary }} />
+                            <Banknote size={18} style={{ color: theme.palette.text.secondary }} />
                             <Typography variant="body2">
                               <strong>Ставка в час:</strong>{" "}
                               {typeof userProfile.profile.hourly_rate === "number"

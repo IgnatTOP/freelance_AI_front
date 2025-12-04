@@ -35,7 +35,7 @@ import {
   Smile,
   Paperclip,
   Calendar,
-  DollarSign,
+  Banknote,
   ExternalLink,
   X,
   CheckCircle,
@@ -866,7 +866,7 @@ export default function ChatPage() {
                 {(order.budget_min || order.budget_max) && (
                   <Box sx={{ p: 1.5, bgcolor: "var(--bg-secondary)", borderRadius: 2 }}>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <DollarSign size={18} style={{ color: "var(--success)" }} />
+                      <Banknote size={18} style={{ color: "var(--success)" }} />
                       <Box>
                         <Typography sx={{ fontSize: 11, color: "var(--text-muted)" }}>Бюджет</Typography>
                         <Typography sx={{ fontSize: 15, fontWeight: 600, color: "var(--success)" }}>

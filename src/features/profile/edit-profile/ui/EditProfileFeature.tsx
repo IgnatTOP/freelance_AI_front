@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, Typography, Skeleton, Stack, Alert, Button, Box, Grid } from "@mui/material";
 import { toastService } from "@/src/shared/lib/toast";
-import { Edit3, Info, Lightbulb, FolderKanban, Plus, FileText, Tag, DollarSign, RefreshCw } from "lucide-react";
+import { Edit3, Info, Lightbulb, FolderKanban, Plus, FileText, Tag, Banknote, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { EditProfileForm } from "./EditProfileForm";
 import { getProfile, updateProfile } from "@/src/shared/api/profile";
@@ -187,7 +187,7 @@ export function EditProfileFeature() {
                 {[
                   { icon: FileText, text: "Заполните все поля профиля" },
                   { icon: Tag, text: "Добавьте больше навыков" },
-                  { icon: DollarSign, text: "Укажите реалистичную ставку" },
+                  { icon: Banknote, text: "Укажите реалистичную ставку" },
                   { icon: RefreshCw, text: "Обновляйте профиль регулярно" },
                 ].map((tip, i) => (
                   <Stack key={i} direction="row" spacing={1.5} alignItems="center">
