@@ -145,9 +145,10 @@ function FreelancersPageContent() {
         ...params,
       };
       const result = await searchFreelancers(searchParams);
-      setFreelancers(result);
+      setFreelancers(Array.isArray(result) ? result : []);
     } catch (error: any) {
       console.error("Failed to load freelancers:", error);
+      setFreelancers([]);
       toastService.error("Не удалось загрузить список фрилансеров");
     } finally {
       setLoading(false);

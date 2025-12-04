@@ -19,11 +19,11 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import {
   FileText,
-  DollarSign,
   Calendar as CalendarIcon,
   Code,
   Sparkles,
   CheckCircle,
+  Banknote,
 } from "lucide-react";
 import type { GeneratedOrderData } from "./QuickCreateMode";
 import dayjs, { Dayjs } from "dayjs";
@@ -198,7 +198,7 @@ export function StandardCreateMode({
             {/* Секция 2: Бюджет и сроки */}
             <Box sx={{ mb: 4 }}>
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-                <DollarSign size={20} />
+                <Banknote size={20} />
                 <Typography variant="h6" fontWeight={600}>
                   Бюджет и сроки
                 </Typography>

@@ -9,6 +9,7 @@ import { useAuth } from "@/src/shared/lib/hooks";
 import { toastService } from "@/src/shared/lib/toast";
 import { getVerificationStatus, sendEmailCode, sendPhoneCode, verifyCode as verifyCodeApi } from "@/src/shared/api/verification";
 import { authService, type Session } from "@/src/shared/lib/auth/auth.service";
+import { getProfile, type ProfileResponse } from "@/src/shared/api/profile";
 import Link from "next/link";
 import type { VerificationStatus } from "@/src/entities/verification/model/types";
 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [profileData, setProfileData] = useState<ProfileResponse | null>(null);
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [verifyType, setVerifyType] = useState<"email" | "phone">("email");
   const [codeInput, setCodeInput] = useState("");
@@ -34,6 +36,7 @@ export default function SettingsPage() {
     if (isAuthenticated) {
       loadVerificationStatus();
       loadSessions();
+      loadProfileData();
     }
   }, [loading, isAuthenticated, router]);
 
@@ -43,6 +46,15 @@ export default function SettingsPage() {
       setVerificationStatus(status);
     } catch (error) {
       console.error("Failed to load verification status:", error);
+    }
+  };
+
+  const loadProfileData = async () => {
+    try {
+      const profile = await getProfile();
+      setProfileData(profile);
+    } catch (error) {
+      console.error("Failed to load profile:", error);
     }
   };
 
@@ -218,13 +230,20 @@ export default function SettingsPage() {
                 <Phone size={20} />
                 <Box>
                   <Typography variant="body1">Телефон</Typography>
-                  <Typography variant="body2" sx={{ color: "var(--text-muted)" }}>Не указан</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--text-muted)" }}>
+                    {profileData?.profile?.phone || "Не указан"}
+                  </Typography>
                 </Box>
               </Stack>
               {verificationStatus?.phone_verified ? (
                 <Chip icon={<CheckCircle size={16} />} label="Подтверждён" color="success" size="small" />
               ) : (
-                <Button variant="outlined" size="small" onClick={() => openVerifyDialog("phone")} disabled>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => openVerifyDialog("phone")}
+                  disabled={!profileData?.profile?.phone}
+                >
                   Подтвердить
                 </Button>
               )}

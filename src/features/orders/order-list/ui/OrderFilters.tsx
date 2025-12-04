@@ -18,7 +18,7 @@ import {
   Autocomplete,
   OutlinedInput,
 } from "@mui/material";
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, DollarSign, Tag as TagIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Banknote, Tag as TagIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 import { getSkills } from "@/src/shared/api/catalog";
 
@@ -248,7 +248,7 @@ export function OrderFilters({
             {/* Budget */}
             <Box>
               <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>
-                <DollarSign size={12} />
+                <Banknote size={12} />
                 Бюджет (₽)
               </Typography>
               <Stack spacing={1}>

@@ -20,7 +20,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { toastService } from "@/src/shared/lib/toast";
 import { motion } from "framer-motion";
 import { authService } from "@/src/shared/lib/auth/auth.service";
-import { LogIn, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
+import { LogIn, Mail, Lock, ArrowRight, ShieldCheck, ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   const theme = useTheme();
@@ -115,6 +115,23 @@ export default function LoginPage() {
           style={{ width: "100%", maxWidth: 480 }}
         >
           <Stack spacing={4}>
+            {/* Back Button */}
+            <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+              <Button
+                onClick={() => router.push("/")}
+                startIcon={<ArrowLeft size={18} />}
+                sx={{
+                  color: theme.palette.text.secondary,
+                  "&:hover": {
+                    color: theme.palette.text.primary,
+                    backgroundColor: theme.palette.action.hover,
+                  },
+                }}
+              >
+                На главную
+              </Button>
+            </Box>
+
             {/* Header */}
             <Box sx={{ textAlign: "center" }}>
               <motion.div

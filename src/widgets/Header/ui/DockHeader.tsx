@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { DesktopDock, AuthButtons, MobileAuthButtons, MobileMenu, DockLogo } from "@/src/shared/ui";
@@ -22,8 +22,47 @@ export function DockHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Track active section on scroll for anchor links
+  const handleScroll = useCallback(() => {
+    if (pathname !== "/") {
+      setActiveSection(null);
+      return;
+    }
+
+    const sections = ["features", "pricing"];
+    const scrollPosition = window.scrollY + 150; // offset for header
+
+    let currentSection: string | null = null;
+
+    for (const sectionId of sections) {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const offsetTop = element.offsetTop;
+        const offsetHeight = element.offsetHeight;
+
+        if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+          currentSection = `#${sectionId}`;
+          break;
+        }
+      }
+    }
+
+    setActiveSection(currentSection);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname === "/") {
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      handleScroll(); // Check initial position
+      return () => window.removeEventListener("scroll", handleScroll);
+    } else {
+      setActiveSection(null);
+    }
+  }, [pathname, handleScroll]);
 
   const showAuthContent = mounted && !authLoading;
 
@@ -37,6 +76,7 @@ export function DockHeader() {
         logoHref="/"
         navItems={navLinks}
         pathname={pathname}
+        activeSection={activeSection}
         showScrollEffect
         onNavItemClick={handleNavClick}
         actions={<AuthButtons isAuthenticated={showAuthContent && isAuthenticated} showLabels size="sm" />}

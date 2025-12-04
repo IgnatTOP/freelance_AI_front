@@ -29,6 +29,7 @@ import {
   Briefcase,
   Users,
   ArrowRight,
+  ArrowLeft,
   Check,
   Shield,
 } from "lucide-react";
@@ -210,6 +211,23 @@ export default function RegisterPage() {
           style={{ width: "100%", maxWidth: selectedRole ? 480 : 960 }}
         >
           <Stack spacing={4}>
+            {/* Back Button */}
+            <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+              <Button
+                onClick={() => router.push("/")}
+                startIcon={<ArrowLeft size={18} />}
+                sx={{
+                  color: theme.palette.text.secondary,
+                  "&:hover": {
+                    color: theme.palette.text.primary,
+                    backgroundColor: theme.palette.action.hover,
+                  },
+                }}
+              >
+                На главную
+              </Button>
+            </Box>
+
             {/* Header */}
             <Box sx={{ textAlign: "center" }}>
               <motion.div

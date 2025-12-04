@@ -22,6 +22,7 @@ interface DesktopDockProps {
   logoHref: string;
   navItems: NavItem[];
   pathname: string;
+  activeSection?: string | null;
   actions: ReactNode;
   topOffset?: string;
   showScrollEffect?: boolean;
@@ -32,6 +33,7 @@ export function DesktopDock({
   logoHref,
   navItems,
   pathname,
+  activeSection,
   actions,
   topOffset = "1.5rem",
   showScrollEffect = false,
@@ -75,16 +77,25 @@ export function DesktopDock({
           <div className="flex items-end gap-1 px-1">
             {navItems.map((item, index) => {
               const isHovered = hoveredIndex === index;
+
+              // Handle anchor links (#features, #pricing) with activeSection
+              const isAnchorLink = item.href.startsWith("#");
+              const isAnchorActive = isAnchorLink && activeSection === item.href;
+
               // Check exact match first, then prefix match but exclude if another nav item is more specific
-              const isExactMatch = pathname === item.href;
+              const isExactMatch = pathname === item.href && !activeSection;
               const isPrefixMatch = item.href !== "/dashboard" && pathname.startsWith(item.href + "/");
               // For /orders, don't activate if we're on a more specific route like /orders/in-progress
               const hasMoreSpecificMatch = navItems.some(
-                (other) => other.href !== item.href && 
-                  other.href.startsWith(item.href) && 
+                (other) => other.href !== item.href &&
+                  other.href.startsWith(item.href) &&
                   (pathname === other.href || pathname.startsWith(other.href + "/"))
               );
-              const isActive = isExactMatch || (isPrefixMatch && !hasMoreSpecificMatch);
+
+              // Home is active only when on "/" and no section is active
+              const isHomeActive = item.href === "/" && pathname === "/" && !activeSection;
+
+              const isActive = isAnchorActive || isHomeActive || (isExactMatch && item.href !== "/") || (isPrefixMatch && !hasMoreSpecificMatch);
               const scale = calculateDockScale(hoveredIndex, index);
 
               return (

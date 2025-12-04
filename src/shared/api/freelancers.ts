@@ -58,5 +58,5 @@ export const searchFreelancers = async (
   const response = await api.get<FreelancerSearchResult[]>(
     `/freelancers/search?${searchParams.toString()}`
   );
-  return response.data;
+  return response.data || [];
 };

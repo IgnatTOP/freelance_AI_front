@@ -21,7 +21,6 @@ import { toastService } from "@/src/shared/lib/toast";
 import {
   User,
   MapPin,
-  DollarSign,
   Briefcase,
   Code,
   Save,
@@ -52,18 +51,21 @@ export function EditProfileForm({
   loading,
 }: EditProfileFormProps) {
   // Initialize formData from form values
-  const [formData, setFormData] = useState(() => ({
-    display_name: form?.getFieldValue?.('display_name') || '',
-    bio: form?.getFieldValue?.('bio') || '',
-    location: form?.getFieldValue?.('location') || '',
-    experience_level: form?.getFieldValue?.('experience_level') || '',
-    hourly_rate: form?.getFieldValue?.('hourly_rate') || 0,
-    phone: form?.getFieldValue?.('phone') || '',
-    telegram: form?.getFieldValue?.('telegram') || '',
-    website: form?.getFieldValue?.('website') || '',
-    company_name: form?.getFieldValue?.('company_name') || '',
-    inn: form?.getFieldValue?.('inn') || '',
-  }));
+  const [formData, setFormData] = useState(() => {
+    const initialHourlyRate = form?.getFieldValue?.('hourly_rate');
+    return {
+      display_name: form?.getFieldValue?.('display_name') || '',
+      bio: form?.getFieldValue?.('bio') || '',
+      location: form?.getFieldValue?.('location') || '',
+      experience_level: form?.getFieldValue?.('experience_level') || '',
+      hourly_rate: initialHourlyRate ? String(initialHourlyRate) : '',
+      phone: form?.getFieldValue?.('phone') || '',
+      telegram: form?.getFieldValue?.('telegram') || '',
+      website: form?.getFieldValue?.('website') || '',
+      company_name: form?.getFieldValue?.('company_name') || '',
+      inn: form?.getFieldValue?.('inn') || '',
+    };
+  });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
@@ -108,8 +110,17 @@ export function EditProfileForm({
       newErrors.experience_level = 'Выберите уровень опыта';
     }
 
-    if (formData.hourly_rate && formData.hourly_rate < 0) {
+    const hourlyRateNum = formData.hourly_rate ? parseFloat(formData.hourly_rate) : 0;
+    if (formData.hourly_rate && (isNaN(hourlyRateNum) || hourlyRateNum < 0)) {
       newErrors.hourly_rate = 'Ставка должна быть положительным числом';
+    }
+
+    // Validate website URL
+    if (formData.website) {
+      const websiteUrl = formData.website.trim();
+      if (websiteUrl && !websiteUrl.match(/^https?:\/\//i)) {
+        newErrors.website = 'Ссылка должна начинаться с https://';
+      }
     }
 
     setErrors(newErrors);
@@ -119,7 +130,12 @@ export function EditProfileForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit(formData);
+      // Convert hourly_rate to number for submission
+      const submitData = {
+        ...formData,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : 0,
+      };
+      onSubmit(submitData);
     }
   };
 
@@ -248,18 +264,23 @@ export function EditProfileForm({
 
         <TextField
           fullWidth
-          type="number"
           label="Ставка в час (₽)"
           value={formData.hourly_rate}
-          onChange={(e) => handleChange('hourly_rate', parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Allow only numbers and empty string
+            if (value === '' || /^\d*$/.test(value)) {
+              handleChange('hourly_rate', value);
+            }
+          }}
           error={!!errors.hourly_rate}
           helperText={errors.hourly_rate || "Укажите желаемую почасовую ставку (опционально)"}
           placeholder="1000"
-          inputProps={{ min: 0, max: 100000, step: 100 }}
+          inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <DollarSign size={16} />
+                ₽
               </InputAdornment>
             ),
           }}
@@ -320,7 +341,8 @@ export function EditProfileForm({
           value={formData.website}
           onChange={(e) => handleChange('website', e.target.value)}
           placeholder="https://example.com"
-          helperText="Ваш личный сайт или портфолио (опционально)"
+          error={!!errors.website}
+          helperText={errors.website || "Ваш личный сайт или портфолио (опционально)"}
           inputProps={{ maxLength: 200 }}
           InputProps={{
             startAdornment: (
